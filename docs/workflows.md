@@ -61,9 +61,11 @@ paths — not just form buttons.
    expiry (`block_expired_dispatch`), remaining shelf life against
    `min_remaining_shelf_life_percent`, release status, warehouse and company match, and
    available quantity.
-3. **FEFO** is computed deterministically — ordered by `expiry_date`, then
-   `manufacturing_date`, then `batch_id` as the explicit tie-break, so the recommendation is
-   stable and identical on both majors regardless of default sort order.
+3. **FEFO** is computed deterministically — ordered by `expiry_date` (never-expiring last),
+   then `manufacturing_date`, then `batch_id` as the explicit tie-break. The ordering is
+   *total*, so the same stock always produces the same recommendation on any database,
+   whatever `Stock Settings.pick_serial_and_batch_based_on` says. Held and rejected batches
+   are never recommended.
 4. `enforce_fefo` decides whether a non-FEFO pick is silent (Off), warned, or blocked.
 5. `Sales Invoice` → `Payment Entry`, entirely standard.
 

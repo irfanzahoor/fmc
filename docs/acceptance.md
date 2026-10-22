@@ -96,18 +96,27 @@ from `Work Order Item.required_qty` / `consumed_qty`, which ERPNext already main
 | 5.4 | Packaging variance recorded | `get_packaging_variance`, asserted zero when consumption matched | PASS |
 | 5.5 | Raw ingredients cannot be consumed twice (structural: packaging BOM consumes bulk only) | `test_packaging_bom_cannot_consume_raw_ingredients`, `..._must_consume_the_declared_bulk_item` | PASS |
 
-## Milestone 6 — expiry, dispatch, recall
+## Milestone 6 — expiry, dispatch, recall — DONE on v16
 
-| # | Criterion |
-|---|---|
-| 6.1 | Near-expiry alerts fire per `near_expiry_alert_days` |
-| 6.2 | Minimum remaining shelf life enforced at dispatch |
-| 6.3 | FEFO deterministic: ordered by expiry, then manufacturing date, then batch id |
-| 6.4 | Expired / rejected / held stock blocked per policy, on form and API |
-| 6.5 | Warehouse, company, available qty and quality eligibility all validated |
-| 6.6 | Backward trace from a sold batch reaches supplier lots; forward trace reaches customers |
-| 6.7 | Split batches and multi-lot inputs traced correctly |
-| 6.8 | Returns and cancellations correctly reflected in the trace |
+| # | Criterion | Check | v16 |
+|---|---|---|---|
+| 6.1 | Near-expiry alerts fire per `near_expiry_alert_days` | `tests/test_near_expiry.py` (8 tests: horizon, expired included, zero-stock excluded, per-company) | PASS |
+| 6.2 | Minimum remaining shelf life enforced at dispatch | `test_batch_below_minimum_shelf_life_is_blocked`, `test_batch_above_minimum_shelf_life_is_allowed` | PASS |
+| 6.3 | FEFO deterministic: ordered by expiry, then manufacturing date, then batch id | `TestFefoOrdering` (5 tests incl. batch-id tie-break and stability under input order) | PASS |
+| 6.4 | Expired / rejected / held stock blocked per policy, on form and API | `test_expired_batch_cannot_be_dispatched`, `test_held_batch_cannot_be_dispatched`, `test_rule_holds_on_the_api_path` | PASS |
+| 6.5 | Warehouse, company, available qty and quality eligibility all validated | warehouse/company via `test_other_companies_stock_is_not_reported`; qty via `test_recommendation_reports_a_shortfall`; quality via `test_held_batches_are_not_recommended` | PASS |
+| 6.6 | Backward trace from a sold batch reaches supplier lots; forward trace reaches customers | `test_forward_trace_reaches_the_customer`; backward trace in `test_packing_into_two_sizes_leaves_7kg_of_bulk` | PASS |
+| 6.7 | Split batches and multi-lot inputs traced correctly | `test_recommendation_splits_across_batches`; multi-lot inputs traced in the acceptance scenario | PASS |
+| 6.8 | Returns and cancellations correctly reflected in the trace | `test_cancelled_delivery_drops_out_of_the_trace` | PASS |
+
+### Limitation found in M6
+
+`block_expired_dispatch = 0` **cannot** make expired dispatch possible. ERPNext raises its
+own `BatchExpiredError` on the Delivery Note, below our hook, and also refuses to *receive*
+stock into an already-expired batch. The policy flag can therefore only ever be stricter
+than ERPNext, never more permissive. Asserted deliberately in
+`test_erpnext_blocks_expired_dispatch_even_when_our_policy_permits` so the limit is recorded
+rather than discovered later. The shelf-life floor is ours alone and is fully effective.
 
 ## Milestone 7 — costing, dashboards, hardening
 

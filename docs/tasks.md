@@ -91,6 +91,22 @@ Status as of 2026-10-22.
       cartons consumed, both SKU batches traced to the actual supplier lots
 - [x] 128 tests passing
 
+## Milestone 6 — expiry, dispatch validation and recall — DONE on v16
+
+- [x] `dispatch/shelf_life.py`: expiry and remaining-shelf-life floor enforced on Delivery
+      Note through `doc_events`, so the rules hold on the API too
+- [x] `dispatch/fefo.py`: a **total** FEFO ordering — expiry, then manufacturing date, then
+      batch id — so the same stock always gives the same answer on any database. Off / Warn
+      / Block honoured. Held and rejected batches are never recommended.
+- [x] `tasks/near_expiry.py`: daily scheduled alert per company, driven by
+      `near_expiry_alert_days`; expired stock included, zero-stock batches excluded
+- [x] `stock_levels.py`: one home for batch balances, reading both `SLE.batch_no` and bundle
+      entries — the third place this distinction has mattered
+- [x] Recall: `trace_forward` reaches the customer; cancelled deliveries drop out
+- [x] Recorded limitation: ERPNext's own `BatchExpiredError` means
+      `block_expired_dispatch = 0` cannot permit expired dispatch
+- [x] 169 tests passing
+
 ## Open blockers
 
 | # | Blocker | Impact | Needs |

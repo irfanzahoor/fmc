@@ -36,13 +36,24 @@ doc_events = {
 		"on_cancel": "food_manufacturing.production.yield_tracking.on_stock_entry_change",
 	},
 	"Delivery Note": {
-		"validate": "food_manufacturing.quality.batch_eligibility.validate_delivery_note",
-		"on_submit": "food_manufacturing.quality.batch_eligibility.validate_delivery_note",
+		"validate": [
+			"food_manufacturing.quality.batch_eligibility.validate_delivery_note",
+			"food_manufacturing.dispatch.shelf_life.validate_delivery_note",
+			"food_manufacturing.dispatch.fefo.validate_delivery_note",
+		],
+		"on_submit": [
+			"food_manufacturing.quality.batch_eligibility.validate_delivery_note",
+			"food_manufacturing.dispatch.shelf_life.validate_delivery_note",
+		],
 	},
 	"Work Order": {
 		"validate": "food_manufacturing.overrides.work_order.validate",
 		"on_submit": "food_manufacturing.production.yield_tracking.on_work_order_submit",
 	},
+}
+
+scheduler_events = {
+	"daily": ["food_manufacturing.tasks.near_expiry.send_near_expiry_alerts"],
 }
 
 FM_MODULES = [
