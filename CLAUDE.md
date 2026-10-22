@@ -29,6 +29,16 @@ This is a Frappe/ERPNext app for spice and masala manufacturers.
 11 warehouses, the `realestate` app). Never write test fixtures that create Companies or
 Warehouses there; discover existing records instead. See `food_manufacturing/tests/`.
 
+## Frontend
+
+Vue 3 + frappe-ui + Tailwind + lucide-vue-next, in `frontend/`, served at `/fm`. Matches the
+`marley_frontend` convention in this bench. Note `frappe-ui` 0.1.278 exposes its Tailwind
+preset at `frappe-ui/tailwind` — the older `frappe-ui/src/tailwind/preset` subpath is gone
+from its exports map.
+
+Client code is UX only. Every rule is enforced in `food_manufacturing/api/` (permission
+checks, POST-only mutations) and in the `doc_events` handlers beneath it.
+
 ## Commands
 
 ```bash
@@ -37,6 +47,8 @@ bench --site steps_erp.local migrate                 # after DocType JSON, patch
 bench build --app food_manufacturing                 # after public JS/CSS changes
 bench --site steps_erp.local clear-cache             # after hooks.py changes
 bench --site steps_erp.local run-tests --app food_manufacturing
+
+cd apps/food_manufacturing/frontend && yarn build   # after frontend changes
 ```
 
 ## Project-specific rules

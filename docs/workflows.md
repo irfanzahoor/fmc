@@ -94,3 +94,44 @@ Any other movement out of quarantine or rejected is blocked. Movement *within* q
   reported as such.
 - Cancelled and returned transactions are excluded from, or marked in, the trace rather than
   silently dropped.
+
+
+## Operator SPA (/fm)
+
+A Vue 3 + frappe-ui app, matching the `marley_frontend` convention in this bench. Served at
+`/fm`; `vue-router` owns everything below that prefix.
+
+| Screen | Route | What it does |
+|---|---|---|
+| Production console | `/fm/production` | Open Work Orders, released lots per ingredient in FEFO order, finish a run with good quantity and process loss |
+| Quality queue | `/fm/quality` | Batches awaiting a decision, longest-waiting first, with history and genealogy before deciding |
+| Goods in | `/fm/receiving` | Receive against a purchase order, capturing supplier lot and manufacturing date |
+| Dispatch | `/fm/dispatch` | Pick batches against a sales order with the FEFO suggestion pre-filled and shelf-life blocks shown |
+
+### The security model
+
+The SPA is a **convenience over the same server rules**, never a second route around them.
+
+- The HTML shell carries no data. `www/fm.py` redirects an anonymous visitor to login and
+  refuses a Website User, so portal accounts cannot open it.
+- Every figure comes from a whitelisted endpoint in `food_manufacturing/api/` that calls
+  `frappe.has_permission(..., throw=True)`, and all mutations are `methods=["POST"]`.
+- Mutating endpoints build ERPNext's own documents (`make_stock_entry`,
+  `make_purchase_receipt`, `make_delivery_note`) and submit them, so the batch quality gate,
+  recipe guard, shelf-life floor, FEFO mode and every stock validation run exactly as in the
+  Desk. Asserted in `tests/test_api.py`: an inspector cannot release through the API, and
+  `finish_production_run` still refuses an unreleased lot.
+- The company selector is a browser preference, never a trust boundary; each endpoint
+  re-checks permission, so choosing a company you cannot see returns nothing.
+
+### Build
+
+```bash
+cd apps/food_manufacturing/frontend
+yarn install
+yarn build          # writes ../food_manufacturing/public/frontend and www/fm.html
+cd ../../.. && bench build --app food_manufacturing
+```
+
+Build output (`public/frontend/`) and the generated `www/fm.html` are gitignored, so the
+repo holds sources only.

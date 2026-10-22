@@ -1,0 +1,44 @@
+@import 'frappe-ui/style.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * Everything here is scoped under .fm-app, which wraps the whole SPA. The app is
+ * served on its own route, but scoping keeps these rules from leaking into the
+ * Desk if the bundle is ever loaded there.
+ */
+@layer components {
+	.fm-app {
+		@apply min-h-screen bg-gray-50 text-base text-gray-900 antialiased;
+	}
+
+	/* Tap targets sized for a gloved hand on a shop-floor tablet. */
+	.fm-app .fm-tap {
+		@apply min-h-11 min-w-11;
+	}
+
+	.fm-app .fm-card {
+		@apply rounded-lg border border-gray-200 bg-white shadow-sm;
+	}
+
+	.fm-app .fm-label {
+		@apply text-xs font-medium uppercase tracking-wide text-gray-600;
+	}
+
+	/* Visible focus for keyboard users; never removed. */
+	.fm-app :focus-visible {
+		@apply outline-none ring-2 ring-blue-500 ring-offset-1;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.fm-app *,
+	.fm-app *::before,
+	.fm-app *::after {
+		animation-duration: 0.01ms !important;
+		animation-iteration-count: 1 !important;
+		transition-duration: 0.01ms !important;
+	}
+}

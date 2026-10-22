@@ -136,7 +136,7 @@ def cleanup():
 	frappe.db.delete("Item", {"name": ("like", f"{PREFIX} %")})
 
 
-def ensure_user(suffix: str, roles: tuple) -> str:
+def ensure_user(suffix: str, roles: tuple, user_type: str = "System User") -> str:
 	"""Create a scoped test user with exactly ``roles``."""
 	email = f"{PREFIX.lower()}.{suffix}@example.com"
 	if not frappe.db.exists("User", email):
@@ -146,13 +146,14 @@ def ensure_user(suffix: str, roles: tuple) -> str:
 				"email": email,
 				"first_name": f"{PREFIX} {suffix}",
 				"send_welcome_email": 0,
-				"user_type": "System User",
+				"user_type": user_type,
 			}
 		)
 		user.insert(ignore_permissions=True)  # test bootstrap
 	else:
 		user = frappe.get_doc("User", email)
 
+	user.user_type = user_type
 	user.set("roles", [])
 	for role in roles:
 		user.append("roles", {"role": role})

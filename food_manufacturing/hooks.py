@@ -52,6 +52,13 @@ doc_events = {
 	},
 }
 
+# Operator SPA
+# ------------
+# The Vue app is served at /fm; vue-router owns everything below that prefix.
+website_route_rules = [
+	{"from_route": "/fm/<path:app_path>", "to_route": "fm"},
+]
+
 scheduler_events = {
 	"daily": ["food_manufacturing.tasks.near_expiry.send_near_expiry_alerts"],
 }

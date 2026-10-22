@@ -1,55 +1,15 @@
-# Byte-compiled / optimized / DLL files
+.DS_Store
 __pycache__/
 *.py[cod]
-*$py.class
-*.pyc
-*.py~
-
-# Distribution / packaging
-.Python
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
-tags
-MANIFEST
-
-# Environments
-.env
-.venv
+*.egg-info
+.venv/
 env/
-venv/
-ENV/
-env.bak/
-venv.bak/
-
-# Dependency directories
 node_modules/
-jspm_packages/
-
-# IDEs and editors
+__pycache__
+*.pyc
 .vscode/
-.vs/
 .idea/
-.kdev4/
-*.kdev4
-*.DS_Store
-*.swp
-*.comp.js
-.wnf-lang-status
-*debug.log
 
-# Helix Editor
-.helix/
-
-# Aider AI Chat
-.aider*
+# Vite build output and the generated Jinja entry point
+food_manufacturing/public/frontend/
+food_manufacturing/www/fm.html
