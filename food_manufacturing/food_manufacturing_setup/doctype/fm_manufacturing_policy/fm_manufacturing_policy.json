@@ -1,0 +1,227 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "field:company",
+ "creation": "2026-10-22 09:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "company",
+  "column_break_policy",
+  "enabled",
+  "warehouse_section",
+  "quarantine_warehouse",
+  "rejected_warehouse",
+  "column_break_warehouse",
+  "bulk_warehouse",
+  "packaging_warehouse",
+  "finished_goods_warehouse",
+  "quality_section",
+  "require_incoming_inspection",
+  "block_unreleased_consumption",
+  "column_break_quality",
+  "block_rejected_consumption",
+  "shelf_life_section",
+  "min_remaining_shelf_life_percent",
+  "near_expiry_alert_days",
+  "column_break_shelf_life",
+  "block_expired_dispatch",
+  "enforce_fefo",
+  "yield_section",
+  "yield_variance_tolerance_percent"
+ ],
+ "fields": [
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Company",
+   "options": "Company",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "column_break_policy",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "1",
+   "fieldname": "enabled",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Enabled"
+  },
+  {
+   "fieldname": "warehouse_section",
+   "fieldtype": "Section Break",
+   "label": "Warehouses"
+  },
+  {
+   "description": "Receipt destination for material awaiting incoming inspection.",
+   "fieldname": "quarantine_warehouse",
+   "fieldtype": "Link",
+   "label": "Quarantine Warehouse",
+   "options": "Warehouse",
+   "reqd": 1
+  },
+  {
+   "description": "Destination for material rejected at inspection. Blocked from production.",
+   "fieldname": "rejected_warehouse",
+   "fieldtype": "Link",
+   "label": "Rejected Warehouse",
+   "options": "Warehouse",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_warehouse",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "Default stocking location for bulk blend batches.",
+   "fieldname": "bulk_warehouse",
+   "fieldtype": "Link",
+   "label": "Bulk Blend Warehouse",
+   "options": "Warehouse"
+  },
+  {
+   "fieldname": "packaging_warehouse",
+   "fieldtype": "Link",
+   "label": "Packaging Material Warehouse",
+   "options": "Warehouse"
+  },
+  {
+   "fieldname": "finished_goods_warehouse",
+   "fieldtype": "Link",
+   "label": "Finished Goods Warehouse",
+   "options": "Warehouse"
+  },
+  {
+   "fieldname": "quality_section",
+   "fieldtype": "Section Break",
+   "label": "Quality and Release"
+  },
+  {
+   "default": "1",
+   "description": "Require a submitted Quality Inspection before a received batch can be released.",
+   "fieldname": "require_incoming_inspection",
+   "fieldtype": "Check",
+   "label": "Require Incoming Inspection"
+  },
+  {
+   "default": "1",
+   "description": "Block consumption of batches that have not been released by Quality.",
+   "fieldname": "block_unreleased_consumption",
+   "fieldtype": "Check",
+   "label": "Block Consumption of Unreleased Batches"
+  },
+  {
+   "fieldname": "column_break_quality",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "1",
+   "description": "Block consumption of batches rejected or held by Quality.",
+   "fieldname": "block_rejected_consumption",
+   "fieldtype": "Check",
+   "label": "Block Consumption of Rejected or Held Batches"
+  },
+  {
+   "fieldname": "shelf_life_section",
+   "fieldtype": "Section Break",
+   "label": "Shelf Life and Dispatch"
+  },
+  {
+   "default": "25",
+   "description": "Minimum percentage of total shelf life that must remain at dispatch.",
+   "fieldname": "min_remaining_shelf_life_percent",
+   "fieldtype": "Percent",
+   "label": "Minimum Remaining Shelf Life (%)"
+  },
+  {
+   "default": "30",
+   "description": "Raise near-expiry alerts this many days before expiry. 0 disables alerts.",
+   "fieldname": "near_expiry_alert_days",
+   "fieldtype": "Int",
+   "label": "Near Expiry Alert (Days)"
+  },
+  {
+   "fieldname": "column_break_shelf_life",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "1",
+   "fieldname": "block_expired_dispatch",
+   "fieldtype": "Check",
+   "label": "Block Dispatch of Expired Stock"
+  },
+  {
+   "default": "Warn",
+   "description": "First Expiry First Out enforcement for picking and dispatch.",
+   "fieldname": "enforce_fefo",
+   "fieldtype": "Select",
+   "label": "FEFO Enforcement",
+   "options": "Off\nWarn\nBlock"
+  },
+  {
+   "fieldname": "yield_section",
+   "fieldtype": "Section Break",
+   "label": "Yield"
+  },
+  {
+   "default": "2",
+   "description": "Planned versus actual yield deviation above this percentage is flagged as a variance.",
+   "fieldname": "yield_variance_tolerance_percent",
+   "fieldtype": "Percent",
+   "label": "Yield Variance Tolerance (%)"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-10-22 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Food Manufacturing Setup",
+ "name": "FM Manufacturing Policy",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "FM Production Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "read": 1,
+   "role": "FM Quality Manager"
+  },
+  {
+   "read": 1,
+   "role": "FM Production Operator"
+  },
+  {
+   "read": 1,
+   "role": "FM Warehouse Operator"
+  },
+  {
+   "read": 1,
+   "role": "FM Quality Inspector"
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}
