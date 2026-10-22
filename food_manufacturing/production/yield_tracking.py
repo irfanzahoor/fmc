@@ -98,7 +98,7 @@ def _input_totals(doc):
 	"""
 	rows = doc.get("required_items") or []
 	if not rows:
-		return 0.0, 0.0, frappe._("No required items")
+		return 0.0, 0.0, "No required items"
 
 	uoms = {row.stock_uom for row in rows if row.stock_uom}
 	target_uom = doc.stock_uom
