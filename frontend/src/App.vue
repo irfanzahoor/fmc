@@ -4,15 +4,27 @@
 			Skip to content
 		</a>
 
-		<header class="sticky top-0 z-20 border-b border-gray-200 bg-white">
+		<header class="sticky top-0 z-20 border-b border-gray-200 bg-white/95 backdrop-blur">
 			<div class="mx-auto flex max-w-7xl flex-wrap items-center gap-3 px-4 py-3">
-				<h1 class="text-base font-semibold">Food Manufacturing</h1>
+				<span
+					class="grid h-9 w-9 shrink-0 place-items-center rounded-lg text-white"
+					style="background: linear-gradient(135deg, #2a78d6, #1c5cab)"
+					aria-hidden="true"
+				>
+					<Factory class="h-4.5 w-4.5" />
+				</span>
+				<div class="min-w-0">
+					<h1 class="truncate text-base font-semibold leading-tight tracking-tight">
+						Food Manufacturing
+					</h1>
+					<p class="truncate text-xs text-gray-500">Spice &amp; masala operations</p>
+				</div>
 
 				<label class="ml-auto flex items-center gap-2 text-sm">
-					<span class="fm-label">Company</span>
+					<span class="fm-label hidden sm:inline">Company</span>
 					<select
 						v-model="company"
-						class="fm-tap rounded border border-gray-300 bg-white px-2 py-1 text-sm"
+						class="fm-tap rounded-md border border-gray-300 bg-white px-2.5 py-1.5 text-sm font-medium"
 						:disabled="session.loading || !session.companies.length"
 						aria-label="Company"
 					>
@@ -28,19 +40,21 @@
 					<li v-for="item in navigation" :key="item.name">
 						<RouterLink
 							:to="{ name: item.name }"
-							class="fm-tap flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium"
+							class="fm-tap flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors motion-reduce:transition-none"
 							:class="
 								route.name === item.name
 									? 'bg-gray-900 text-white'
 									: 'text-gray-700 hover:bg-gray-100'
 							"
+							:aria-current="route.name === item.name ? 'page' : undefined"
 						>
 							<component :is="item.icon" class="h-4 w-4" aria-hidden="true" />
 							{{ item.label }}
-							<!-- Count is a number, not a colour, so it reads without hue. -->
+							<!-- A count, not a colour: it reads with hue removed. -->
 							<span
 								v-if="item.count"
-								class="rounded-full bg-amber-100 px-1.5 text-xs font-semibold text-amber-900"
+								class="rounded-full px-1.5 text-xs font-semibold"
+								:class="route.name === item.name ? 'bg-white/20 text-white' : 'bg-gray-200 text-gray-800'"
 							>
 								{{ item.count }}
 							</span>
@@ -67,7 +81,7 @@
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import { ClipboardCheck, Factory, PackageCheck, Truck } from 'lucide-vue-next'
+import { ClipboardCheck, Factory, LayoutDashboard, PackageCheck, Truck } from 'lucide-vue-next'
 
 import { errorMessage, quality } from '@/data/api'
 import { session } from '@/data/session'
@@ -81,6 +95,7 @@ const company = computed({
 })
 
 const navigation = computed(() => [
+	{ name: 'Dashboard', label: 'Overview', icon: LayoutDashboard },
 	{ name: 'Production', label: 'Production', icon: Factory },
 	{ name: 'Quality', label: 'Quality', icon: ClipboardCheck, count: pendingQc.value },
 	{ name: 'Receiving', label: 'Receiving', icon: PackageCheck },

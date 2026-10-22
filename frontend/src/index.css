@@ -9,6 +9,77 @@
  * served on its own route, but scoping keeps these rules from leaking into the
  * Desk if the bundle is ever loaded there.
  */
+/*
+ * Chart tokens. Values come from the validated data-viz palette, re-checked
+ * against this app's own white card surface rather than the reference surface:
+ *   - series blue #2a78d6 ............ all checks pass
+ *   - ordinal blue ramp (4 steps) .... all checks pass
+ *   - status set, ordered good/warning/critical/serious .... both separation
+ *     gates pass; warning and serious are sub-3:1 on white, so every status
+ *     mark ships a visible label and a table view (the documented relief).
+ * Dark mode steps are selected for the dark surface, not flipped.
+ */
+.fm-app {
+	color-scheme: light;
+	--viz-surface: #ffffff;
+	--viz-plane: #f9f9f7;
+	--viz-ink: #0b0b0b;
+	--viz-ink-secondary: #52514e;
+	--viz-muted: #898781;
+	--viz-grid: #e1e0d9;
+	--viz-axis: #c3c2b7;
+
+	--viz-series-1: #2a78d6;
+
+	/* Ordinal ramp, light -> dark with magnitude. */
+	--viz-ordinal-1: #86b6ef;
+	--viz-ordinal-2: #3987e5;
+	--viz-ordinal-3: #1c5cab;
+	--viz-ordinal-4: #104281;
+
+	/* Status roles. Reserved - never reused as a series colour. */
+	--viz-good: #0ca30c;
+	--viz-warning: #fab219;
+	--viz-serious: #ec835a;
+	--viz-critical: #d03b3b;
+
+	--viz-delta-up: #006300;
+}
+
+@media (prefers-color-scheme: dark) {
+	:root:where(:not([data-theme='light'])) .fm-app {
+		color-scheme: dark;
+		--viz-surface: #1a1a19;
+		--viz-plane: #0d0d0d;
+		--viz-ink: #f0efec;
+		--viz-ink-secondary: #c3c2b7;
+		--viz-grid: #2c2c2a;
+		--viz-axis: #383835;
+		--viz-series-1: #3987e5;
+		--viz-ordinal-1: #184f95;
+		--viz-ordinal-2: #256abf;
+		--viz-ordinal-3: #3987e5;
+		--viz-ordinal-4: #86b6ef;
+		--viz-delta-up: #0ca30c;
+	}
+}
+
+:root[data-theme='dark'] .fm-app {
+	color-scheme: dark;
+	--viz-surface: #1a1a19;
+	--viz-plane: #0d0d0d;
+	--viz-ink: #f0efec;
+	--viz-ink-secondary: #c3c2b7;
+	--viz-grid: #2c2c2a;
+	--viz-axis: #383835;
+	--viz-series-1: #3987e5;
+	--viz-ordinal-1: #184f95;
+	--viz-ordinal-2: #256abf;
+	--viz-ordinal-3: #3987e5;
+	--viz-ordinal-4: #86b6ef;
+	--viz-delta-up: #0ca30c;
+}
+
 @layer components {
 	.fm-app {
 		@apply min-h-screen bg-gray-50 text-base text-gray-900 antialiased;

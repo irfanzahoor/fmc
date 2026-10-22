@@ -21,14 +21,14 @@ Version differences are isolated in `food_manufacturing/compat/`.
 
 ## Operator UI
 
-A Vue 3 + frappe-ui SPA at `/fm` with four screens: production console, quality release
-queue, goods in, and dispatch with FEFO picking. See `docs/workflows.md` for the routes, the
+A Vue 3 + frappe-ui SPA at `/fm`: a plant-overview dashboard plus four operator screens —
+production console, quality release queue, goods in, and dispatch with FEFO picking. See `docs/workflows.md` for the routes, the
 security model and the build steps.
 
 ## Status
 
 All seven milestones plus the operator UI implemented and verified on v16: **204 tests
-passing**. The
+passing**, and the dashboard has been rendered and reviewed at desktop and phone widths. The
 representative acceptance scenario runs end to end against real ERPNext stock. See
 `docs/tasks.md` for what is still owed before a pilot.
 

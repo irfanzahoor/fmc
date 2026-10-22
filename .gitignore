@@ -13,3 +13,6 @@ __pycache__
 # Vite build output and the generated Jinja entry point
 food_manufacturing/public/frontend/
 food_manufacturing/www/fm.html
+
+# Design-harness build output
+/tmp/fm-preview/

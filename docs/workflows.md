@@ -103,6 +103,7 @@ A Vue 3 + frappe-ui app, matching the `marley_frontend` convention in this bench
 
 | Screen | Route | What it does |
 |---|---|---|
+| Plant overview | `/fm/dashboard` | Hero yield figure, KPI row, yield trend, output by item, quality mix, expiry horizon |
 | Production console | `/fm/production` | Open Work Orders, released lots per ingredient in FEFO order, finish a run with good quantity and process loss |
 | Quality queue | `/fm/quality` | Batches awaiting a decision, longest-waiting first, with history and genealogy before deciding |
 | Goods in | `/fm/receiving` | Receive against a purchase order, capturing supplier lot and manufacturing date |
@@ -123,6 +124,51 @@ The SPA is a **convenience over the same server rules**, never a second route ar
   `finish_production_run` still refuses an unreleased lot.
 - The company selector is a browser preference, never a trust boundary; each endpoint
   re-checks permission, so choosing a company you cannot see returns nothing.
+
+### The dashboard
+
+Built against the data-visualization method, with the palette **computed rather than
+eyeballed** — the validator was run against this app's own white card surface, not the
+reference surface:
+
+| Use | Colour | Validator result |
+|---|---|---|
+| Yield trend line | series blue `#2a78d6` | all checks pass |
+| Expiry horizon bars | ordinal blue ramp, 4 steps | all checks pass |
+| Quality status stack | status palette, ordered good → warning → critical → serious | both separation gates pass |
+
+The status order is deliberate. Warning (`#fab219`) beside serious (`#ec835a`) fails the
+normal-vision separation floor (ΔE 13.6, needs ≥ 15), so `_quality_mix` emits
+**Released, Quarantine, Rejected, Hold** to keep that pair apart — reordering is the
+documented fix, and it lifts the worst adjacent pair to ΔE 15.7. Those two hues also sit
+below 3:1 on white, which obliges visible relief: every segment carries a direct value
+label and the legend repeats each value with an icon and a word, so a status is never
+conveyed by colour alone.
+
+Three decisions worth keeping:
+
+- **Bars never scale across units.** Output is grouped by UOM and each group scaled against
+  its own maximum. Scaling 1,842 kg against 24,000 packs on one length axis made packs look
+  like the entire plant's output.
+- **Expiry buckets lead with the most urgent**, darkest step first, so the row needing
+  action is not buried under a longer bar for a bucket nobody must act on.
+- **On a phone the yield plot is replaced by its table**, not shrunk. Twelve points in
+  330px is not a readable chart.
+
+An unknown is never rendered as zero: with no completed runs the average-yield tile shows
+`—`, because "we did not measure this" and "this is zero" are different facts.
+
+### Design harness
+
+`frontend/preview/` builds the real chart components against fixture data as a standalone
+static page, so the UI can be opened and screenshotted without a Frappe session:
+
+```bash
+cd apps/food_manufacturing/frontend
+FM_PREVIEW_OUT=/tmp/fm-preview npx vite build --config vite.preview.config.js
+```
+
+It is a development tool and is never served by the app.
 
 ### Build
 

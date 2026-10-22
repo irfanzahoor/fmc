@@ -36,6 +36,16 @@ Vue 3 + frappe-ui + Tailwind + lucide-vue-next, in `frontend/`, served at `/fm`.
 preset at `frappe-ui/tailwind` — the older `frappe-ui/src/tailwind/preset` subpath is gone
 from its exports map.
 
+**frappe-ui's Tailwind preset replaces the font-size scale and stops at `text-2xl`** —
+`text-4xl` and `text-5xl` generate no CSS at all, so a hero number written with them
+silently renders at base size. The dashboard's hero uses a `text-fm-hero` token added in
+`tailwind.config.js`.
+
+Charts are hand-rolled inline SVG rather than a chart library: the mark specs (2px lines,
+≥8px markers with a surface ring, 2px gaps between stacked fills, selective direct labels)
+are easier to meet directly than to configure, and it avoids a dependency. Before changing
+any chart colour, re-run the data-viz validator against the white card surface.
+
 Client code is UX only. Every rule is enforced in `food_manufacturing/api/` (permission
 checks, POST-only mutations) and in the `doc_events` handlers beneath it.
 
