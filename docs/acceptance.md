@@ -81,15 +81,20 @@ from the ledger.
 | 4.6 | Partial completion, cancellation and amendment leave consistent stock and no orphan FM records | `test_cancelling_the_manufacture_entry_resets_the_yield`, `test_partial_completion` | PASS |
 | 4.7 | Concurrent consumption of the same batch cannot oversell it | `test_duplicate_release_is_rejected` (row lock); stock oversell is ERPNext's own guard | **PARTIAL** — release races are tested; a true two-process concurrent consumption test is **NOT RUN** and is owed |
 
-## Milestone 5 — packaging
+## Milestone 5 — packaging — DONE on v16
 
-| # | Criterion |
-|---|---|
-| 5.1 | Bulk + packaging consumed, finished SKU batches produced, per pack size |
-| 5.2 | Bulk→packed genealogy recorded and queryable |
-| 5.3 | Remaining bulk stock stays correct and available |
-| 5.4 | Packaging variance recorded |
-| 5.5 | Raw ingredients cannot be consumed twice (structural: packaging BOM consumes bulk only) |
+Again no custom DocType: a packaging run is a standard Work Order whose BOM consumes the
+bulk blend plus packaging materials. What ERPNext cannot express is the *shape* such a BOM
+must have, and that is enforced in `packaging/validation.py`. Packaging variance is derived
+from `Work Order Item.required_qty` / `consumed_qty`, which ERPNext already maintains.
+
+| # | Criterion | Check | v16 |
+|---|---|---|---|
+| 5.1 | Bulk + packaging consumed, finished SKU batches produced, per pack size | `test_packing_into_two_sizes_leaves_7kg_of_bulk` | PASS |
+| 5.2 | Bulk→packed genealogy recorded and queryable | `trace_backward` asserted to reach both supplier lots from each SKU batch | PASS |
+| 5.3 | Remaining bulk stock stays correct and available | same test: 97 − 50 − 40 = 7 kg read back from the ledger | PASS |
+| 5.4 | Packaging variance recorded | `get_packaging_variance`, asserted zero when consumption matched | PASS |
+| 5.5 | Raw ingredients cannot be consumed twice (structural: packaging BOM consumes bulk only) | `test_packaging_bom_cannot_consume_raw_ingredients`, `..._must_consume_the_declared_bulk_item` | PASS |
 
 ## Milestone 6 — expiry, dispatch, recall
 
@@ -115,20 +120,22 @@ from the ledger.
 | 7.5 | Role-based workspace: production queue, pending QC, near-expiry, yield variance |
 | 7.6 | Screens responsive; scoped CSS; no global theme override; no fragile DOM manipulation |
 
-## Representative acceptance scenario (M5 gate)
+## Representative acceptance scenario (M5 gate) — PASS on v16
 
-Synthetic demo data, asserted end to end:
+Run for real in `tests/test_acceptance_scenario.py`: actual Work Orders and Stock Entries
+are posted, and every figure below is read back from the stock ledger afterwards.
 
-| Step | Expected |
-|---|---|
-| Consume ingredients | 100 kg from identified supplier lots |
-| Produce blend | 97 kg usable bulk |
-| Process loss | 3 kg, recorded as loss — not as a by-product |
-| Pack 50 g | 1,000 packs = 50 kg |
-| Pack 100 g | 400 packs = 40 kg |
-| Remaining bulk | 7 kg, if no additional packing loss |
-| Packaging consumed | pouches and cartons per pack size |
-| Trace | both finished batches → actual supplier lots → customers |
+| Step | Expected | Result |
+|---|---|---|
+| Consume ingredients | 100 kg from identified supplier lots | PASS — 60 kg chilli + 40 kg cumin, both lots identified; stores left at 0 |
+| Produce blend | 97 kg usable bulk | PASS — `produced_qty` 97, 97 kg on hand |
+| Process loss | 3 kg, recorded as loss — not as a by-product | PASS — `process_loss_qty` 3, `fm_byproduct_qty` 0 |
+| Pack 50 g | 1,000 packs = 50 kg | PASS |
+| Pack 100 g | 400 packs = 40 kg | PASS |
+| Remaining bulk | 7 kg, if no additional packing loss | PASS — read back from the ledger |
+| Packaging consumed | pouches and cartons per pack size | PASS — 1,000 + 400 pouches and 14 cartons |
+| Trace | both finished batches → actual supplier lots | PASS — `trace_backward` reaches both lots via the bulk batch |
+| Trace → customers | | **NOT RUN** — dispatch is M6; `trace_forward` is written but untested |
 
 Also asserted: quantities and UOM conversions, valuation, batch links, and cancellation
 behaviour at every step.

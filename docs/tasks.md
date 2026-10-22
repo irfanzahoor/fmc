@@ -62,6 +62,35 @@ Status as of 2026-10-22.
       genealogy, because the SLE's own `batch_no` is empty in that case.
 - [x] 124 tests passing
 
+## Milestone 5 — packaging and bulk-to-finished traceability — DONE on v16
+
+- [x] `packaging/validation.py`: a packaging BOM may consume only the bulk blend its SKU
+      declares plus packaging materials. Raw ingredients are rejected, which makes double
+      consumption structurally impossible rather than a procedural rule.
+- [x] Packaging variance derived from `Work Order Item`, no separate record to keep in step
+- [x] `production/genealogy.py` extended: `trace_backward`, `trace_forward`,
+      `get_producing_work_orders`, `get_consuming_work_orders`. Packed SKU → bulk → lots
+      falls out of one recursion, so packaging needs no genealogy code of its own.
+- [x] **Full acceptance scenario passing for real**: 100 kg in, 97 kg blend, 3 kg loss,
+      1,000 × 50 g, 400 × 100 g, 7 kg bulk left, pouches and cartons consumed, both SKU
+      batches traced back to the actual supplier lots
+- [x] 128 tests passing
+
+## Milestone 5 — packaging and bulk-to-finished traceability — DONE on v16
+
+- [x] **Design revised again**: no `FM Packaging Run`. A packaging run is a standard Work
+      Order; the bulk-to-packed link is already in the ledger and variance is already on
+      `Work Order Item`. Justified in `docs/data-model.md`.
+- [x] `packaging/validation.py`: a packaging BOM may consume only the bulk blend and
+      packaging materials, and must consume the bulk item its SKU declares
+- [x] `get_packaging_variance`: required vs consumed packaging material, derived
+- [x] `trace_backward` / `trace_forward` / `get_consuming_work_orders` in
+      `production/genealogy.py`, handling multi-level and split batches
+- [x] **The representative acceptance scenario passes for real**: 100 kg consumed, 97 kg
+      blend, 3 kg process loss, 1,000 x 50 g, 400 x 100 g, 7 kg bulk left, pouches and
+      cartons consumed, both SKU batches traced to the actual supplier lots
+- [x] 128 tests passing
+
 ## Open blockers
 
 | # | Blocker | Impact | Needs |
@@ -74,14 +103,14 @@ Status as of 2026-10-22.
 | B6 | Frappe rolls the test transaction back **per class**, not per test | Tests that post real stock saw each other's ledger entries (a 120 kg requirement against 60 kg of stock) | Mitigated: production-flow tests derive item and batch names from the test name |
 | B7 | True concurrency (two processes consuming one batch) not tested | Acceptance 4.7 only partially met — the release row-lock is tested, stock oversell relies on ERPNext's own guard | Needs a two-process test harness |
 
-## Next — Milestone 5
+## Next — Milestone 6
 
-Packaging and bulk-to-finished traceability. Acceptance criteria 5.1–5.5 are already
-written in `docs/acceptance.md`.
+Expiry rules, dispatch validation and recall tracing. Acceptance criteria 6.1–6.8 are
+already written in `docs/acceptance.md`.
 
-1. A packaging BOM that consumes the bulk item plus pouches and cartons — never the raw
-   ingredients, which is what structurally prevents double consumption
-2. A separate Work Order per pack size, producing finished SKU batches
-3. Bulk-to-packed genealogy, extending `production/genealogy.py`
-4. Packaging variance: pouches and cartons consumed versus theoretical
-5. The full acceptance scenario: 97 kg blend, 1,000 x 50 g, 400 x 100 g, 7 kg bulk left
+1. Minimum remaining shelf life enforced at dispatch, against the policy percentage
+2. Deterministic FEFO: expiry, then manufacturing date, then batch id as explicit tie-break
+3. `enforce_fefo` Off / Warn / Block honoured
+4. Near-expiry alerts on `near_expiry_alert_days`
+5. Dispatch validation of warehouse, company, available qty and quality eligibility
+6. Recall: exercise `trace_forward` to customers, and test returns and cancellations

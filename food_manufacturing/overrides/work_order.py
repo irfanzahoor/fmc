@@ -7,11 +7,12 @@ as well as the form.
 import frappe
 from frappe import _
 
-RECIPE_MODULE = "food_manufacturing.food_manufacturing_recipe.doctype.fm_recipe.fm_recipe"
+from food_manufacturing.packaging.validation import validate_packaging_work_order
 
 
 def validate(doc, method=None):
 	validate_recipe_approved(doc)
+	validate_packaging_work_order(doc)
 
 
 def validate_recipe_approved(doc) -> None:

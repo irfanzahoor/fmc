@@ -151,3 +151,212 @@ def _work_order_stock_entries(work_order: str) -> list:
 def _drop_empty(bucket: dict) -> list:
 	"""Discard (item, batch) pairs that net to zero after reversals."""
 	return [entry for entry in bucket.values() if flt(entry["qty"])]
+
+
+def get_producing_work_orders(item_code: str, batch_no: str) -> list:
+	"""Work Orders whose submitted entries produced this batch.
+
+	More than one is possible: a batch may be topped up by several runs.
+	"""
+	bundles = frappe.get_all(
+		"Serial and Batch Entry",
+		filters={"batch_no": batch_no, "is_cancelled": 0, "is_outward": 0},
+		pluck="parent",
+		order_by="parent asc",
+	)
+
+	filters = {
+		"voucher_type": "Stock Entry",
+		"is_cancelled": 0,
+		"actual_qty": (">", 0),
+	}
+
+	or_filters = {"batch_no": batch_no}
+	if bundles:
+		or_filters["serial_and_batch_bundle"] = ("in", bundles)
+
+	vouchers = frappe.get_all(
+		"Stock Ledger Entry",
+		filters=filters,
+		or_filters=or_filters,
+		pluck="voucher_no",
+		order_by="posting_datetime asc",
+	)
+	if not vouchers:
+		return []
+
+	return frappe.get_all(
+		"Stock Entry",
+		filters={
+			"name": ("in", list(dict.fromkeys(vouchers))),
+			"docstatus": 1,
+			"work_order": ("is", "set"),
+		},
+		pluck="work_order",
+		order_by="posting_date asc, name asc",
+	)
+
+
+def trace_backward(item_code: str, batch_no: str, max_depth: int = 6) -> dict:
+	"""Walk a batch back towards the supplier lots it came from.
+
+	Returns a tree of ``{item_code, batch_no, qty, work_order, inputs: [...]}``.
+	Packed SKU -> bulk blend -> ingredient lots falls out of the same recursion,
+	so packaging needs no genealogy code of its own.
+
+	``max_depth`` stops a cycle caused by bad data from recursing forever; a
+	spice blend is two or three levels deep, so the default is generous.
+	"""
+	return _trace_backward(item_code, batch_no, max_depth, set())
+
+
+def _trace_backward(item_code: str, batch_no: str, depth: int, seen: set) -> dict:
+	node = {
+		"item_code": item_code,
+		"batch_no": batch_no,
+		"work_orders": [],
+		"inputs": [],
+		"truncated": False,
+	}
+
+	key = (item_code, batch_no)
+	if depth <= 0 or key in seen:
+		node["truncated"] = True
+		return node
+
+	seen = seen | {key}
+
+	node["work_orders"] = get_producing_work_orders(item_code, batch_no)
+	if not node["work_orders"]:
+		# A leaf: nothing produced it here, so it came in from a supplier.
+		node["supplier_lot"] = _supplier_lot(batch_no)
+		return node
+
+	for work_order in node["work_orders"]:
+		for entry in get_work_order_batches(work_order)["consumed"]:
+			child = _trace_backward(entry["item_code"], entry["batch_no"], depth - 1, seen)
+			child["qty"] = entry["qty"]
+			child["via_work_order"] = work_order
+			node["inputs"].append(child)
+
+	return node
+
+
+def trace_forward(item_code: str, batch_no: str) -> list:
+	"""Deliveries that shipped this batch, with the customer.
+
+	The dispatch end of a recall: given an ingredient lot, the caller walks
+	forward through :func:`get_consuming_work_orders` to the packed batches and
+	then here to find where they went.
+	"""
+	rows = frappe.get_all(
+		"Stock Ledger Entry",
+		filters={
+			"voucher_type": "Delivery Note",
+			"item_code": item_code,
+			"is_cancelled": 0,
+		},
+		fields=["voucher_no", "actual_qty", "serial_and_batch_bundle", "batch_no"],
+		order_by="posting_datetime asc",
+	)
+	if not rows:
+		return []
+
+	bundle_batches = _bundle_batch_map([r.serial_and_batch_bundle for r in rows if r.serial_and_batch_bundle])
+
+	deliveries = {}
+	for row in rows:
+		batches = bundle_batches.get(row.serial_and_batch_bundle) or (
+			{row.batch_no} if row.batch_no else set()
+		)
+		if batch_no not in batches:
+			continue
+
+		deliveries.setdefault(row.voucher_no, 0.0)
+		deliveries[row.voucher_no] += abs(flt(row.actual_qty))
+
+	if not deliveries:
+		return []
+
+	notes = frappe.get_all(
+		"Delivery Note",
+		filters={"name": ("in", list(deliveries)), "docstatus": 1},
+		fields=["name", "customer", "posting_date", "is_return"],
+		order_by="posting_date asc, name asc",
+	)
+
+	return [
+		{
+			"delivery_note": note.name,
+			"customer": note.customer,
+			"posting_date": note.posting_date,
+			"is_return": note.is_return,
+			"qty": deliveries[note.name],
+		}
+		for note in notes
+	]
+
+
+def get_consuming_work_orders(batch_no: str) -> list:
+	"""Work Orders that consumed this batch."""
+	bundles = frappe.get_all(
+		"Serial and Batch Entry",
+		filters={"batch_no": batch_no, "is_cancelled": 0, "is_outward": 1},
+		pluck="parent",
+		order_by="parent asc",
+	)
+
+	or_filters = {"batch_no": batch_no}
+	if bundles:
+		or_filters["serial_and_batch_bundle"] = ("in", bundles)
+
+	vouchers = frappe.get_all(
+		"Stock Ledger Entry",
+		filters={"voucher_type": "Stock Entry", "is_cancelled": 0, "actual_qty": ("<", 0)},
+		or_filters=or_filters,
+		pluck="voucher_no",
+		order_by="posting_datetime asc",
+	)
+	if not vouchers:
+		return []
+
+	return frappe.get_all(
+		"Stock Entry",
+		filters={
+			"name": ("in", list(dict.fromkeys(vouchers))),
+			"docstatus": 1,
+			"work_order": ("is", "set"),
+		},
+		pluck="work_order",
+		order_by="posting_date asc, name asc",
+	)
+
+
+def _bundle_batch_map(bundles: list) -> dict:
+	"""Map bundle name -> set of its batch numbers, in one query."""
+	if not bundles:
+		return {}
+
+	rows = frappe.get_all(
+		"Serial and Batch Entry",
+		filters={"parent": ("in", list(set(bundles))), "batch_no": ("is", "set")},
+		fields=["parent", "batch_no"],
+		order_by="parent asc",
+	)
+
+	mapping = {}
+	for row in rows:
+		mapping.setdefault(row.parent, set()).add(row.batch_no)
+
+	return mapping
+
+
+def _supplier_lot(batch_no: str) -> dict:
+	"""Supplier-side identity of a purchased batch."""
+	values = frappe.db.get_value(
+		"Batch",
+		batch_no,
+		["fm_supplier_lot_no", "supplier", "expiry_date", "manufacturing_date"],
+		as_dict=True,
+	)
+	return values or {}

@@ -80,8 +80,13 @@ def ensure_policy(site, **overrides):
 	return policy
 
 
-def ensure_item(suffix: str, nature: str | None = None, has_batch: bool = True) -> str:
-	"""Create a batched stock item scoped to the test prefix."""
+def ensure_item(suffix: str, nature: str | None = None, has_batch: bool = True,
+                uom: str | None = None) -> str:
+	"""Create a stock item scoped to the test prefix.
+
+	``has_batch`` is False for packaging materials, which are counted rather
+	than lot-tracked.
+	"""
 	item_code = f"{PREFIX} {suffix}"
 	if not frappe.db.exists("Item", item_code):
 		frappe.get_doc(
@@ -90,7 +95,7 @@ def ensure_item(suffix: str, nature: str | None = None, has_batch: bool = True) 
 				"item_code": item_code,
 				"item_name": item_code,
 				"item_group": frappe.db.get_value("Item Group", {"is_group": 0}, "name"),
-				"stock_uom": "Kg" if frappe.db.exists("UOM", "Kg") else "Nos",
+				"stock_uom": uom or ("Kg" if frappe.db.exists("UOM", "Kg") else "Nos"),
 				"is_stock_item": 1,
 				"has_batch_no": 1 if has_batch else 0,
 				"create_new_batch": 1 if has_batch else 0,

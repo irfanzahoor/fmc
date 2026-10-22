@@ -36,7 +36,7 @@ A custom DocType is only created where standard configuration cannot express the
 | `FM Recipe` | A BOM cannot be entered as percentages, has no approval state distinct from submit, and has no confidential-formula permlevel. Generates a standard BOM rather than replacing it. | planned (M3) |
 | `FM Batch Release` | `Quality Inspection` records *measurements*; it does not record an authorised release decision, who made it, or a later hold/reject with history. Batch status alone has no audit trail. | planned (M2) |
 | ~~`FM Production Run`~~ | **Not created — design revised in M4 after reading the real schema.** `Work Order` already maintains `required_items[].required_qty` / `consumed_qty`, `produced_qty`, `process_loss_qty`, and (v16) by-products in `secondary_items`; ERPNext updates them itself when a manufacturing Stock Entry is submitted or cancelled. A wrapper DocType would have duplicated all of that. The genuine gaps — a **yield** figure and a variance flag against the company tolerance — are `fm_` fields on Work Order, and lot allocation is *derived* from the ledger rather than stored. | **replaced by an extension** |
-| `FM Packaging Run` | No standard record links one bulk batch to the several SKU batches packed from it, nor tracks packaging variance. | planned (M5) |
+| ~~`FM Packaging Run`~~ | **Not created — design revised in M5.** A packaging run is a standard Work Order whose BOM consumes the bulk blend plus packaging materials. The bulk→packed link is already in the ledger, so genealogy is derived rather than stored, and packaging variance comes from `Work Order Item.required_qty` / `consumed_qty`. What ERPNext cannot express is the *shape* a packaging BOM must have, which is enforced in `packaging/validation.py`. | **replaced by validation + derivation** |
 
 Deliberately **not** created: any invoice, payment, stock ledger, valuation or accounting
 DocType. Those remain pure ERPNext.
@@ -74,6 +74,30 @@ bundle — ERPNext uses the bundle when it allocates batches itself, and leaves 
 `batch_no` empty. Reading only one of the two silently loses rows. An SLE that has a bundle
 is read from the bundle alone, so nothing is double counted. Cancelled entries are excluded,
 which is what makes cancellations and returns behave without special handling.
+
+## Packaging (M5)
+
+A packaging run is a standard Work Order per pack size. `packaging/validation.py` enforces
+the two rules ERPNext cannot:
+
+- A BOM producing a `Finished Good` may consume only `Bulk Blend` and `Packaging Material`
+  items. Consuming a `Raw Material` is rejected. Since the blending Work Order is the only
+  thing that consumes ingredients, **there is no path by which an ingredient is consumed
+  twice** — 5.5 is structural, not a procedure anyone has to remember.
+- The bulk item the BOM consumes must be the one the SKU declares in `fm_bulk_item`, so a
+  SKU cannot silently be packed from the wrong blend.
+
+Packaging variance (`get_packaging_variance`) is derived from `Work Order Item.required_qty`
+versus `consumed_qty`. Nothing is stored, so it cannot fall out of step with the ledger.
+
+### Tracing
+
+`trace_backward(item_code, batch_no)` walks a packed SKU batch back through the Work Orders
+that produced it to the batches they consumed, recursively, ending at purchased lots with
+their `fm_supplier_lot_no` and supplier. Packed SKU → bulk blend → ingredient lots falls out
+of the same recursion, so packaging needs no genealogy code of its own. `trace_forward`
+and `get_consuming_work_orders` give the dispatch direction for recall. A depth limit stops
+bad data causing infinite recursion.
 
 ## Implemented schema (M1)
 
