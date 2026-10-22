@@ -42,11 +42,16 @@ passing**, and the dashboard has been rendered and reviewed at desktop and phone
 representative acceptance scenario runs end to end against real ERPNext stock. See
 `docs/tasks.md` for what is still owed before a pilot.
 
+The newer [operator reliability changes](docs/operator-improvements.md) have passed
+local unit/build/browser checks; their v16 database integration and concurrency
+checks are wired into CI and still need a CI run.
+
 ## Documentation
 
 - `docs/PRD.md` — scope and assumptions
 - `docs/data-model.md` — standard-feature reuse map and custom DocTypes
 - `docs/workflows.md` — operational flows
+- `docs/operator-improvements.md` — QC guards, stock UOM picking, safe retries, scanners and recall
 - `docs/compatibility.md` — version matrix and cross-version risks
 - `docs/acceptance.md` — acceptance criteria per milestone
 - `docs/tasks.md` — milestone status

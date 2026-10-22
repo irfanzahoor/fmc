@@ -4,3 +4,5 @@ food_manufacturing.patches.v0_2.ensure_module_defs
 
 [post_model_sync]
 food_manufacturing.patches.v0_2.create_custom_fields
+
+food_manufacturing.patches.v0_2.operator_retry_fields

@@ -299,4 +299,4 @@ def _expiry_buckets(company: str) -> list:
 def _pending_qc_count(company: str) -> int:
 	from food_manufacturing.api.quality import get_release_queue
 
-	return len(get_release_queue(company))
+	return len(get_release_queue(company, limit=0))

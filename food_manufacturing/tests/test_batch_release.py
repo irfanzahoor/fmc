@@ -88,9 +88,7 @@ class TestFMBatchRelease(FMTestCase):
 		batch = fixtures.ensure_batch(self.item, "A6", status="Quarantine")
 		doc = self.make_release(batch, submit=True)
 		self.assertEqual(doc.decided_by, frappe.session.user)
-		self.assertEqual(
-			frappe.db.get_value("Batch", batch, "fm_released_by"), frappe.session.user
-		)
+		self.assertEqual(frappe.db.get_value("Batch", batch, "fm_released_by"), frappe.session.user)
 		self.assertEqual(frappe.db.get_value("Batch", batch, "fm_last_release"), doc.name)
 
 	# -- transitions ----------------------------------------------------------
@@ -154,3 +152,25 @@ class TestFMBatchRelease(FMTestCase):
 		hold.cancel()
 		self.assertEqual(self.status_of(batch), "Released")
 		self.assertEqual(frappe.db.get_value("Batch", batch, "fm_last_release"), first.name)
+
+	def test_old_decision_cannot_cancel_after_later_hold(self):
+		fixtures.ensure_policy(self.site, require_incoming_inspection=0)
+		batch = fixtures.ensure_batch(self.item, "A14", status="Quarantine")
+		first = self.make_release(batch, submit=True)
+		hold = self.make_release(batch, decision="Hold", submit=True)
+		with self.assertRaises(frappe.ValidationError):
+			first.cancel()
+		self.assertEqual(self.status_of(batch), "Hold")
+		self.assertEqual(frappe.db.get_value("Batch", batch, "fm_last_release"), hold.name)
+
+	def test_cancel_chain_restores_the_actual_previous_decision(self):
+		fixtures.ensure_policy(self.site, require_incoming_inspection=0)
+		batch = fixtures.ensure_batch(self.item, "A15", status="Quarantine")
+		first = self.make_release(batch, decision="Hold", submit=True)
+		second = self.make_release(batch, submit=True)
+		self.assertEqual(second.previous_decision, first.name)
+		second.cancel()
+		self.assertEqual(self.status_of(batch), "Hold")
+		self.assertEqual(frappe.db.get_value("Batch", batch, "fm_last_release"), first.name)
+		first.cancel()
+		self.assertEqual(self.status_of(batch), "Quarantine")

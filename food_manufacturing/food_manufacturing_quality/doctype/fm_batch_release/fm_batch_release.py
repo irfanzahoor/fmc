@@ -87,7 +87,12 @@ class FMBatchRelease(Document):
 				title=_("Inspection Required"),
 			)
 
-		status = frappe.db.get_value("Quality Inspection", self.quality_inspection, ["status", "docstatus"], as_dict=True)
+		status = frappe.db.get_value(
+			"Quality Inspection",
+			self.quality_inspection,
+			["status", "docstatus", "item_code", "batch_no"],
+			as_dict=True,
+		)
 		if not status or status.docstatus != 1:
 			frappe.throw(
 				_("Quality Inspection {0} must be submitted before it can support a release.").format(
@@ -95,9 +100,13 @@ class FMBatchRelease(Document):
 				)
 			)
 
-		if status.status == "Rejected":
+		item = frappe.db.get_value("Batch", self.batch, "item")
+		if status.item_code != item or status.batch_no != self.batch:
+			frappe.throw(_("The Quality Inspection must belong to this item and batch."))
+
+		if status.status != "Accepted":
 			frappe.throw(
-				_("Quality Inspection {0} was rejected, so this batch cannot be released.").format(
+				_("Quality Inspection {0} must be Accepted before this batch can be released.").format(
 					frappe.bold(self.quality_inspection)
 				)
 			)
@@ -115,9 +124,7 @@ class FMBatchRelease(Document):
 			)
 
 	def get_current_status(self, for_update: bool = False) -> str:
-		return (
-			frappe.db.get_value("Batch", self.batch, "fm_quality_status", for_update=for_update) or ""
-		)
+		return frappe.db.get_value("Batch", self.batch, "fm_quality_status", for_update=for_update) or ""
 
 	# -- effects -------------------------------------------------------------
 
@@ -135,6 +142,11 @@ class FMBatchRelease(Document):
 
 		new_status = STATUS_BY_DECISION[self.decision]
 		self.db_set("previous_status", current_status, update_modified=False)
+		self.db_set(
+			"previous_decision",
+			frappe.db.get_value("Batch", self.batch, "fm_last_release", for_update=True),
+			update_modified=False,
+		)
 
 		values = {
 			"fm_quality_status": new_status,
@@ -152,8 +164,10 @@ class FMBatchRelease(Document):
 	def revert_decision(self):
 		"""Restore the status this batch had before the cancelled decision."""
 		self.get_current_status(for_update=True)
+		if frappe.db.get_value("Batch", self.batch, "fm_last_release", for_update=True) != self.name:
+			frappe.throw(_("Cancel the latest quality decision first."))
 
-		previous = self.previous_status or "Quarantine"
+		previous = self.previous_status or ""
 		values = {
 			"fm_quality_status": previous,
 			"fm_last_release": None,
@@ -161,24 +175,24 @@ class FMBatchRelease(Document):
 			"fm_released_on": None,
 		}
 
-		if previous == "Released":
-			# The batch was already released before this decision; preserve that.
+		if previous:
+			# Restore the actual preceding decision, including a previous Hold.
 			earlier = frappe.db.get_value(
 				"FM Batch Release",
 				{
 					"batch": self.batch,
-					"decision": "Release",
 					"docstatus": 1,
-					"name": ("!=", self.name),
+					"name": self.previous_decision or ("!=", self.name),
 				},
-				["name", "decided_by", "posting_datetime"],
-				order_by="posting_datetime desc",
+				["name", "decision", "decided_by", "posting_datetime"],
+				order_by="creation desc, name desc",
 				as_dict=True,
 			)
 			if earlier:
 				values["fm_last_release"] = earlier.name
-				values["fm_released_by"] = earlier.decided_by
-				values["fm_released_on"] = earlier.posting_datetime
+				if earlier.decision == "Release":
+					values["fm_released_by"] = earlier.decided_by
+					values["fm_released_on"] = earlier.posting_datetime
 
 		self.update_batch(values)
 

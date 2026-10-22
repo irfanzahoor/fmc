@@ -10,7 +10,9 @@ import frappe
 from frappe import _
 from frappe.utils import cint, flt
 
-from food_manufacturing.dispatch.fefo import get_fefo_batches
+from food_manufacturing.api.idempotency import retry_safe
+
+from food_manufacturing.dispatch.fefo import get_fefo_batches, get_fefo_batches_bulk
 from food_manufacturing.dispatch.shelf_life import get_batch_shelf_life, remaining_shelf_life_percent
 from food_manufacturing.food_manufacturing_setup.doctype.fm_manufacturing_policy.fm_manufacturing_policy import (
 	get_policy_if_any,
@@ -53,14 +55,26 @@ def get_picklist(sales_order: str) -> dict:
 
 	policy = get_policy_if_any(doc.company)
 
+	available = get_fefo_batches_bulk([(row.item_code, row.warehouse) for row in doc.items], doc.company)
+	all_candidates = [batch for batches in available.values() for batch in batches]
+	details = get_batch_shelf_life([batch["batch_no"] for batch in all_candidates])
 	lines = []
 	for row in doc.items:
 		pending = flt(row.qty) - flt(row.delivered_qty)
 		if pending <= 0:
 			continue
 
-		candidates = get_fefo_batches(row.item_code, row.warehouse, doc.company)
-		suggestion, shortfall = _allocate(candidates, pending)
+		factor = flt(row.conversion_factor) or 1
+		candidates = _annotate(available.get((row.item_code, row.warehouse), []), policy, details)
+		# The UI and allocation API use stock UOM; ERPNext rows retain their sales UOM.
+		suggestion, shortfall = _allocate(
+			[b for b in candidates if not b["blocked_reason"]], pending * factor
+		)
+		for pick in suggestion:
+			for candidate in available.get((row.item_code, row.warehouse), []):
+				if candidate["batch_no"] == pick["batch_no"]:
+					candidate["available_qty"] -= pick["qty"]
+		# Shared candidate dictionaries reserve suggestions across repeated order lines.
 
 		lines.append(
 			{
@@ -77,7 +91,8 @@ def get_picklist(sales_order: str) -> dict:
 				"warehouse": row.warehouse,
 				"suggestion": suggestion,
 				"shortfall": shortfall,
-				"candidates": _annotate(candidates, policy),
+				"candidates": candidates,
+				"conversion_factor": factor,
 			}
 		)
 
@@ -87,15 +102,14 @@ def get_picklist(sales_order: str) -> dict:
 		"customer_name": doc.customer_name,
 		"company": doc.company,
 		"fefo_mode": (policy.enforce_fefo if policy else "Off"),
-		"min_remaining_shelf_life_percent": flt(policy.min_remaining_shelf_life_percent)
-		if policy
-		else 0.0,
+		"min_remaining_shelf_life_percent": flt(policy.min_remaining_shelf_life_percent) if policy else 0.0,
 		"lines": lines,
 	}
 
 
 @frappe.whitelist(methods=["POST"])
-def create_delivery_note(sales_order: str, lines) -> dict:
+@retry_safe("Sales Order", "sales_order", "Delivery Note", "delivery_note")
+def create_delivery_note(sales_order: str, lines, request_id: str | None = None) -> dict:
 	"""Create and submit a Delivery Note for the chosen batches.
 
 	``lines`` is ``[{name, allocations: [{batch_no, qty}]}]`` where ``name`` is
@@ -130,15 +144,14 @@ def create_delivery_note(sales_order: str, lines) -> dict:
 
 		for pick in picks:
 			clone = frappe.copy_doc(row, ignore_no_copy=False)
-			clone.qty = flt(pick["qty"])
+			clone.qty = flt(pick["qty"]) / (flt(row.conversion_factor) or 1)
+			clone.stock_qty = flt(pick["qty"])
 			clone.use_serial_batch_fields = 1
 			clone.batch_no = pick["batch_no"]
 			rows.append(clone)
 
 	if not rows:
-		frappe.throw(
-			_("None of the given lines belong to {0}.").format(frappe.bold(sales_order))
-		)
+		frappe.throw(_("None of the given lines belong to {0}.").format(frappe.bold(sales_order)))
 
 	note.set("items", rows)
 	note.insert()
@@ -166,12 +179,12 @@ def _allocate(candidates: list, wanted: float):
 	return picks, flt(remaining) if remaining > 0 else 0.0
 
 
-def _annotate(candidates: list, policy) -> list:
+def _annotate(candidates: list, policy, details=None) -> list:
 	"""Add the shelf-life figure and whether each batch would be refused."""
 	if not candidates:
 		return []
 
-	details = get_batch_shelf_life([b["batch_no"] for b in candidates])
+	details = details if details is not None else get_batch_shelf_life([b["batch_no"] for b in candidates])
 	minimum = flt(policy.min_remaining_shelf_life_percent) if policy else 0.0
 
 	annotated = []
@@ -181,9 +194,7 @@ def _annotate(candidates: list, policy) -> list:
 
 		blocked_reason = None
 		if remaining is not None and minimum > 0 and remaining < minimum:
-			blocked_reason = _("Below the {0}% shelf life required for dispatch.").format(
-				flt(minimum, 2)
-			)
+			blocked_reason = _("Below the {0}% shelf life required for dispatch.").format(flt(minimum, 2))
 
 		annotated.append(
 			{

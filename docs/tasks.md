@@ -132,16 +132,16 @@ Status as of 2026-10-22.
 | B4 | Host site has `Stock Settings.enable_serial_and_batch_no_for_item` **off** | Batched receiving is impossible on this site without it. Receiving tests enable it and restore it; a real pilot site must have it on | Turn it on in Stock Settings before pilot |
 | B5 | Tests run against the user's live site | Test fixtures must never create Companies/Warehouses there | Already mitigated: fixtures discover existing records and skip if absent |
 | B6 | Frappe rolls the test transaction back **per class**, not per test | Tests that post real stock saw each other's ledger entries (a 120 kg requirement against 60 kg of stock) | Mitigated: production-flow tests derive item and batch names from the test name |
-| B7 | True concurrency (two processes consuming one batch) not tested | Acceptance 4.7 only partially met — the release row-lock is tested, stock oversell relies on ERPNext's own guard | Needs a two-process test harness |
+| B7 | True concurrency (two processes consuming one batch) not tested | Acceptance 4.7 only partially met — the release row-lock is tested, stock oversell relies on ERPNext's own guard | Two-process barrier harness added in `tests/concurrency.py`, restricted to disposable `ci.localhost`; execution pending v16 CI |
 
-## Next — Milestone 6
+## Operator reliability improvements
 
-Expiry rules, dispatch validation and recall tracing. Acceptance criteria 6.1–6.8 are
-already written in `docs/acceptance.md`.
+Implemented QC inspection/batch matching, latest-decision cancellation guards,
+stock-UOM picking, eligible FEFO allocation, company-stock queue pagination, bulk
+availability queries, durable retry keys, keyboard scanner entry and a read-only
+recall screen. See [operator-improvements.md](operator-improvements.md).
 
-1. Minimum remaining shelf life enforced at dispatch, against the policy percentage
-2. Deterministic FEFO: expiry, then manufacturing date, then batch id as explicit tie-break
-3. `enforce_fefo` Off / Warn / Block honoured
-4. Near-expiry alerts on `near_expiry_alert_days`
-5. Dispatch validation of warehouse, company, available qty and quality eligibility
-6. Recall: exercise `trace_forward` to customers, and test returns and cancellations
+Local verification: 14 database-free regression tests, Python compilation, frontend
+production build and browser smoke checks with mocked API responses. The v16
+integration suite and two-process harness are configured in CI but were not run
+locally because this workspace has no v16 bench/database.

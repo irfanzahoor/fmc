@@ -143,7 +143,7 @@
 							</p>
 
 							<div class="sm:col-span-3">
-								<Button class="fm-tap" variant="solid" :loading="finishing" type="submit">
+								<Button class="fm-tap" variant="solid" :loading="finishing" :disabled="finishing || Boolean(finishResult)" type="submit">
 									Finish run
 								</Button>
 							</div>
@@ -213,6 +213,7 @@ async function open(row) {
 }
 
 async function finish() {
+	if (finishing.value || finishResult.value) return
 	finishing.value = true
 	finishError.value = null
 	finishResult.value = null

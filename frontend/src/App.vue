@@ -100,6 +100,7 @@ const navigation = computed(() => [
 	{ name: 'Quality', label: 'Quality', icon: ClipboardCheck, count: pendingQc.value },
 	{ name: 'Receiving', label: 'Receiving', icon: PackageCheck },
 	{ name: 'Dispatch', label: 'Dispatch', icon: Truck },
+	{ name: 'Recall', label: 'Recall', icon: ClipboardCheck },
 ])
 
 async function loadCounts() {

@@ -13,6 +13,8 @@ frappe.ui.form.on("FM Batch Release", {
 		frm.set_query("quality_inspection", () => ({
 			filters: {
 				docstatus: 1,
+				batch_no: frm.doc.batch,
+				status: "Accepted",
 				...(frm.doc.item_code ? { item_code: frm.doc.item_code } : {}),
 			},
 		}));
@@ -33,6 +35,7 @@ frappe.ui.form.on("FM Batch Release", {
 	},
 
 	batch(frm) {
+		frm.set_value("quality_inspection", null);
 		if (!frm.doc.batch) {
 			return;
 		}

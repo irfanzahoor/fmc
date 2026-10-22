@@ -38,7 +38,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
+          python-version: '3.14'
 
       - name: Set up Node
         uses: actions/setup-node@v4
@@ -116,11 +116,27 @@ jobs:
         working-directory: /home/runner/frappe-bench
         run: bench build --app food_manufacturing
 
+      - name: Build operator frontend
+        working-directory: food_manufacturing/frontend
+        run: |
+          yarn install --frozen-lockfile
+          yarn build
+
+      - name: Prepare disposable test fixtures
+        working-directory: /home/runner/frappe-bench
+        run: |
+          bench --site ci.localhost set-config fm_isolated_test_site true
+          bench --site ci.localhost execute food_manufacturing.tests.ci_setup.prepare
+
       - name: Run tests
         working-directory: /home/runner/frappe-bench
         run: |
           bench --site ci.localhost set-config allow_tests true
           bench --site ci.localhost run-tests --app food_manufacturing --failfast
+
+      - name: Test concurrent stock postings
+        working-directory: /home/runner/frappe-bench
+        run: bench --site ci.localhost execute food_manufacturing.tests.concurrency.run
 
       - name: Dump logs on failure
         if: failure()

@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 
 const routes = [
+	{ path: '/recall', name: 'Recall', component: () => import('@/pages/Recall.vue'), meta: { title: 'Recall' } },
 	{ path: '/', redirect: { name: 'Dashboard' } },
 	{
 		path: '/dashboard',

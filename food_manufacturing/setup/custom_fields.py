@@ -27,7 +27,7 @@ MATERIAL_NATURES = ("Raw Material", "Packaging Material", "Bulk Blend", "Finishe
 
 def get_custom_fields() -> dict:
 	"""DocType -> list of Custom Field definitions."""
-	return {
+	fields = {
 		"Item": [
 			{
 				"fieldname": "fm_manufacturing_section",
@@ -292,6 +292,44 @@ def get_custom_fields() -> dict:
 			},
 		],
 	}
+
+	for doctype in ("Stock Entry", "Purchase Receipt", "Delivery Note"):
+		fields.setdefault(doctype, []).extend(
+			[
+				{
+					"fieldname": "fm_operation_key",
+					"fieldtype": "Data",
+					"label": "FM Operation Key",
+					"unique": 1,
+					"hidden": 1,
+					"read_only": 1,
+					"no_copy": 1,
+					"allow_on_submit": 1,
+					"module": SETUP_MODULE,
+				},
+				{
+					"fieldname": "fm_operation_hash",
+					"fieldtype": "Data",
+					"label": "FM Operation Hash",
+					"hidden": 1,
+					"read_only": 1,
+					"no_copy": 1,
+					"allow_on_submit": 1,
+					"module": SETUP_MODULE,
+				},
+				{
+					"fieldname": "fm_operation_result",
+					"fieldtype": "Long Text",
+					"label": "FM Operation Result",
+					"hidden": 1,
+					"read_only": 1,
+					"no_copy": 1,
+					"allow_on_submit": 1,
+					"module": SETUP_MODULE,
+				},
+			]
+		)
+	return fields
 
 
 def create_fm_custom_fields() -> None:

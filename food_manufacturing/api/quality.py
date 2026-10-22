@@ -18,9 +18,10 @@ PENDING_STATUSES = ("Quarantine", "Hold")
 
 
 @frappe.whitelist()
-def get_release_queue(company: str, status: str | None = None, limit: int = 100) -> list:
+def get_release_queue(company: str, status: str | None = None, limit: int = 100, start: int = 0) -> list:
 	"""Batches awaiting a quality decision, oldest first."""
 	frappe.has_permission("Batch", "read", throw=True)
+	frappe.has_permission("Company", "read", doc=company, throw=True)
 	frappe.has_permission("FM Batch Release", "read", throw=True)
 
 	filters = {"disabled": 0}
@@ -40,15 +41,13 @@ def get_release_queue(company: str, status: str | None = None, limit: int = 100)
 			"manufacturing_date",
 			"creation",
 		],
-		order_by="creation asc",
-		limit=cint(limit) or 100,
+		order_by="creation asc, name asc",
+		limit_page_length=0,
 	)
 	if not batches:
 		return []
 
-	warehouses = frappe.get_all(
-		"Warehouse", filters={"company": company}, pluck="name", order_by="name asc"
-	)
+	warehouses = frappe.get_all("Warehouse", filters={"company": company}, pluck="name", order_by="name asc")
 	if not warehouses:
 		return []
 
@@ -69,7 +68,10 @@ def get_release_queue(company: str, status: str | None = None, limit: int = 100)
 		)
 		queue.append(batch)
 
-	return queue
+	# Apply pagination after company stock filtering.
+	page_size = min(max(cint(limit), 1), 500) if cint(limit) else len(queue)
+	start = max(cint(start), 0)
+	return queue[start : start + page_size]
 
 
 @frappe.whitelist()
@@ -82,7 +84,7 @@ def get_batch_context(batch: str) -> dict:
 
 	inspections = frappe.get_list(
 		"Quality Inspection",
-		filters={"item_code": doc.item, "docstatus": 1},
+		filters={"item_code": doc.item, "batch_no": batch, "docstatus": 1, "status": "Accepted"},
 		fields=["name", "status", "inspection_type", "report_date"],
 		order_by="report_date desc",
 		limit=10,
@@ -164,7 +166,7 @@ def get_queue_counts(company: str) -> dict:
 	"""Badge counts for the console header."""
 	frappe.has_permission("Batch", "read", throw=True)
 
-	queue = get_release_queue(company)
+	queue = get_release_queue(company, limit=0)
 	return {
 		"quarantine": sum(1 for b in queue if b["fm_quality_status"] == "Quarantine"),
 		"hold": sum(1 for b in queue if b["fm_quality_status"] == "Hold"),

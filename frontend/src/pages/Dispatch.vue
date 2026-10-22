@@ -38,6 +38,10 @@
 						</p>
 
 						<form class="space-y-5" @submit.prevent="submit">
+							<label class="block text-sm">Scan batch to focus its quantity
+								<input v-model.trim="scannedBatch" class="fm-tap ml-2 rounded border p-2" @keydown.enter.prevent="focusBatch" placeholder="Batch ID + Enter" />
+							</label>
+							<p v-if="scanMessage" role="status" class="text-sm">{{ scanMessage }}</p>
 							<fieldset v-for="line in picklist.lines" :key="line.name" class="fm-card p-3">
 								<legend class="px-1 text-sm font-medium">
 									{{ line.item_name || line.item_code }} — {{ fmt(line.pending_qty) }} {{ line.uom }} outstanding
@@ -59,7 +63,7 @@
 											<th scope="col" class="py-1 pr-3 font-medium">Available</th>
 											<th scope="col" class="py-1 pr-3 font-medium">Expiry</th>
 											<th scope="col" class="py-1 pr-3 font-medium">Shelf life</th>
-											<th scope="col" class="py-1 font-medium">Pick qty</th>
+											<th scope="col" class="py-1 font-medium">Pick qty (stock UOM)</th>
 										</tr>
 									</thead>
 									<tbody>
@@ -86,6 +90,7 @@
 											<td class="py-1">
 												<input
 													v-model="allocations[line.name][batch.batch_no]"
+													:data-batch="batch.batch_no"
 													type="number"
 													step="any"
 													min="0"
@@ -111,7 +116,7 @@
 								Dispatched as {{ submitResult.delivery_note }}.
 							</p>
 
-							<Button class="fm-tap" variant="solid" type="submit" :loading="submitting">
+							<Button class="fm-tap" variant="solid" type="submit" :loading="submitting" :disabled="submitting || Boolean(submitResult)">
 								Create delivery note
 							</Button>
 						</form>
@@ -140,6 +145,14 @@ const picklist = ref(null)
 const pickLoading = ref(false)
 const pickError = ref(null)
 const allocations = reactive({})
+const scannedBatch = ref('')
+const scanMessage = ref('')
+function focusBatch() {
+	const input = Array.from(document.querySelectorAll('input[data-batch]')).find((element) => element.dataset.batch === scannedBatch.value && !element.disabled)
+	if (input) { input.focus(); input.select(); scanMessage.value = '' }
+	else scanMessage.value = 'This batch is unavailable or blocked for this order.'
+	scannedBatch.value = ''
+}
 
 const submitting = ref(false)
 const submitError = ref(null)
@@ -190,6 +203,7 @@ async function open(order) {
 }
 
 async function submit() {
+	if (submitting.value || submitResult.value) return
 	submitting.value = true
 	submitError.value = null
 	submitResult.value = null

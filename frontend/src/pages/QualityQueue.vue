@@ -56,6 +56,11 @@
 			</div>
 		</StateBlock>
 
+		<div class="my-3 flex items-center gap-3">
+			<Button :disabled="loading || pageStart === 0" @click="changePage(-100)">Previous</Button>
+			<span class="text-sm">Page {{ Math.floor(pageStart / 100) + 1 }}</span>
+			<Button :disabled="loading || rows.length < 100" @click="changePage(100)">Next</Button>
+		</div>
 		<Dialog v-model="showDecision" :options="{ title: 'Quality decision', size: 'xl' }">
 			<template #body-content>
 				<StateBlock :loading="contextLoading" :error="contextError" loading-text="Loading batch…">
@@ -162,6 +167,11 @@ const props = defineProps({ company: { type: String, required: true } })
 const decisions = ['Release', 'Hold', 'Reject']
 
 const rows = ref([])
+const pageStart = ref(0)
+async function changePage(delta) {
+	pageStart.value = Math.max(0, pageStart.value + delta)
+	await load()
+}
 const loading = ref(false)
 const error = ref(null)
 
@@ -189,7 +199,7 @@ async function load() {
 	loading.value = true
 	error.value = null
 	try {
-		rows.value = await quality.queue({ company: props.company })
+		rows.value = await quality.queue({ company: props.company, start: pageStart.value, limit: 100 })
 	} catch (err) {
 		error.value = err
 	} finally {

@@ -11,7 +11,9 @@ import frappe
 from frappe import _
 from frappe.utils import cint, flt
 
-from food_manufacturing.dispatch.fefo import get_fefo_batches
+from food_manufacturing.api.idempotency import retry_safe
+
+from food_manufacturing.dispatch.fefo import get_fefo_batches_bulk
 from food_manufacturing.production.genealogy import get_consumed_lots
 
 #: Work Order states an operator still has something to do about.
@@ -69,6 +71,10 @@ def get_work_order_detail(work_order: str) -> dict:
 	doc = frappe.get_doc("Work Order", work_order)
 	doc.check_permission("read")
 
+	lots = get_fefo_batches_bulk(
+		[(row.item_code, row.source_warehouse or doc.wip_warehouse) for row in doc.required_items],
+		doc.company,
+	)
 	ingredients = []
 	for row in doc.get("required_items") or []:
 		ingredients.append(
@@ -82,11 +88,7 @@ def get_work_order_detail(work_order: str) -> dict:
 				"source_warehouse": row.source_warehouse or doc.wip_warehouse,
 				# Released lots only, in FEFO order, so the operator picks the
 				# right one without having to know the rule.
-				"available_lots": get_fefo_batches(
-					row.item_code,
-					row.source_warehouse or doc.wip_warehouse,
-					doc.company,
-				),
+				"available_lots": lots.get((row.item_code, row.source_warehouse or doc.wip_warehouse), []),
 			}
 		)
 
@@ -116,11 +118,13 @@ def get_work_order_detail(work_order: str) -> dict:
 
 
 @frappe.whitelist(methods=["POST"])
+@retry_safe("Work Order", "work_order", "Stock Entry", "stock_entry")
 def finish_production_run(
 	work_order: str,
 	qty: float,
 	finished_batch: str | None = None,
 	process_loss_qty: float = 0,
+	request_id: str | None = None,
 ) -> dict:
 	"""Post the Manufacture Stock Entry for a run.
 
@@ -138,7 +142,7 @@ def finish_production_run(
 	if qty <= 0:
 		frappe.throw(_("Quantity to finish must be greater than zero."))
 
-	order = frappe.get_doc("Work Order", work_order)
+	order = frappe.get_doc("Work Order", work_order, for_update=True)
 	order.check_permission("write")
 
 	if order.docstatus != 1:
@@ -151,9 +155,7 @@ def finish_production_run(
 	remaining = flt(order.qty) - flt(order.produced_qty) - flt(order.process_loss_qty)
 	if qty + process_loss_qty > remaining + 0.0001:
 		frappe.throw(
-			_("Only {0} {1} is left to finish on this Work Order.").format(
-				flt(remaining), order.stock_uom
-			),
+			_("Only {0} {1} is left to finish on this Work Order.").format(flt(remaining), order.stock_uom),
 			title=_("Quantity Exceeds the Work Order"),
 		)
 

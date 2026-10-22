@@ -72,6 +72,8 @@
 											<td class="py-2 pr-3">
 												<input
 													v-model="entries[line.name].supplier_lot_no"
+													@keydown.enter.prevent
+													placeholder="Scan supplier lot"
 													type="text"
 													class="fm-tap w-36 rounded border border-gray-300 px-2 py-1"
 													:aria-label="`Supplier lot for ${line.item_code}`"
@@ -106,7 +108,7 @@
 								</ul>
 							</div>
 
-							<Button class="fm-tap" variant="solid" type="submit" :loading="submitting">
+							<Button class="fm-tap" variant="solid" type="submit" :loading="submitting" :disabled="submitting || Boolean(submitResult)">
 								Post receipt
 							</Button>
 						</form>
@@ -182,6 +184,7 @@ async function open(order) {
 }
 
 async function submit() {
+	if (submitting.value || submitResult.value) return
 	submitting.value = true
 	submitError.value = null
 	submitResult.value = null

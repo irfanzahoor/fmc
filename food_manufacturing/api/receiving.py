@@ -9,6 +9,8 @@ import frappe
 from frappe import _
 from frappe.utils import cint, flt
 
+from food_manufacturing.api.idempotency import retry_safe
+
 from food_manufacturing.food_manufacturing_setup.doctype.fm_manufacturing_policy.fm_manufacturing_policy import (
 	get_policy_if_any,
 )
@@ -109,7 +111,8 @@ def get_purchase_order_lines(purchase_order: str) -> dict:
 
 
 @frappe.whitelist(methods=["POST"])
-def receive_purchase_order(purchase_order: str, lines) -> dict:
+@retry_safe("Purchase Order", "purchase_order", "Purchase Receipt", "purchase_receipt")
+def receive_purchase_order(purchase_order: str, lines, request_id: str | None = None) -> dict:
 	"""Create and submit a Purchase Receipt for the given lines.
 
 	``lines`` is a list of ``{name, qty, supplier_lot_no, supplier_mfg_date,

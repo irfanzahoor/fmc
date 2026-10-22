@@ -74,35 +74,58 @@ def get_fefo_recommendation(item_code: str, warehouse: str, qty: float = 0, comp
 
 def get_fefo_batches(item_code: str, warehouse: str, company: str | None = None) -> list:
 	"""Available batches of an item in a warehouse, in deterministic FEFO order."""
-	from erpnext.stock.doctype.batch.batch import get_available_batches
+	return get_fefo_batches_bulk([(item_code, warehouse)], company).get((item_code, warehouse), [])
 
-	available = get_available_batches(
-		frappe._dict(item_code=item_code, warehouse=warehouse)
-	)
-	batch_names = [name for name, qty in (available or {}).items() if flt(qty) > 0]
-	if not batch_names:
-		return []
 
-	details = get_batch_shelf_life(batch_names)
-	statuses = _quality_statuses(batch_names)
+def get_fefo_batches_bulk(requests, company=None) -> dict:
+	"""Load all requested item/warehouse candidates without queries per line."""
+	from food_manufacturing.stock_levels import get_batch_balances, get_reserved_batch_quantities
 
-	rows = []
-	for batch_no in batch_names:
-		if statuses.get(batch_no) not in DISPATCHABLE_STATUSES:
-			continue
-
-		detail = details.get(batch_no) or {}
-		rows.append(
-			{
-				"batch_no": batch_no,
-				"available_qty": flt(available[batch_no]),
-				"expiry_date": detail.get("expiry_date"),
-				"manufacturing_date": detail.get("manufacturing_date"),
-				"quality_status": statuses.get(batch_no),
-			}
+	requests = set(requests)
+	items = {item for item, warehouse in requests if item and warehouse}
+	warehouses = {warehouse for item, warehouse in requests if item and warehouse}
+	if not items or not warehouses:
+		return {}
+	if company:
+		warehouses = set(
+			frappe.get_all(
+				"Warehouse",
+				filters={"name": ("in", list(warehouses)), "company": company},
+				pluck="name",
+				order_by="name asc",
+			)
 		)
-
-	return sorted(rows, key=_fefo_sort_key)
+	if not warehouses:
+		return {}
+	batches = frappe.get_all(
+		"Batch",
+		filters={"item": ("in", list(items)), "disabled": 0},
+		fields=["name", "item", "expiry_date", "manufacturing_date", "fm_quality_status"],
+		order_by="name asc",
+	)
+	balances = get_batch_balances([batch.name for batch in batches], warehouses)
+	reserved = get_reserved_batch_quantities([batch.name for batch in batches], warehouses)
+	result = {key: [] for key in requests}
+	today = getdate()
+	for batch in batches:
+		if batch.fm_quality_status not in DISPATCHABLE_STATUSES:
+			continue
+		if batch.expiry_date and getdate(batch.expiry_date) < today:
+			continue
+		for warehouse in warehouses:
+			key = (batch.item, warehouse)
+			qty = balances.get((batch.name, warehouse), 0) - reserved.get((batch.name, warehouse), 0)
+			if key in result and qty > 0:
+				result[key].append(
+					{
+						"batch_no": batch.name,
+						"available_qty": qty,
+						"expiry_date": batch.expiry_date,
+						"manufacturing_date": batch.manufacturing_date,
+						"quality_status": batch.fm_quality_status,
+					}
+				)
+	return {key: sorted(rows, key=_fefo_sort_key) for key, rows in result.items()}
 
 
 def _fefo_sort_key(row):
@@ -132,7 +155,7 @@ def validate_delivery_note(doc, method=None) -> None:
 	if not batches_by_row:
 		return
 
-	breaches = _find_breaches(rows, batches_by_row, doc.company)
+	breaches = _find_breaches(rows, batches_by_row, doc.company, policy)
 	if not breaches:
 		return
 
@@ -143,37 +166,57 @@ def validate_delivery_note(doc, method=None) -> None:
 	frappe.msgprint(message, title=_("Not the Earliest Expiring Batch"), indicator="orange")
 
 
-def _find_breaches(rows, batches_by_row, company) -> list:
-	"""One message per row that skipped an earlier-expiring batch."""
-	breaches = []
+def _find_breaches(rows, batches_by_row, company, policy=None) -> list:
+	"""Compare total picked stock quantities with the eligible FEFO allocation."""
+	from food_manufacturing.dispatch.shelf_life import remaining_shelf_life_percent
 
-	for row in rows:
-		chosen = batches_by_row.get(row.name)
-		if not chosen:
-			continue
-
-		candidates = get_fefo_batches(row.item_code, row.warehouse, company)
-		if not candidates:
-			continue
-
-		earliest = candidates[0]
-		if earliest["batch_no"] in chosen:
-			continue
-
-		# Only a breach if the skipped batch actually expires sooner than
-		# everything picked, otherwise a split pick would be reported wrongly.
-		chosen_keys = [_fefo_sort_key(c) for c in candidates if c["batch_no"] in chosen]
-		if chosen_keys and _fefo_sort_key(earliest) >= min(chosen_keys):
-			continue
-
-		breaches.append(
-			_("Row {0}: batch {1} expires sooner than the batch picked for {2}.").format(
-				row.idx,
-				frappe.bold(earliest["batch_no"]),
-				frappe.bold(row.item_code),
-			)
+	available = get_fefo_batches_bulk([(row.item_code, row.warehouse) for row in rows], company)
+	details = get_batch_shelf_life([batch["batch_no"] for group in available.values() for batch in group])
+	minimum = flt(policy.min_remaining_shelf_life_percent) if policy else 0
+	bundle_names = [row.get("serial_and_batch_bundle") for row in rows if row.get("serial_and_batch_bundle")]
+	entries = (
+		frappe.get_all(
+			"Serial and Batch Entry",
+			filters={"parent": ("in", bundle_names), "is_cancelled": 0},
+			fields=["parent", "batch_no", "qty"],
+			order_by="parent asc, idx asc",
 		)
-
+		if bundle_names
+		else []
+	)
+	bundles = {}
+	for entry in entries:
+		bundles.setdefault(entry.parent, []).append(entry)
+	picked = {}
+	for row in rows:
+		if not batches_by_row.get(row.name) or flt(row.qty) <= 0:
+			continue
+		group = picked.setdefault((row.item_code, row.warehouse), {})
+		if row.get("serial_and_batch_bundle"):
+			for entry in bundles.get(row.serial_and_batch_bundle, []):
+				group[entry.batch_no] = group.get(entry.batch_no, 0) + abs(flt(entry.qty))
+		elif row.get("batch_no"):
+			group[row.batch_no] = group.get(row.batch_no, 0) + flt(row.qty) * (
+				flt(row.get("conversion_factor")) or 1
+			)
+	breaches = []
+	for key, chosen in picked.items():
+		remaining = sum(chosen.values())
+		for candidate in available.get(key, []):
+			if remaining <= 0:
+				break
+			life = remaining_shelf_life_percent(details.get(candidate["batch_no"]) or {})
+			if life is not None and life < minimum:
+				continue
+			expected = min(remaining, flt(candidate["available_qty"]))
+			if flt(chosen.get(candidate["batch_no"])) + 0.000001 < expected:
+				breaches.append(
+					_("Batch {0} must be picked before later batches of {1}.").format(
+						frappe.bold(candidate["batch_no"]), frappe.bold(key[0])
+					)
+				)
+				break
+			remaining -= expected
 	return breaches
 
 
