@@ -48,6 +48,7 @@ class FMManufacturingPolicy(Document):
 				filters={"name": ("in", warehouses)},
 				fields=["name", "company"],
 				as_list=True,
+				order_by="name asc",
 			)
 		)
 

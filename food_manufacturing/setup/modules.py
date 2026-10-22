@@ -23,6 +23,7 @@ def ensure_module_defs() -> None:
 			"Module Def",
 			filters={"name": ("in", module_names)},
 			pluck="name",
+			order_by="name asc",
 		)
 	)
 

@@ -30,6 +30,7 @@ def ensure_roles() -> None:
 			"Role",
 			filters={"name": ("in", list(FM_ROLES))},
 			pluck="name",
+			order_by="name asc",
 		)
 	)
 

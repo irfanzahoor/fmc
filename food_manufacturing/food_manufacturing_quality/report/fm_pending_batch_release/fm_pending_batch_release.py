@@ -65,7 +65,10 @@ def get_data(filters):
 	warehouses = None
 	if filters.get("company"):
 		warehouses = frappe.get_all(
-			"Warehouse", filters={"company": filters.company}, pluck="name"
+			"Warehouse",
+			filters={"company": filters.company},
+			pluck="name",
+			order_by="name asc",
 		)
 		if not warehouses:
 			return []

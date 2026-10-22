@@ -86,7 +86,9 @@ def get_near_expiry_batches(company: str, within_days: int) -> list:
 
 def _batch_quantities(batch_names: list, company: str) -> dict:
 	"""On-hand quantity per batch, scoped to one company's warehouses."""
-	warehouses = frappe.get_all("Warehouse", filters={"company": company}, pluck="name")
+	warehouses = frappe.get_all(
+		"Warehouse", filters={"company": company}, pluck="name", order_by="name asc"
+	)
 	if not warehouses:
 		return {}
 
