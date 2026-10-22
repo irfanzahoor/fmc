@@ -32,12 +32,16 @@ class FMRecipe(Document):
 		self.supersede_previous()
 
 	def on_cancel(self):
-		# Cancelling the BOM first means ERPNext's own link checks apply: a BOM
+		# Status first, so a cancelled recipe never reads "Approved" even if a
+		# later step fails. Everything here shares one transaction, so if
+		# cancel_bom raises, this write rolls back with it.
+		self.db_set("status", "Cancelled")
+
+		# Cancelling the BOM means ERPNext's own link checks apply: a BOM
 		# consumed by a submitted Work Order cannot be cancelled, so an approved
 		# recipe that has been used in production cannot be un-approved. That is
 		# the behaviour we want - history stays intact.
 		self.cancel_bom()
-		self.db_set("status", "Cancelled")
 		self.restore_superseded()
 
 	# -- validation ----------------------------------------------------------

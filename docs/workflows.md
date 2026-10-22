@@ -181,3 +181,48 @@ cd ../../.. && bench build --app food_manufacturing
 
 Build output (`public/frontend/`) and the generated `www/fm.html` are gitignored, so the
 repo holds sources only.
+
+
+## Demo data
+
+`food_manufacturing/demo/seed.py` seeds the acceptance scenario as **real ERPNext
+documents**, so the demo exercises the same validations a plant would: quarantine routing,
+the quality gate, recipe approval, yield and loss, packaging genealogy and FEFO dispatch.
+
+```bash
+bench --site <site> execute food_manufacturing.demo.seed.create_demo_data \
+  --kwargs '{"company":"Steps ERP (Demo)"}'
+
+bench --site <site> execute food_manufacturing.demo.seed.remove_demo_data \
+  --kwargs '{"company":"Steps ERP (Demo)"}'
+```
+
+With no `company` it picks a company whose name contains "Demo", falling back to the first.
+
+### What it creates
+
+Everything is prefixed `FM Demo`. Five supplier lots across three spices — three released,
+one left in quarantine so the QC queue is not empty, one rejected for moisture. An approved
+percentage recipe (60% chilli / 40% cumin) generating a BOM. Three blending runs, two within
+tolerance and one at 91% so the variance flag has something to show. Packaging into 1,000 ×
+50 g and 400 × 100 g from one bulk batch, leaving bulk on hand. A delivery note to a
+customer, so a sold pack traces forward. Three ageing batches so the expiry horizon is
+populated.
+
+### Three properties that make it safe on a shared site
+
+- **Namespaced** — every record carries the `FM Demo` prefix.
+- **Idempotent** — re-running produces identical figures and never duplicates. In
+  particular a quality decision is never overwritten: an early version re-stamped every lot
+  back to Quarantine on the second run, silently undoing the releases.
+- **Reversible** — `remove_demo_data` cancels and deletes in dependency order. Two details
+  that took fixing: a BOM and the FM Recipe that generated it point at each other, so the
+  link is broken before either is deleted; and a warehouse holding stock ledger entries is
+  **disabled rather than deleted**, because deleting stock history to tidy up a demo would
+  be the wrong trade.
+
+### One site-wide change
+
+The seeder turns on `Stock Settings.enable_serial_and_batch_no_for_item`, without which no
+batched stock can move at all. This affects **every company on the site**. Teardown restores
+it only if the seeder was the one that changed it.

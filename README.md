@@ -25,6 +25,16 @@ A Vue 3 + frappe-ui SPA at `/fm`: a plant-overview dashboard plus four operator 
 production console, quality release queue, goods in, and dispatch with FEFO picking. See `docs/workflows.md` for the routes, the
 security model and the build steps.
 
+## Demo data
+
+```bash
+bench --site <site> execute food_manufacturing.demo.seed.create_demo_data
+```
+
+Seeds the acceptance scenario as real documents — supplier lots, QC decisions, an approved
+recipe, three blends, two pack sizes and a dispatch. Namespaced `FM Demo`, idempotent, and
+removable with `remove_demo_data`. See `docs/workflows.md` for the caveats.
+
 ## Status
 
 All seven milestones plus the operator UI implemented and verified on v16: **204 tests
