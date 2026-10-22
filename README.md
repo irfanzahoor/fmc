@@ -19,6 +19,12 @@ Matched majors only — Frappe and ERPNext must be on the same major version.
 
 Version differences are isolated in `food_manufacturing/compat/`.
 
+## Status
+
+All seven milestones implemented and verified on v16: **178 tests passing**. The
+representative acceptance scenario runs end to end against real ERPNext stock. See
+`docs/tasks.md` for what is still owed before a pilot.
+
 ## Documentation
 
 - `docs/PRD.md` — scope and assumptions

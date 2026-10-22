@@ -107,6 +107,21 @@ Status as of 2026-10-22.
       `block_expired_dispatch = 0` cannot permit expired dispatch
 - [x] 169 tests passing
 
+## Milestone 7 — costing, reports, workspace and labels — DONE on v16
+
+- [x] `costing/batch_cost.py`: ledger valuation (actual) kept strictly separate from the BOM
+      estimate (planned); planned is blank for purchased batches
+- [x] Labour, overhead and wastage treatment documented in `docs/data-model.md` and asserted
+- [x] 4 script reports, all verified to execute: `FM Production Yield`, `FM Batch Cost`,
+      `FM Pending Batch Release`, `FM Near Expiry Stock`
+- [x] Workspace `Food Manufacturing`: production queue, pending QC, near-expiry and yield
+      variance as shortcuts, plus cards for production, quality, dispatch, reports and setup
+- [x] `FM Batch Label` print format with fully scoped CSS
+- [x] `stock_levels.py` reused by alerts, FEFO and reports, so screen and email agree
+- [x] Fixed: two test names truncated to the same tag and shared a batch, so their stock
+      accumulated under Frappe's per-class rollback
+- [x] 178 tests passing
+
 ## Open blockers
 
 | # | Blocker | Impact | Needs |

@@ -99,6 +99,39 @@ of the same recursion, so packaging needs no genealogy code of its own. `trace_f
 and `get_consuming_work_orders` give the dispatch direction for recall. A depth limit stops
 bad data causing infinite recursion.
 
+## Costing (M7)
+
+`costing/batch_cost.py`. Two figures, deliberately never mixed:
+
+| Figure | Source | Meaning |
+|---|---|---|
+| **Actual** | `stock_value_difference` over the batch's inward ledger entries | The stock ledger's own valuation — the same number ERPNext posted to the GL |
+| **Planned** | `BOM.total_cost` scaled to the quantity made | An estimate made before the run |
+
+The actual figure reconciles with the standard Stock Ledger and Stock Balance reports *by
+construction*, because it is read from the same rows rather than recomputed. Planned cost is
+blank for a purchased batch: there is no BOM estimate for bought material, and inventing one
+would blur the very line this module exists to keep.
+
+### Labour, overhead and wastage
+
+These follow ERPNext's own treatment; this app adds no costing engine.
+
+- **Labour and overhead** come from BOM operations and the Work Order's operating cost.
+  ERPNext includes them in the valuation of the output, so they are already inside the
+  actual figure. `planned_operating_cost` is reported separately for comparison.
+- **Non-recoverable process loss** is not written off. The same value is spread over fewer
+  surviving units, so the unit cost rises — which is the correct accounting and needs no
+  adjustment from us. Asserted in
+  `test_process_loss_raises_the_unit_cost_of_what_survives`: 3 kg lost from 100 kg worth
+  10,000 leaves 97 kg at 103.09, with the total still 10,000.
+- **Recoverable by-products** are stocked items in their own right and take valuation at the
+  rate ERPNext assigns them, which reduces the cost carried by the main output.
+
+Per-pack cost needs no arithmetic: a finished SKU's stock UOM *is* the pack, so the unit
+rate is the cost per pack. It is stated as its own column because that is the number a
+pricing conversation needs.
+
 ## Implemented schema (M1)
 
 ### FM Manufacturing Policy

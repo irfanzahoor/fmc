@@ -118,16 +118,16 @@ than ERPNext, never more permissive. Asserted deliberately in
 `test_erpnext_blocks_expired_dispatch_even_when_our_policy_permits` so the limit is recorded
 rather than discovered later. The shelf-life floor is ours alone and is fully effective.
 
-## Milestone 7 — costing, dashboards, hardening
+## Milestone 7 — costing, dashboards, hardening — DONE on v16
 
-| # | Criterion |
-|---|---|
-| 7.1 | Cost per batch and per pack reported |
-| 7.2 | Planned estimate vs actual ledger valuation clearly separated |
-| 7.3 | Operational reports reconcile with standard ERPNext stock and GL reports |
-| 7.4 | Labour, overhead and wastage treatment documented and consistent |
-| 7.5 | Role-based workspace: production queue, pending QC, near-expiry, yield variance |
-| 7.6 | Screens responsive; scoped CSS; no global theme override; no fragile DOM manipulation |
+| # | Criterion | Check | v16 |
+|---|---|---|---|
+| 7.1 | Cost per batch and per pack reported | `test_purchased_batch_rate_matches_what_was_paid`, `test_cost_per_pack_is_reported_for_finished_goods` | PASS |
+| 7.2 | Planned estimate vs actual ledger valuation clearly separated | `test_planned_cost_is_reported_separately_for_a_made_batch`, `test_purchased_batch_has_no_planned_cost` | PASS |
+| 7.3 | Operational reports reconcile with standard ERPNext stock and GL reports | `test_actual_cost_reconciles_with_the_stock_ledger`, `test_blend_value_equals_the_value_of_its_inputs` | PASS |
+| 7.4 | Labour, overhead and wastage treatment documented and consistent | `test_process_loss_raises_the_unit_cost_of_what_survives`; treatment documented in `docs/data-model.md` | PASS |
+| 7.5 | Role-based workspace: production queue, pending QC, near-expiry, yield variance | Workspace `Food Manufacturing` with 5 shortcuts and 5 cards; 4 script reports verified to execute | PASS |
+| 7.6 | Screens responsive; scoped CSS; no global theme override; no fragile DOM manipulation | Scoped CSS in the `FM Batch Label` print format (`.fm-label__*` only); report formatters emphasise a value that stays visible, so colour is never the only signal | **PARTIAL** — no global theme override and no DOM manipulation anywhere, and the Desk is responsive on its own. But **responsiveness was NOT visually verified in a browser**, so no claim is made beyond "we added nothing that breaks it" |
 
 ## Representative acceptance scenario (M5 gate) — PASS on v16
 
