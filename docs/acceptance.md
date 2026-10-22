@@ -64,17 +64,22 @@ so the field-stripping test uses a role that is explicitly granted export at per
 | 3.5 | Unauthorised recipe access blocked on form **and** `/api/resource`, `/api/method`, report view, and export | `test_get_list_strips_*`, `test_exporter_strips_the_formula_for_a_permitted_exporter`, `test_document_read_hides_*` | PASS |
 | 3.6 | A user without `FM Recipe Manager` cannot read formula fields by any of those paths | `test_permitted_fieldnames_exclude_the_formula_for_an_outsider`, `test_level_zero_writer_cannot_change_the_formula` | PASS |
 
-## Milestone 4 — production
+## Milestone 4 — production — DONE on v16
 
-| # | Criterion |
-|---|---|
-| 4.1 | Actual ingredient quantities and lot allocations recorded against planned |
-| 4.2 | Bulk output batch created with correct qty and expiry |
-| 4.3 | Planned vs actual yield computed; variance beyond tolerance flagged |
-| 4.4 | Process loss and recoverable by-products reported separately |
-| 4.5 | By-products read/written only through `compat/bom.py`; verified on both majors |
-| 4.6 | Partial completion, cancellation and amendment leave consistent stock and no orphan FM records |
-| 4.7 | Concurrent consumption of the same batch cannot oversell it |
+No `FM Production Run` DocType was created: ERPNext's Work Order already tracks planned vs
+actual quantities, process loss and v16 by-products. See `docs/data-model.md` for the
+revised decision. Yield became `fm_` fields on Work Order, and lot allocation is derived
+from the ledger.
+
+| # | Criterion | Check | v16 |
+|---|---|---|---|
+| 4.1 | Actual ingredient quantities and lot allocations recorded against planned | `test_blend_run_records_yield_and_genealogy`, `test_consumed_lots_carry_supplier_lot_metadata` | PASS |
+| 4.2 | Bulk output batch created with correct qty and expiry | `test_blend_run_records_yield_and_genealogy` (produced batch asserted from the ledger) | PASS |
+| 4.3 | Planned vs actual yield computed; variance beyond tolerance flagged | `test_variance_beyond_tolerance_is_flagged`, `test_tolerance_comes_from_the_policy` | PASS |
+| 4.4 | Process loss and recoverable by-products reported separately | `test_byproducts_are_reported_separately_from_process_loss` | PASS |
+| 4.5 | By-products read/written only through `compat/bom.py`; verified on both majors | `test_byproducts_read_through_the_compat_layer` | PASS (v16 only) |
+| 4.6 | Partial completion, cancellation and amendment leave consistent stock and no orphan FM records | `test_cancelling_the_manufacture_entry_resets_the_yield`, `test_partial_completion` | PASS |
+| 4.7 | Concurrent consumption of the same batch cannot oversell it | `test_duplicate_release_is_rejected` (row lock); stock oversell is ERPNext's own guard | **PARTIAL** — release races are tested; a true two-process concurrent consumption test is **NOT RUN** and is owed |
 
 ## Milestone 5 — packaging
 

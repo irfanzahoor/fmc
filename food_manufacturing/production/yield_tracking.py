@@ -11,10 +11,15 @@ custom fields on the Work Order. It never writes stock.
 
 UOM honesty: ``required_qty`` and ``consumed_qty`` are each in their own item's
 stock UOM, so adding them up is only meaningful when every ingredient shares the
-Work Order's stock UOM - which is the normal case for a blend measured in kg.
-When the UOMs are mixed the input total would be a meaningless number, so the
-yield is left blank and ``fm_yield_basis`` says why rather than reporting a
-figure nobody should trust.
+output's stock UOM - the normal case for a blend measured in kg. When they do
+not, the input total would be arithmetic on incompatible units, so the yield is
+left blank and ``fm_yield_basis`` says why rather than reporting a figure nobody
+should trust.
+
+The output UOM is read from the production **Item**, not from
+``Work Order.stock_uom``: ERPNext defaults that field to ``Nos`` and does not
+always set it from the item, so trusting it reported a false "mixed UOMs" for a
+blend whose every quantity was in kg.
 """
 
 import frappe
@@ -91,32 +96,58 @@ def compute_yield(doc) -> dict:
 
 
 def _input_totals(doc):
-	"""(planned_input, actual_input, basis) in the Work Order's stock UOM.
+	"""(planned_input, actual_input, basis) in the output's stock UOM.
 
-	Returns zeros and an explanatory basis when the ingredient UOMs are mixed,
-	because summing across UOMs would be arithmetic on incompatible units.
+	Returns zeros and an explanatory basis whenever the quantities cannot be
+	compared, rather than summing incompatible units.
 	"""
 	rows = doc.get("required_items") or []
 	if not rows:
 		return 0.0, 0.0, "No required items"
 
 	uoms = {row.stock_uom for row in rows if row.stock_uom}
-	target_uom = doc.stock_uom
-
 	if not uoms:
 		return 0.0, 0.0, "Ingredient stock UOM not set"
 
-	if len(uoms) > 1 or (target_uom and uoms != {target_uom}):
+	if len(uoms) > 1:
 		return (
 			0.0,
 			0.0,
-			"Mixed UOMs ({0}); yield not computed".format(", ".join(sorted(uoms))),
+			"Ingredients use mixed UOMs ({0}); yield not computed".format(
+				", ".join(sorted(uoms))
+			),
+		)
+
+	ingredient_uom = next(iter(uoms))
+	output_uom = _output_uom(doc)
+
+	if output_uom and ingredient_uom != output_uom:
+		return (
+			0.0,
+			0.0,
+			"Ingredients in {0} but output in {1}; yield not computed".format(
+				ingredient_uom, output_uom
+			),
 		)
 
 	planned = sum(flt(row.required_qty) for row in rows)
 	actual = sum(flt(row.consumed_qty) for row in rows)
 
-	return planned, actual, next(iter(uoms))
+	return planned, actual, ingredient_uom
+
+
+def _output_uom(doc) -> str | None:
+	"""Stock UOM of the produced item.
+
+	Taken from the Item rather than ``Work Order.stock_uom``, which ERPNext
+	defaults to ``Nos`` and does not reliably set from the production item.
+	"""
+	if doc.get("production_item"):
+		uom = frappe.get_cached_value("Item", doc.production_item, "stock_uom")
+		if uom:
+			return uom
+
+	return doc.get("stock_uom")
 
 
 def _percent(output: float, base: float):

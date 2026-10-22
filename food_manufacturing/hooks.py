@@ -29,7 +29,11 @@ doc_events = {
 	},
 	"Stock Entry": {
 		"validate": "food_manufacturing.quality.batch_eligibility.validate_stock_entry",
-		"on_submit": "food_manufacturing.quality.batch_eligibility.validate_stock_entry",
+		"on_submit": [
+			"food_manufacturing.quality.batch_eligibility.validate_stock_entry",
+			"food_manufacturing.production.yield_tracking.on_stock_entry_change",
+		],
+		"on_cancel": "food_manufacturing.production.yield_tracking.on_stock_entry_change",
 	},
 	"Delivery Note": {
 		"validate": "food_manufacturing.quality.batch_eligibility.validate_delivery_note",
@@ -37,6 +41,7 @@ doc_events = {
 	},
 	"Work Order": {
 		"validate": "food_manufacturing.overrides.work_order.validate",
+		"on_submit": "food_manufacturing.production.yield_tracking.on_work_order_submit",
 	},
 }
 
@@ -44,6 +49,7 @@ FM_MODULES = [
 	"Food Manufacturing Setup",
 	"Food Manufacturing Quality",
 	"Food Manufacturing Recipe",
+	"Food Manufacturing Production",
 ]
 
 # Scoped fixtures - only records owned by this app's modules are exported.

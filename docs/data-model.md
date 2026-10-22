@@ -35,11 +35,45 @@ A custom DocType is only created where standard configuration cannot express the
 | `FM Manufacturing Policy` | ERPNext has no per-company place to declare quarantine/rejected warehouses, shelf-life floors, FEFO mode or yield tolerance. `Stock Settings` is a Single and cannot vary by company. | **implemented (M1)** |
 | `FM Recipe` | A BOM cannot be entered as percentages, has no approval state distinct from submit, and has no confidential-formula permlevel. Generates a standard BOM rather than replacing it. | planned (M3) |
 | `FM Batch Release` | `Quality Inspection` records *measurements*; it does not record an authorised release decision, who made it, or a later hold/reject with history. Batch status alone has no audit trail. | planned (M2) |
-| `FM Production Run` | `Work Order` does not record which supplier lots were actually allocated, nor planned-vs-actual yield with a loss/by-product split. Wraps, does not replace, the Work Order. | planned (M4) |
+| ~~`FM Production Run`~~ | **Not created — design revised in M4 after reading the real schema.** `Work Order` already maintains `required_items[].required_qty` / `consumed_qty`, `produced_qty`, `process_loss_qty`, and (v16) by-products in `secondary_items`; ERPNext updates them itself when a manufacturing Stock Entry is submitted or cancelled. A wrapper DocType would have duplicated all of that. The genuine gaps — a **yield** figure and a variance flag against the company tolerance — are `fm_` fields on Work Order, and lot allocation is *derived* from the ledger rather than stored. | **replaced by an extension** |
 | `FM Packaging Run` | No standard record links one bulk batch to the several SKU batches packed from it, nor tracks packaging variance. | planned (M5) |
 
 Deliberately **not** created: any invoice, payment, stock ledger, valuation or accounting
 DocType. Those remain pure ERPNext.
+
+## Production yield (M4)
+
+No custom DocType. `fm_` fields on `Work Order`, computed by
+`production/yield_tracking.py` and refreshed by a `doc_events` hook on Stock Entry
+submit/cancel — exactly when ERPNext updates `produced_qty` and `consumed_qty`.
+
+| Field | Purpose |
+|---|---|
+| `fm_planned_input_qty`, `fm_actual_input_qty` | Input totals, in the output's stock UOM |
+| `fm_planned_yield_percent`, `fm_actual_yield_percent` | Output over input |
+| `fm_yield_variance_percent`, `fm_yield_flagged` | Deviation, flagged against `yield_variance_tolerance_percent` |
+| `fm_byproduct_qty` | Recoverable by-products, read only through `compat/bom.py` |
+| `fm_process_loss_qty_snapshot` | Non-recoverable loss, copied from the standard field |
+| `fm_yield_basis` | The UOM the yield was computed in, **or why it could not be** |
+
+Two deliberate honesty constraints:
+
+- `required_qty` and `consumed_qty` are each in their own item's stock UOM. Summing them is
+  only meaningful when every ingredient shares the output's UOM, so when they differ the
+  yield is left blank and `fm_yield_basis` explains why, rather than reporting a number
+  derived by adding kilograms to grams.
+- The output UOM comes from the production **Item**, not `Work Order.stock_uom`: ERPNext
+  defaults that field to `Nos` and does not reliably set it from the item. Trusting it
+  produced a false "mixed UOMs" result for a blend whose every quantity was in kg.
+
+### Genealogy (`production/genealogy.py`)
+
+Derived, never stored, so it cannot drift from the ledger. Batches are read from
+`Stock Ledger Entry.batch_no` **and** from the `Serial and Batch Entry` rows of the SLE's
+bundle — ERPNext uses the bundle when it allocates batches itself, and leaves the SLE's own
+`batch_no` empty. Reading only one of the two silently loses rows. An SLE that has a bundle
+is read from the bundle alone, so nothing is double counted. Cancelled entries are excluded,
+which is what makes cancellations and returns behave without special handling.
 
 ## Implemented schema (M1)
 
