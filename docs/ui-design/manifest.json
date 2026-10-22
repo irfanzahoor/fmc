@@ -1,0 +1,110 @@
+[
+  {
+    "screen": "overview",
+    "name": "projects/14703154858659368589/screens/e16601f4f01c407cb31688154003b4e1",
+    "title": "Plant Overview - FMC Core",
+    "width": "2560",
+    "height": "2048",
+    "screenMetadata": {
+      "agentType": "PRO_AGENT",
+      "status": "COMPLETE"
+    },
+    "source": "overview-refined"
+  },
+  {
+    "screen": "production",
+    "name": "projects/14703154858659368589/screens/d49d5318a88145d689d4cf5aff4c2839",
+    "title": "Production - FMC Operations",
+    "width": "2560",
+    "height": "2392",
+    "screenMetadata": {
+      "agentType": "PRO_AGENT",
+      "status": "COMPLETE"
+    },
+    "source": "operator-refined"
+  },
+  {
+    "screen": "quality",
+    "name": "projects/14703154858659368589/screens/899f04528ee5434b8526e783175b0ce6",
+    "title": "Quality Queue - FMC Operations",
+    "width": "2560",
+    "height": "2048",
+    "screenMetadata": {
+      "agentType": "PRO_AGENT",
+      "status": "COMPLETE"
+    },
+    "source": "operator-refined"
+  },
+  {
+    "screen": "receiving",
+    "name": "projects/14703154858659368589/screens/0d4d0047a0be4b86bc6768f36151758e",
+    "title": "Goods In - FMC Operations",
+    "width": "2560",
+    "height": "2108",
+    "screenMetadata": {
+      "agentType": "PRO_AGENT",
+      "status": "COMPLETE"
+    },
+    "source": "logistics-refined"
+  },
+  {
+    "screen": "dispatch",
+    "name": "projects/14703154858659368589/screens/8f3a65c3d9a949869deba6930eab53bd",
+    "title": "Dispatch - FMC Operations",
+    "width": "2560",
+    "height": "2048",
+    "screenMetadata": {
+      "agentType": "PRO_AGENT",
+      "status": "COMPLETE"
+    },
+    "source": "logistics-refined"
+  },
+  {
+    "screen": "recall",
+    "name": "projects/14703154858659368589/screens/ac0d9e087da245af9a89bb857b31c36f",
+    "title": "Recall & Traceability - FMC Operations",
+    "width": "2560",
+    "height": "2048",
+    "screenMetadata": {
+      "agentType": "PRO_AGENT",
+      "status": "COMPLETE"
+    },
+    "source": "recall-refined"
+  },
+  {
+    "screen": "overview-mobile",
+    "name": "projects/14703154858659368589/screens/e2ee73a325354d368fd629abf80d0ba9",
+    "title": "Plant Overview - FMC Mobile",
+    "width": "780",
+    "height": "3388",
+    "screenMetadata": {
+      "agentType": "PRO_AGENT",
+      "status": "COMPLETE"
+    },
+    "source": "overview-mobile"
+  },
+  {
+    "screen": "production-mobile",
+    "name": "projects/14703154858659368589/screens/78f30ad4c4994326ac0337011586bade",
+    "title": "Production Console - FMC Mobile",
+    "width": "780",
+    "height": "3608",
+    "screenMetadata": {
+      "agentType": "PRO_AGENT",
+      "status": "COMPLETE"
+    },
+    "source": "production-mobile"
+  },
+  {
+    "screen": "dispatch-mobile",
+    "name": "projects/14703154858659368589/screens/2e37a24b0ec64304a2054244c114cd77",
+    "title": "Dispatch - FMC Mobile",
+    "width": "780",
+    "height": "1768",
+    "screenMetadata": {
+      "agentType": "PRO_AGENT",
+      "status": "COMPLETE"
+    },
+    "source": "dispatch-mobile"
+  }
+]

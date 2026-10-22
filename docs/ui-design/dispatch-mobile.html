@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+
+<html class="h-full bg-background" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+<title>FMC - Mobile Dispatch Execution</title>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Inter Font -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "tertiary-fixed-dim": "#b7c8e1",
+            "primary-fixed": "#d5e3ff",
+            "on-error-container": "#93000a",
+            "on-primary-container": "#fefcff",
+            "on-background": "#191c1e",
+            "tertiary-container": "#66768d",
+            "surface-variant": "#e0e3e6",
+            "surface-dim": "#d8dadd",
+            "secondary-fixed-dim": "#bcc7de",
+            "secondary-fixed": "#d8e3fb",
+            "on-primary-fixed": "#001b3c",
+            "on-primary-fixed-variant": "#00468a",
+            "background": "#f7f9fc",
+            "primary-container": "#2474d2",
+            "surface-tint": "#005eb4",
+            "on-secondary-fixed-variant": "#3c475a",
+            "surface-container-highest": "#e0e3e6",
+            "surface-bright": "#f7f9fc",
+            "outline": "#727784",
+            "error-container": "#ffdad6",
+            "on-tertiary-container": "#fdfcff",
+            "tertiary": "#4d5d73",
+            "surface-container": "#eceef1",
+            "surface-container-lowest": "#ffffff",
+            "on-primary": "#ffffff",
+            "on-error": "#ffffff",
+            "on-tertiary-fixed-variant": "#38485d",
+            "inverse-on-surface": "#eff1f4",
+            "on-surface": "#191c1e",
+            "primary": "#005bb0",
+            "on-surface-variant": "#414752",
+            "outline-variant": "#c1c6d4",
+            "inverse-surface": "#2d3133",
+            "error": "#ba1a1a",
+            "on-tertiary-fixed": "#0b1c30",
+            "tertiary-fixed": "#d3e4fe",
+            "surface-container-low": "#f2f4f7",
+            "secondary-container": "#d5e0f8",
+            "on-tertiary": "#ffffff",
+            "on-secondary-fixed": "#111c2d",
+            "secondary": "#545f73",
+            "surface": "#f7f9fc",
+            "primary-fixed-dim": "#a8c8ff",
+            "on-secondary-container": "#586377",
+            "on-secondary": "#ffffff",
+            "surface-container-high": "#e6e8eb",
+            "inverse-primary": "#a8c8ff"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.125rem",
+            "lg": "0.25rem",
+            "xl": "0.5rem",
+            "full": "0.75rem"
+          },
+          "spacing": {
+            "gutter": "1rem",
+            "space-xl": "1.5rem",
+            "space-sm": "0.5rem",
+            "space-md": "0.75rem",
+            "space-2xs": "0.125rem",
+            "space-xs": "0.25rem",
+            "gutter-dense": "0.75rem",
+            "space-lg": "1rem",
+            "margin": "1.5rem",
+            "margin-mobile": "0.75rem",
+            "space-2xl": "2rem"
+          },
+          "fontFamily": {
+            "title-sm": ["Inter"],
+            "headline-md": ["Inter"],
+            "title-md": ["Inter"],
+            "label-md": ["Inter"],
+            "data-tabular-sm": ["Inter"],
+            "display-lg": ["Inter"],
+            "body-sm": ["Inter"],
+            "data-tabular-lg": ["Inter"],
+            "body-md": ["Inter"],
+            "display-lg-mobile": ["Inter"],
+            "label-xs": ["Inter"],
+            "headline-sm": ["Inter"],
+            "data-tabular-md": ["Inter"]
+          },
+          "fontSize": {
+            "title-sm": ["13px", {"lineHeight": "18px", "fontWeight": "600"}],
+            "headline-md": ["22px", {"lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+            "title-md": ["15px", {"lineHeight": "20px", "fontWeight": "600"}],
+            "label-md": ["12px", {"lineHeight": "16px", "letterSpacing": "0.01em", "fontWeight": "500"}],
+            "data-tabular-sm": ["12px", {"lineHeight": "16px", "fontWeight": "500"}],
+            "display-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+            "body-sm": ["12px", {"lineHeight": "16px", "fontWeight": "400"}],
+            "data-tabular-lg": ["24px", {"lineHeight": "28px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+            "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+            "display-lg-mobile": ["26px", {"lineHeight": "34px", "letterSpacing": "-0.015em", "fontWeight": "700"}],
+            "label-xs": ["11px", {"lineHeight": "14px", "letterSpacing": "0.04em", "fontWeight": "600"}],
+            "headline-sm": ["18px", {"lineHeight": "24px", "letterSpacing": "-0.005em", "fontWeight": "600"}],
+            "data-tabular-md": ["14px", {"lineHeight": "20px", "fontWeight": "500"}]
+          }
+        }
+      }
+    }
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      display: inline-block;
+      vertical-align: middle;
+      line-height: 1;
+    }
+    /* Touch optimization */
+    input[type=number]::-webkit-inner-spin-button, 
+    input[type=number]::-webkit-outer-spin-button { 
+      -webkit-appearance: none; 
+      margin: 0; 
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="h-full bg-background text-on-surface antialiased font-body-md select-none">
+<!-- Mobile Viewport Container 390px Max Width Centered -->
+<div class="relative mx-auto w-full max-w-[390px] min-h-screen bg-background flex flex-col pb-44 shadow-lg overflow-x-hidden">
+<!-- 1. Top App Bar (Shared Components standard: small docked full-width) -->
+<header class="sticky top-0 z-40 flex items-center justify-between px-space-md h-14 bg-surface-container-lowest border-b border-outline-variant shadow-none">
+<div class="flex items-center gap-space-sm">
+<button aria-label="Open Navigation Drawer" class="p-space-xs -ml-1 text-on-surface hover:bg-surface-container rounded-lg active:opacity-80 transition-opacity" id="menu-btn">
+<span class="material-symbols-outlined text-[24px]">menu</span>
+</button>
+<div class="flex flex-col">
+<div class="flex items-center gap-1 cursor-pointer">
+<span class="font-title-md text-title-md font-bold text-on-surface">FM Demo Foods</span>
+<span class="material-symbols-outlined text-[16px] text-on-surface-variant">expand_more</span>
+</div>
+<div class="flex items-center gap-1">
+<span class="font-label-xs text-label-xs text-primary font-semibold">Dispatch Execution</span>
+<span class="inline-block w-1 h-1 rounded-full bg-outline"></span>
+<span class="font-label-xs text-label-xs text-on-surface-variant">Unit 04 Line</span>
+</div>
+</div>
+</div>
+<button aria-label="Warehouse Location Domain" class="w-9 h-9 flex items-center justify-center text-primary rounded-lg hover:bg-surface-container active:opacity-80">
+<span class="material-symbols-outlined text-[22px]">domain</span>
+</button>
+</header>
+<!-- Slide-over Compact Drawer Backdrop & Panel -->
+<div class="fixed inset-0 bg-inverse-surface/40 z-50 transition-opacity duration-200 hidden opacity-0" id="drawer-backdrop"></div>
+<aside class="fixed inset-y-0 left-0 z-50 w-72 bg-surface-container-lowest border-r border-outline-variant shadow-md flex flex-col p-space-lg gap-space-sm transform -translate-x-full transition-transform duration-200" id="drawer">
+<div class="flex items-center justify-between pb-space-sm border-b border-outline-variant">
+<div>
+<h2 class="font-title-md text-title-md font-bold text-primary">FM Demo Foods</h2>
+<p class="font-label-md text-label-md text-on-surface-variant">Dispatch Operator Portal</p>
+<p class="font-label-xs text-label-xs text-secondary">Unit 04 - Spice &amp; Masala Line</p>
+</div>
+<button class="p-1 text-on-surface-variant rounded-lg hover:bg-surface-container" id="close-drawer">
+<span class="material-symbols-outlined">close</span>
+</button>
+</div>
+<nav class="flex flex-col gap-1 mt-2">
+<a class="flex items-center gap-space-md px-space-md py-space-sm text-on-surface-variant hover:bg-surface-container rounded-lg font-body-md" href="#">
+<span class="material-symbols-outlined text-[20px]">dashboard</span>
+<span>Overview</span>
+</a>
+<a class="flex items-center gap-space-md px-space-md py-space-sm text-on-surface-variant hover:bg-surface-container rounded-lg font-body-md" href="#">
+<span class="material-symbols-outlined text-[20px]">precision_manufacturing</span>
+<span>Production</span>
+</a>
+<a class="flex items-center justify-between px-space-md py-space-sm text-on-surface-variant hover:bg-surface-container rounded-lg font-body-md" href="#">
+<div class="flex items-center gap-space-md">
+<span class="material-symbols-outlined text-[20px]">security</span>
+<span>Quality Quarantine</span>
+</div>
+<span class="px-1.5 py-0.5 rounded-full bg-error-container text-on-error-container font-label-xs text-label-xs">12</span>
+</a>
+<a class="flex items-center gap-space-md px-space-md py-space-sm text-on-surface-variant hover:bg-surface-container rounded-lg font-body-md" href="#">
+<span class="material-symbols-outlined text-[20px]">input</span>
+<span>Receiving</span>
+</a>
+<!-- ACTIVE DISPATCH -->
+<a class="flex items-center gap-space-md px-space-md py-space-sm bg-secondary-container text-on-secondary-container rounded-lg font-title-sm" href="#">
+<span class="material-symbols-outlined text-[20px] text-primary" style="font-variation-settings: 'FILL' 1;">local_shipping</span>
+<span>Batch Dispatch</span>
+</a>
+<a class="flex items-center gap-space-md px-space-md py-space-sm text-on-surface-variant hover:bg-surface-container rounded-lg font-body-md" href="#">
+<span class="material-symbols-outlined text-[20px]">history</span>
+<span>Factory Logs</span>
+</a>
+</nav>
+<div class="mt-auto pt-space-md border-t border-outline-variant flex items-center gap-space-sm">
+<div class="w-8 h-8 rounded-full bg-primary-fixed flex items-center justify-center font-title-sm text-on-primary-fixed">
+          DO
+        </div>
+<div>
+<p class="font-title-sm text-title-sm text-on-surface leading-tight">D. Sen (Emp #4802)</p>
+<p class="font-label-xs text-label-xs text-on-surface-variant">Shift Lead • FMC Terminal</p>
+</div>
+</div>
+</aside>
+<!-- Main Operational Scroll Flow -->
+<main class="flex-1 px-3 py-3 space-y-3">
+<!-- 2. Order Context & Customer Header Card -->
+<section class="bg-surface-container-lowest rounded-[10px] border border-[#e2e8f0] p-3 space-y-2.5">
+<div class="flex items-start justify-between">
+<div>
+<div class="flex items-center gap-1.5">
+<span class="font-label-xs text-label-xs text-on-surface-variant">SALES ORDER</span>
+<span class="px-1.5 py-0.5 rounded bg-surface-container text-on-surface font-title-sm text-title-sm font-bold tracking-tight">SO-FM-0036</span>
+</div>
+<h1 class="font-headline-sm text-headline-sm text-on-surface mt-0.5 font-bold">Apex National Retailers Ltd</h1>
+<p class="font-label-xs text-label-xs text-on-surface-variant">GSTIN: <span class="font-data-tabular-sm text-data-tabular-sm">27AABCA1234F1Z9</span></p>
+</div>
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-[6px] bg-[#d5e0f8] text-[#005bb0] font-label-xs text-label-xs font-semibold">
+<span class="w-1.5 h-1.5 rounded-full bg-[#005bb0]"></span>
+            Retail Distribution
+          </span>
+</div>
+<div class="grid grid-cols-2 gap-2 pt-2 border-t border-[#edf2f7]">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[18px] text-tertiary">forklift</span>
+<div class="leading-tight">
+<p class="font-label-xs text-label-xs text-on-surface-variant">Bay Location</p>
+<p class="font-title-sm text-title-sm text-on-surface font-semibold">Bay #04 (Outward)</p>
+</div>
+</div>
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[18px] text-tertiary">schedule</span>
+<div class="leading-tight">
+<p class="font-label-xs text-label-xs text-on-surface-variant">Target Departure</p>
+<p class="font-title-sm text-title-sm text-on-surface font-semibold">Tomorrow, 14:00</p>
+</div>
+</div>
+</div>
+<!-- Shelf Life Policy Badge Banner -->
+<div class="flex items-center gap-2 p-2 rounded-[6px] bg-[#f8fafc] border border-[#cbd5e1]/60">
+<span class="material-symbols-outlined text-[18px] text-[#005bb0]">verified</span>
+<p class="font-label-xs text-label-xs text-on-surface leading-snug">
+<strong class="text-[#005bb0] font-bold">Strict Policy:</strong> Min 90 days shelf-life required at delivery dock receipt.
+          </p>
+</div>
+</section>
+<!-- 3. Sales to Stock UOM Conversion Breakdown -->
+<section class="bg-surface-container-lowest rounded-[10px] border border-[#e2e8f0] p-3 space-y-2.5">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[18px] text-[#2A78D6]">sync_alt</span>
+<h2 class="font-title-md text-title-md font-bold text-on-surface">Sales to Stock UOM Conversion</h2>
+</div>
+<span class="px-2 py-0.5 rounded-[6px] bg-[#dcfce7] text-[#16a34a] font-label-xs text-label-xs font-bold">100% Demand Met</span>
+</div>
+<div class="space-y-2">
+<!-- Conversion Item 1 -->
+<div class="p-2 rounded-[6px] bg-[#fcfdfe] border border-[#edf2f7] space-y-1">
+<div class="flex items-center justify-between text-body-sm">
+<span class="font-title-sm text-title-sm text-on-surface font-semibold">Garam Masala 50g Boxed Pouch</span>
+<span class="px-1.5 py-0.5 rounded bg-[#dcfce7] text-[#16a34a] font-label-xs text-label-xs font-bold">48/48 Packs</span>
+</div>
+<div class="flex items-center justify-between text-on-surface-variant font-label-xs text-label-xs">
+<span>Order: <strong class="text-on-surface">2 Cartons</strong> (1 Ctn = 24 Packs)</span>
+<span class="material-symbols-outlined text-[14px]">arrow_right_alt</span>
+<span class="font-data-tabular-sm text-data-tabular-sm font-semibold text-[#005bb0]">48 Packs Required</span>
+</div>
+<div class="w-full h-1.5 bg-[#f1f5f9] rounded-full overflow-hidden">
+<div class="h-full bg-[#2A78D6] rounded-full w-full"></div>
+</div>
+</div>
+<!-- Conversion Item 2 -->
+<div class="p-2 rounded-[6px] bg-[#fcfdfe] border border-[#edf2f7] space-y-1">
+<div class="flex items-center justify-between text-body-sm">
+<span class="font-title-sm text-title-sm text-on-surface font-semibold">Garam Masala 100g Stand-up</span>
+<span class="px-1.5 py-0.5 rounded bg-[#dcfce7] text-[#16a34a] font-label-xs text-label-xs font-bold">60/60 Packs</span>
+</div>
+<div class="flex items-center justify-between text-on-surface-variant font-label-xs text-label-xs">
+<span>Order: <strong class="text-on-surface">3 Cartons</strong> (1 Ctn = 20 Packs)</span>
+<span class="material-symbols-outlined text-[14px]">arrow_right_alt</span>
+<span class="font-data-tabular-sm text-data-tabular-sm font-semibold text-[#005bb0]">60 Packs Required</span>
+</div>
+<div class="w-full h-1.5 bg-[#f1f5f9] rounded-full overflow-hidden">
+<div class="h-full bg-[#2A78D6] rounded-full w-full"></div>
+</div>
+</div>
+<!-- Conversion Item 3 -->
+<div class="p-2 rounded-[6px] bg-[#fcfdfe] border border-[#edf2f7] space-y-1">
+<div class="flex items-center justify-between text-body-sm">
+<span class="font-title-sm text-title-sm text-on-surface font-semibold">Chilli Powder Premium 500g</span>
+<span class="px-1.5 py-0.5 rounded bg-[#dcfce7] text-[#16a34a] font-label-xs text-label-xs font-bold">10/10 Jars</span>
+</div>
+<div class="flex items-center justify-between text-on-surface-variant font-label-xs text-label-xs">
+<span>Order: <strong class="text-on-surface">10 Jars</strong> (1 Jar = 1 Unit)</span>
+<span class="material-symbols-outlined text-[14px]">arrow_right_alt</span>
+<span class="font-data-tabular-sm text-data-tabular-sm font-semibold text-[#005bb0]">10 Jars Required</span>
+</div>
+<div class="w-full h-1.5 bg-[#f1f5f9] rounded-full overflow-hidden">
+<div class="h-full bg-[#2A78D6] rounded-full w-full"></div>
+</div>
+</div>
+</div>
+</section>
+<!-- 4. Barcode Scan Input Bar -->
+<section class="bg-surface-container-lowest rounded-[10px] border border-[#e2e8f0] p-3 space-y-2">
+<label class="font-label-xs text-label-xs text-on-surface font-bold uppercase tracking-wider block" for="barcode-scanner-input">Scan or Search Batch Barcode</label>
+<div class="flex items-center gap-1.5">
+<div class="relative flex-1">
+<span class="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px]">barcode_scanner</span>
+<input class="w-full h-11 pl-9 pr-3 text-body-md font-body-md bg-white border border-[#cbd5e1] rounded-[6px] focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary text-on-surface placeholder:text-outline-variant font-mono" id="barcode-scanner-input" placeholder="BATCH-GM-2408-01..." type="text"/>
+</div>
+<button class="h-11 px-3.5 bg-primary hover:bg-[#1E62B3] active:bg-[#185296] text-white font-title-sm text-title-sm rounded-[6px] flex items-center justify-center gap-1 min-w-[70px] transition-colors" onclick="matchBatch()" type="button">
+<span>Match</span>
+</button>
+</div>
+<p class="font-label-xs text-label-xs text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px] text-tertiary">info</span>
+          Pressing ENTER highlights matching FEFO allocation without submit.
+        </p>
+</section>
+<!-- 5. Stacked FEFO Batch Cards -->
+<section class="space-y-2.5">
+<div class="flex items-center justify-between px-0.5">
+<div>
+<h2 class="font-title-md text-title-md font-bold text-on-surface">FEFO Batch Allocation</h2>
+<p class="font-label-xs text-label-xs text-on-surface-variant">First-Expired, First-Out sequence enforced</p>
+</div>
+<span class="material-symbols-outlined text-[20px] text-primary" title="FIFO/FEFO Engine Active">low_priority</span>
+</div>
+<p class="font-label-xs text-label-xs text-on-surface-variant italic px-0.5">
+          * Suggestions do not reserve stock until Delivery Note submission.
+        </p>
+<!-- FEFO Card 1 -->
+<article class="bg-surface-container-lowest rounded-[10px] border border-[#e2e8f0] p-3 space-y-2.5 transition-all" id="batch-card-1">
+<div class="flex items-start justify-between">
+<div>
+<div class="flex items-center gap-1.5">
+<span class="font-data-tabular-md text-data-tabular-md font-bold text-on-surface tracking-tight">BATCH-GM-2408-01</span>
+<span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-[6px] bg-[#dcfce7] text-[#16a34a] font-label-xs text-label-xs font-semibold">
+<span class="w-1.5 h-1.5 rounded-full bg-[#16a34a]"></span>
+                  Released
+                </span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Garam Masala 50g Boxed Pouch</p>
+</div>
+<span class="px-2 py-0.5 rounded-[4px] bg-[#f1f5f9] text-on-surface-variant font-label-xs text-label-xs font-bold">FEFO #1</span>
+</div>
+<!-- Freshness and Shelf Life Horizon -->
+<div class="grid grid-cols-3 gap-1 bg-[#f8fafc] p-2 rounded-[6px] border border-[#edf2f7] text-center">
+<div>
+<p class="font-label-xs text-label-xs text-on-surface-variant">MFD</p>
+<p class="font-data-tabular-sm text-data-tabular-sm font-semibold text-on-surface">10 Aug '24</p>
+</div>
+<div class="border-x border-[#e2e8f0]">
+<p class="font-label-xs text-label-xs text-on-surface-variant">EXP</p>
+<p class="font-data-tabular-sm text-data-tabular-sm font-semibold text-on-surface">10 May '25</p>
+</div>
+<div>
+<p class="font-label-xs text-label-xs text-on-surface-variant">HORIZON</p>
+<p class="font-data-tabular-sm text-data-tabular-sm font-bold text-[#16a34a]">234d Left</p>
+</div>
+</div>
+<!-- Quantity Stepper Controls (min 44px touch targets) -->
+<div class="flex items-center justify-between pt-1">
+<div>
+<p class="font-label-xs text-label-xs text-on-surface-variant">Stock Available</p>
+<p class="font-data-tabular-sm text-data-tabular-sm font-bold text-on-surface">48 Packs</p>
+<span class="inline-block mt-0.5 px-1.5 py-0.2 rounded bg-primary-fixed text-on-primary-fixed font-label-xs text-[10px] font-semibold">Suggested (FEFO)</span>
+</div>
+<div class="flex items-center border border-[#cbd5e1] rounded-[6px] bg-white overflow-hidden shadow-sm">
+<button aria-label="Decrease quantity" class="w-11 h-11 flex items-center justify-center text-on-surface hover:bg-[#f1f5f9] active:bg-[#e2e8f0] transition-colors" onclick="decrementQty('qty-1', 48)" type="button">
+<span class="material-symbols-outlined text-[18px]">remove</span>
+</button>
+<input class="w-14 h-11 text-center font-data-tabular-md text-data-tabular-md font-bold text-on-surface border-0 focus:ring-0 p-0" id="qty-1" max="48" min="0" type="number" value="48"/>
+<button aria-label="Increase quantity" class="w-11 h-11 flex items-center justify-center text-on-surface hover:bg-[#f1f5f9] active:bg-[#e2e8f0] transition-colors" onclick="incrementQty('qty-1', 48)" type="button">
+<span class="material-symbols-outlined text-[18px]">add</span>
+</button>
+</div>
+</div>
+</article>
+<!-- FEFO Card 2 -->
+<article class="bg-surface-container-lowest rounded-[10px] border border-[#e2e8f0] p-3 space-y-2.5 transition-all" id="batch-card-2">
+<div class="flex items-start justify-between">
+<div>
+<div class="flex items-center gap-1.5">
+<span class="font-data-tabular-md text-data-tabular-md font-bold text-on-surface tracking-tight">BATCH-GM-2408-14</span>
+<span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-[6px] bg-[#dcfce7] text-[#16a34a] font-label-xs text-label-xs font-semibold">
+<span class="w-1.5 h-1.5 rounded-full bg-[#16a34a]"></span>
+                  Released
+                </span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Garam Masala 100g Stand-up Pouch</p>
+</div>
+<span class="px-2 py-0.5 rounded-[4px] bg-[#f1f5f9] text-on-surface-variant font-label-xs text-label-xs font-bold">FEFO #2</span>
+</div>
+<div class="grid grid-cols-3 gap-1 bg-[#f8fafc] p-2 rounded-[6px] border border-[#edf2f7] text-center">
+<div>
+<p class="font-label-xs text-label-xs text-on-surface-variant">MFD</p>
+<p class="font-data-tabular-sm text-data-tabular-sm font-semibold text-on-surface">18 Aug '24</p>
+</div>
+<div class="border-x border-[#e2e8f0]">
+<p class="font-label-xs text-label-xs text-on-surface-variant">EXP</p>
+<p class="font-data-tabular-sm text-data-tabular-sm font-semibold text-on-surface">18 Jun '25</p>
+</div>
+<div>
+<p class="font-label-xs text-label-xs text-on-surface-variant">HORIZON</p>
+<p class="font-data-tabular-sm text-data-tabular-sm font-bold text-[#16a34a]">273d Left</p>
+</div>
+</div>
+<div class="flex items-center justify-between pt-1">
+<div>
+<p class="font-label-xs text-label-xs text-on-surface-variant">Stock Available</p>
+<p class="font-data-tabular-sm text-data-tabular-sm font-bold text-on-surface">60 Packs</p>
+<span class="inline-block mt-0.5 px-1.5 py-0.2 rounded bg-primary-fixed text-on-primary-fixed font-label-xs text-[10px] font-semibold">Suggested (FEFO)</span>
+</div>
+<div class="flex items-center border border-[#cbd5e1] rounded-[6px] bg-white overflow-hidden shadow-sm">
+<button aria-label="Decrease quantity" class="w-11 h-11 flex items-center justify-center text-on-surface hover:bg-[#f1f5f9] active:bg-[#e2e8f0] transition-colors" onclick="decrementQty('qty-2', 60)" type="button">
+<span class="material-symbols-outlined text-[18px]">remove</span>
+</button>
+<input class="w-14 h-11 text-center font-data-tabular-md text-data-tabular-md font-bold text-on-surface border-0 focus:ring-0 p-0" id="qty-2" max="60" min="0" type="number" value="60"/>
+<button aria-label="Increase quantity" class="w-11 h-11 flex items-center justify-center text-on-surface hover:bg-[#f1f5f9] active:bg-[#e2e8f0] transition-colors" onclick="incrementQty('qty-2', 60)" type="button">
+<span class="material-symbols-outlined text-[18px]">add</span>
+</button>
+</div>
+</div>
+</article>
+<!-- FEFO Card 3 -->
+<article class="bg-surface-container-lowest rounded-[10px] border border-[#e2e8f0] p-3 space-y-2.5 transition-all" id="batch-card-3">
+<div class="flex items-start justify-between">
+<div>
+<div class="flex items-center gap-1.5">
+<span class="font-data-tabular-md text-data-tabular-md font-bold text-on-surface tracking-tight">BATCH-CP-2409-02</span>
+<span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-[6px] bg-[#dcfce7] text-[#16a34a] font-label-xs text-label-xs font-semibold">
+<span class="w-1.5 h-1.5 rounded-full bg-[#16a34a]"></span>
+                  Released
+                </span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Chilli Powder Premium 500g Jar</p>
+</div>
+<span class="px-2 py-0.5 rounded-[4px] bg-[#f1f5f9] text-on-surface-variant font-label-xs text-label-xs font-bold">FEFO #1</span>
+</div>
+<div class="grid grid-cols-3 gap-1 bg-[#f8fafc] p-2 rounded-[6px] border border-[#edf2f7] text-center">
+<div>
+<p class="font-label-xs text-label-xs text-on-surface-variant">MFD</p>
+<p class="font-data-tabular-sm text-data-tabular-sm font-semibold text-on-surface">02 Sep '24</p>
+</div>
+<div class="border-x border-[#e2e8f0]">
+<p class="font-label-xs text-label-xs text-on-surface-variant">EXP</p>
+<p class="font-data-tabular-sm text-data-tabular-sm font-semibold text-on-surface">02 Sep '25</p>
+</div>
+<div>
+<p class="font-label-xs text-label-xs text-on-surface-variant">HORIZON</p>
+<p class="font-data-tabular-sm text-data-tabular-sm font-bold text-[#16a34a]">349d Left</p>
+</div>
+</div>
+<div class="flex items-center justify-between pt-1">
+<div>
+<p class="font-label-xs text-label-xs text-on-surface-variant">Stock Available</p>
+<p class="font-data-tabular-sm text-data-tabular-sm font-bold text-on-surface">25 Jars</p>
+<span class="inline-block mt-0.5 px-1.5 py-0.2 rounded bg-surface-container text-on-surface-variant font-label-xs text-[10px] font-semibold">Manually Picked</span>
+</div>
+<div class="flex items-center border border-[#cbd5e1] rounded-[6px] bg-white overflow-hidden shadow-sm">
+<button aria-label="Decrease quantity" class="w-11 h-11 flex items-center justify-center text-on-surface hover:bg-[#f1f5f9] active:bg-[#e2e8f0] transition-colors" onclick="decrementQty('qty-3', 25)" type="button">
+<span class="material-symbols-outlined text-[18px]">remove</span>
+</button>
+<input class="w-14 h-11 text-center font-data-tabular-md text-data-tabular-md font-bold text-on-surface border-0 focus:ring-0 p-0" id="qty-3" max="25" min="0" type="number" value="10"/>
+<button aria-label="Increase quantity" class="w-11 h-11 flex items-center justify-center text-on-surface hover:bg-[#f1f5f9] active:bg-[#e2e8f0] transition-colors" onclick="incrementQty('qty-3', 25)" type="button">
+<span class="material-symbols-outlined text-[18px]">add</span>
+</button>
+</div>
+</div>
+</article>
+</section>
+<!-- 6. Excluded Batches & Food Safety Policy Guardrails -->
+<section class="bg-surface-container-lowest rounded-[10px] border border-[#fecaca] p-3 space-y-2.5">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[20px] text-[#dc2626]">gpp_bad</span>
+<h2 class="font-title-md text-title-md font-bold text-[#ba1a1a]">Policy Excluded Batches (2)</h2>
+</div>
+<span class="px-2 py-0.5 rounded-[4px] bg-[#fee2e2] text-[#dc2626] font-label-xs text-label-xs font-bold uppercase">Locked</span>
+</div>
+<p class="font-label-xs text-label-xs text-on-surface-variant">
+          Strict food quality enforcement: Non-compliant lots are hardware-blocked and cannot be selected.
+        </p>
+<!-- Excluded Item 1 -->
+<div class="p-2.5 rounded-[6px] bg-[#fff5f5] border border-[#fecaca] space-y-1">
+<div class="flex items-center justify-between">
+<span class="font-data-tabular-sm text-data-tabular-sm font-bold text-on-surface">BATCH-GM-2405-99</span>
+<span class="px-1.5 py-0.5 rounded bg-[#fee2e2] text-[#dc2626] font-label-xs text-[10px] font-bold">BLOCKED BY POLICY</span>
+</div>
+<p class="font-label-xs text-label-xs text-on-surface-variant">Garam Masala 50g Boxed Pouch</p>
+<div class="flex items-center gap-1 text-[#dc2626] font-label-xs text-label-xs font-semibold">
+<span class="material-symbols-outlined text-[14px]">warning</span>
+<span>18 Days Left — fails customer 90-day shelf life requirement</span>
+</div>
+</div>
+<!-- Excluded Item 2 -->
+<div class="p-2.5 rounded-[6px] bg-[#fffbeb] border border-[#fde68a] space-y-1">
+<div class="flex items-center justify-between">
+<span class="font-data-tabular-sm text-data-tabular-sm font-bold text-on-surface">BATCH-GM-2407-33</span>
+<span class="px-1.5 py-0.5 rounded bg-[#fef3c7] text-[#d97706] font-label-xs text-[10px] font-bold">QUARANTINE</span>
+</div>
+<p class="font-label-xs text-label-xs text-on-surface-variant">Garam Masala 100g Stand-up Pouch</p>
+<div class="flex items-center gap-1 text-[#d97706] font-label-xs text-label-xs font-semibold">
+<span class="material-symbols-outlined text-[14px]">science</span>
+<span>Pending QC Lab Microbial Assay (Incubation 48h)</span>
+</div>
+</div>
+</section>
+</main>
+<!-- 7. Fixed Bottom Dispatch Summary & Primary Execution Action -->
+<div class="fixed bottom-16 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-[#e2e8f0] px-3 py-2.5 shadow-lg max-w-[390px] mx-auto">
+<div class="flex items-center justify-between mb-2">
+<div class="flex items-center gap-1">
+<span class="font-label-xs text-label-xs text-on-surface-variant uppercase font-semibold">Allocated:</span>
+<span class="font-data-tabular-md text-data-tabular-md font-bold text-on-surface" id="total-picked-display">118 Stock Units</span>
+</div>
+<div class="flex items-center gap-1 font-label-xs text-label-xs text-[#16a34a] font-bold">
+<span class="material-symbols-outlined text-[14px]">check_circle</span>
+<span>3 Order Lines • 100% Demand Met</span>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<button class="h-11 px-3 border border-[#cbd5e1] hover:bg-[#f8fafc] active:bg-[#f1f5f9] rounded-[6px] font-title-sm text-title-sm text-on-surface-variant transition-colors flex items-center justify-center" onclick="resetQuantities()" title="Reset back to suggested" type="button">
+          Reset
+        </button>
+<button class="flex-1 h-12 bg-primary hover:bg-[#1E62B3] active:bg-[#185296] text-white rounded-[6px] font-title-md text-title-md font-semibold flex items-center justify-center gap-2 shadow-sm transition-all active:scale-[0.99]" id="btn-create-dn" onclick="submitDeliveryNote()" type="button">
+<span class="material-symbols-outlined text-[20px]">assignment_turned_in</span>
+<span>Create Delivery Note</span>
+</button>
+</div>
+</div>
+<!-- Bottom Navigation Bar (Shared Components standard: label_icon, 4 destinations) -->
+<nav class="fixed bottom-0 left-0 right-0 z-50 flex justify-around items-center h-16 px-space-sm bg-surface-container-lowest border-t border-outline-variant shadow-none max-w-[390px] mx-auto">
+<!-- 1. Dispatch (ACTIVE) -->
+<a class="flex flex-col items-center justify-center text-primary font-semibold flex-1 active:scale-95 transition-transform" href="#">
+<span class="material-symbols-outlined text-[22px]" style="font-variation-settings: 'FILL' 1;">local_shipping</span>
+<span class="font-label-xs text-label-xs mt-0.5">Dispatch</span>
+</a>
+<!-- 2. Scan FEFO -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container flex-1 py-1 rounded-lg active:scale-95 transition-transform" href="#">
+<span class="material-symbols-outlined text-[22px]">barcode_scanner</span>
+<span class="font-label-xs text-label-xs mt-0.5">Scan FEFO</span>
+</a>
+<!-- 3. Orders -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container flex-1 py-1 rounded-lg active:scale-95 transition-transform" href="#">
+<span class="material-symbols-outlined text-[22px]">receipt_long</span>
+<span class="font-label-xs text-label-xs mt-0.5">Orders</span>
+</a>
+<!-- 4. Alerts -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container flex-1 py-1 rounded-lg active:scale-95 transition-transform relative" href="#">
+<div class="relative">
+<span class="material-symbols-outlined text-[22px]">warning</span>
+<span class="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-error"></span>
+</div>
+<span class="font-label-xs text-label-xs mt-0.5">Alerts</span>
+</a>
+</nav>
+<!-- Notification Toast (Hidden by default) -->
+<div class="fixed top-16 left-1/2 -translate-x-1/2 z-50 bg-[#1e293b] text-white px-4 py-2.5 rounded-[8px] text-body-sm shadow-xl flex items-center gap-2 pointer-events-none transition-all duration-200 opacity-0 -translate-y-2" id="toast">
+<span class="material-symbols-outlined text-[18px] text-[#22c55e]">check_circle</span>
+<span id="toast-text">Delivery Note Draft DN-2024-089 Created!</span>
+</div>
+</div>
+<script>
+    // Drawer Interactivity
+    const menuBtn = document.getElementById('menu-btn');
+    const drawerBackdrop = document.getElementById('drawer-backdrop');
+    const drawer = document.getElementById('drawer');
+    const closeDrawerBtn = document.getElementById('close-drawer');
+
+    function openDrawer() {
+      drawerBackdrop.classList.remove('hidden');
+      setTimeout(() => {
+        drawerBackdrop.classList.remove('opacity-0');
+        drawer.classList.remove('-translate-x-full');
+      }, 10);
+    }
+
+    function closeDrawer() {
+      drawerBackdrop.classList.add('opacity-0');
+      drawer.classList.add('-translate-x-full');
+      setTimeout(() => {
+        drawerBackdrop.classList.add('hidden');
+      }, 200);
+    }
+
+    menuBtn.addEventListener('click', openDrawer);
+    closeDrawerBtn.addEventListener('click', closeDrawer);
+    drawerBackdrop.addEventListener('click', closeDrawer);
+
+    // Quantity Stepper Logic
+    function updateTotals() {
+      const q1 = parseInt(document.getElementById('qty-1').value) || 0;
+      const q2 = parseInt(document.getElementById('qty-2').value) || 0;
+      const q3 = parseInt(document.getElementById('qty-3').value) || 0;
+      const total = q1 + q2 + q3;
+      document.getElementById('total-picked-display').innerText = total + ' Stock Units';
+    }
+
+    function incrementQty(id, max) {
+      const el = document.getElementById(id);
+      let val = parseInt(el.value) || 0;
+      if (val < max) {
+        el.value = val + 1;
+        updateTotals();
+      }
+    }
+
+    function decrementQty(id, max) {
+      const el = document.getElementById(id);
+      let val = parseInt(el.value) || 0;
+      if (val > 0) {
+        el.value = val - 1;
+        updateTotals();
+      }
+    }
+
+    function resetQuantities() {
+      document.getElementById('qty-1').value = 48;
+      document.getElementById('qty-2').value = 60;
+      document.getElementById('qty-3').value = 10;
+      updateTotals();
+      showToast('Quantities reset to FEFO suggested defaults');
+    }
+
+    // Barcode Scanning Matcher
+    const barcodeInput = document.getElementById('barcode-scanner-input');
+    barcodeInput.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        matchBatch();
+      }
+    });
+
+    function matchBatch() {
+      const val = barcodeInput.value.trim().toUpperCase();
+      let target = null;
+      if (val.includes('BATCH-GM-2408-01') || val === '1') {
+        target = document.getElementById('batch-card-1');
+      } else if (val.includes('BATCH-GM-2408-14') || val === '2') {
+        target = document.getElementById('batch-card-2');
+      } else if (val.includes('BATCH-CP-2409-02') || val === '3') {
+        target = document.getElementById('batch-card-3');
+      } else if (val.includes('BATCH-GM-2405-99') || val.includes('BATCH-GM-2407-33')) {
+        showToast('Batch is policy blocked/quarantined!', true);
+        return;
+      }
+
+      if (target) {
+        target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        target.classList.add('ring-2', 'ring-primary', 'bg-blue-50/50');
+        setTimeout(() => {
+          target.classList.remove('ring-2', 'ring-primary', 'bg-blue-50/50');
+        }, 1800);
+        showToast('Matched & Focused: ' + (val || 'Batch Row'));
+      } else {
+        showToast('Batch not found in active order', true);
+      }
+    }
+
+    // Delivery Note Creation Handler
+    function submitDeliveryNote() {
+      const btn = document.getElementById('btn-create-dn');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="material-symbols-outlined animate-spin text-[20px]">progress_activity</span> Generating DN...';
+      
+      setTimeout(() => {
+        btn.disabled = false;
+        btn.innerHTML = '<span class="material-symbols-outlined text-[20px]">check</span> Delivery Note Created';
+        btn.classList.remove('bg-primary');
+        btn.classList.add('bg-[#16a34a]');
+        showToast('Delivery Note DN-2024-0092 generated for SO-FM-0036!');
+      }, 900);
+    }
+
+    function showToast(msg, isError = false) {
+      const toast = document.getElementById('toast');
+      const text = document.getElementById('toast-text');
+      text.innerText = msg;
+      if (isError) {
+        toast.querySelector('.material-symbols-outlined').innerText = 'error';
+        toast.querySelector('.material-symbols-outlined').style.color = '#ef4444';
+      } else {
+        toast.querySelector('.material-symbols-outlined').innerText = 'check_circle';
+        toast.querySelector('.material-symbols-outlined').style.color = '#22c55e';
+      }
+      toast.classList.remove('opacity-0', '-translate-y-2');
+      setTimeout(() => {
+        toast.classList.add('opacity-0', '-translate-y-2');
+      }, 2600);
+    }
+  </script>
+</body></html>

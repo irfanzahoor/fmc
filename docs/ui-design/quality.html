@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+
+<html class="h-full bg-surface" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Quality Queue - FMC Operations</title>
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS v3 -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Theme Config -->
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "surface-bright": "#f7f9fc",
+            "on-secondary": "#ffffff",
+            "secondary-fixed": "#d8e3fb",
+            "secondary": "#545f73",
+            "on-secondary-fixed-variant": "#3c475a",
+            "surface-container": "#eceef1",
+            "error": "#ba1a1a",
+            "on-tertiary-fixed": "#0b1c30",
+            "inverse-surface": "#2d3133",
+            "secondary-container": "#d5e0f8",
+            "on-surface-variant": "#414752",
+            "outline": "#727784",
+            "secondary-fixed-dim": "#bcc7de",
+            "on-secondary-fixed": "#111c2d",
+            "on-primary-container": "#fefcff",
+            "primary-container": "#2474d2",
+            "on-error": "#ffffff",
+            "tertiary-fixed-dim": "#b7c8e1",
+            "on-tertiary-fixed-variant": "#38485d",
+            "surface-container-highest": "#e0e3e6",
+            "on-primary-fixed-variant": "#00468a",
+            "background": "#f7f9fc",
+            "on-primary-fixed": "#001b3c",
+            "primary-fixed-dim": "#a8c8ff",
+            "tertiary-container": "#66768d",
+            "surface-container-high": "#e6e8eb",
+            "primary-fixed": "#d5e3ff",
+            "on-tertiary-container": "#fdfcff",
+            "inverse-on-surface": "#eff1f4",
+            "on-tertiary": "#ffffff",
+            "on-secondary-container": "#586377",
+            "on-surface": "#191c1e",
+            "on-error-container": "#93000a",
+            "inverse-primary": "#a8c8ff",
+            "surface-dim": "#d8dadd",
+            "on-primary": "#ffffff",
+            "on-background": "#191c1e",
+            "error-container": "#ffdad6",
+            "outline-variant": "#c1c6d4",
+            "tertiary-fixed": "#d3e4fe",
+            "surface-tint": "#005eb4",
+            "surface-container-lowest": "#ffffff",
+            "surface-container-low": "#f2f4f7",
+            "primary": "#005bb0",
+            "tertiary": "#4d5d73",
+            "surface": "#f7f9fc",
+            "surface-variant": "#e0e3e6"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.125rem",
+            "lg": "0.25rem",
+            "xl": "0.5rem",
+            "full": "0.75rem"
+          },
+          "spacing": {
+            "space-xl": "1.5rem",
+            "space-lg": "1rem",
+            "margin": "1.5rem",
+            "space-2xs": "0.125rem",
+            "space-2xl": "2rem",
+            "gutter-dense": "0.75rem",
+            "space-xs": "0.25rem",
+            "margin-mobile": "0.75rem",
+            "space-sm": "0.5rem",
+            "space-md": "0.75rem",
+            "gutter": "1rem"
+          },
+          "fontFamily": {
+            "headline-md": ["Inter"],
+            "data-tabular-lg": ["Inter"],
+            "label-md": ["Inter"],
+            "data-tabular-sm": ["Inter"],
+            "title-md": ["Inter"],
+            "headline-sm": ["Inter"],
+            "title-sm": ["Inter"],
+            "display-lg": ["Inter"],
+            "body-sm": ["Inter"],
+            "data-tabular-md": ["Inter"],
+            "label-xs": ["Inter"],
+            "display-lg-mobile": ["Inter"],
+            "body-md": ["Inter"]
+          },
+          "fontSize": {
+            "headline-md": ["22px", { "lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+            "data-tabular-lg": ["24px", { "lineHeight": "28px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+            "label-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0.01em", "fontWeight": "500" }],
+            "data-tabular-sm": ["12px", { "lineHeight": "16px", "fontWeight": "500" }],
+            "title-md": ["15px", { "lineHeight": "20px", "fontWeight": "600" }],
+            "headline-sm": ["18px", { "lineHeight": "24px", "letterSpacing": "-0.005em", "fontWeight": "600" }],
+            "title-sm": ["13px", { "lineHeight": "18px", "fontWeight": "600" }],
+            "display-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+            "body-sm": ["12px", { "lineHeight": "16px", "fontWeight": "400" }],
+            "data-tabular-md": ["14px", { "lineHeight": "20px", "fontWeight": "500" }],
+            "label-xs": ["11px", { "lineHeight": "14px", "letterSpacing": "0.04em", "fontWeight": "600" }],
+            "display-lg-mobile": ["26px", { "lineHeight": "34px", "letterSpacing": "-0.015em", "fontWeight": "700" }],
+            "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }]
+          }
+        }
+      }
+    }
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 20;
+      font-size: 18px;
+      line-height: 1;
+      display: inline-block;
+      vertical-align: middle;
+    }
+    .custom-scroll::-webkit-scrollbar {
+      width: 5px;
+      height: 5px;
+    }
+    .custom-scroll::-webkit-scrollbar-track {
+      background: #f2f4f7;
+    }
+    .custom-scroll::-webkit-scrollbar-thumb {
+      background: #c1c6d4;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body class="h-full overflow-hidden bg-surface text-on-surface flex flex-col font-body-md text-[14px] antialiased selection:bg-primary-fixed selection:text-on-primary-fixed">
+<!-- Fixed SideNavBar: Exactly 6 items, No downtime button, No operator badge/shift footer -->
+<aside class="fixed top-0 left-0 h-screen w-60 z-30 border-r border-outline-variant bg-surface-container-lowest flex flex-col justify-between p-space-md select-none">
+<div class="flex flex-col gap-space-md">
+<!-- Header / Brand -->
+<div class="flex items-center gap-space-sm pb-space-sm border-b border-surface-container-high">
+<div class="w-8 h-8 rounded bg-primary flex items-center justify-center text-on-primary font-title-sm font-bold shadow-xs">
+<span class="material-symbols-outlined" data-icon="factory">factory</span>
+</div>
+<div class="flex flex-col min-w-0">
+<span class="text-title-md font-title-md font-bold tracking-tight text-on-surface truncate">FMC Operations</span>
+<span class="text-label-xs font-label-xs text-secondary truncate">Manufacturing Core</span>
+</div>
+</div>
+<!-- Navigation Links (Exactly 6 items) -->
+<nav aria-label="Main Navigation" class="flex flex-col gap-space-xs mt-space-xs">
+<!-- 1. Overview -->
+<a class="flex items-center gap-space-sm px-space-md py-2 rounded text-secondary hover:bg-surface-container-low transition-colors duration-150 cursor-pointer" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="font-medium text-body-md">Overview</span>
+</a>
+<!-- 2. Production -->
+<a class="flex items-center gap-space-sm px-space-md py-2 rounded text-secondary hover:bg-surface-container-low transition-colors duration-150 cursor-pointer" href="#">
+<span class="material-symbols-outlined" data-icon="precision_manufacturing">precision_manufacturing</span>
+<span class="font-medium text-body-md">Production</span>
+</a>
+<!-- 3. Quality (ACTIVE with 12 badge) -->
+<a class="flex items-center justify-between px-space-md py-2 rounded bg-surface-container-high text-primary font-title-sm border-l-2 border-primary cursor-pointer shadow-xs" href="#">
+<div class="flex items-center gap-space-sm">
+<span class="material-symbols-outlined text-primary" data-icon="verified" style="font-variation-settings: 'FILL' 1;">verified</span>
+<span class="font-semibold text-body-md">Quality</span>
+</div>
+<span class="px-1.5 py-0.5 rounded text-[11px] font-bold bg-amber-100 text-amber-800 border border-amber-300">12</span>
+</a>
+<!-- 4. Receiving -->
+<a class="flex items-center gap-space-sm px-space-md py-2 rounded text-secondary hover:bg-surface-container-low transition-colors duration-150 cursor-pointer" href="#">
+<span class="material-symbols-outlined" data-icon="local_shipping">local_shipping</span>
+<span class="font-medium text-body-md">Receiving</span>
+</a>
+<!-- 5. Dispatch -->
+<a class="flex items-center gap-space-sm px-space-md py-2 rounded text-secondary hover:bg-surface-container-low transition-colors duration-150 cursor-pointer" href="#">
+<span class="material-symbols-outlined" data-icon="forklift">forklift</span>
+<span class="font-medium text-body-md">Dispatch</span>
+</a>
+<!-- 6. Recall -->
+<a class="flex items-center gap-space-sm px-space-md py-2 rounded text-secondary hover:bg-surface-container-low transition-colors duration-150 cursor-pointer" href="#">
+<span class="material-symbols-outlined" data-icon="warning">warning</span>
+<span class="font-medium text-body-md">Recall</span>
+</a>
+</nav>
+</div>
+</aside>
+<!-- TopNavBar: Only FMC branding, company selector dropdown 'FM Demo Foods', and breadcrumb 'Quality / Quality Queue' -->
+<header class="docked full-width top-0 z-20 border-b border-outline-variant bg-surface-container-lowest flex items-center justify-between w-full h-12 pl-64 pr-space-lg select-none">
+<div class="flex items-center gap-space-md min-w-0">
+<!-- FMC Branding badge & Company Selector Dropdown -->
+<div class="flex items-center gap-1.5 px-2.5 py-1 rounded bg-surface-container text-on-surface font-title-sm text-title-sm border border-outline-variant cursor-pointer hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined text-primary text-[17px]" data-icon="domain">domain</span>
+<span class="font-semibold">FM Demo Foods</span>
+<span class="material-symbols-outlined text-secondary text-[16px]" data-icon="arrow_drop_down">arrow_drop_down</span>
+</div>
+<!-- Clean Breadcrumb -->
+<div class="flex items-center gap-1.5 text-secondary text-body-md">
+<span>Quality</span>
+<span class="text-outline-variant">/</span>
+<span class="font-semibold text-on-surface">Quality Queue</span>
+</div>
+</div>
+</header>
+<!-- Primary Application Body (Left offset for fixed sidebar: 240px) -->
+<div class="ml-60 flex-1 flex flex-col h-[calc(100vh-48px)] overflow-hidden max-w-[1440px]">
+<!-- Header Strip: Title 'Quality Queue', Subtitle, Filter Chips: 'All Pending (12)' (active), 'Quarantine (8)', 'On Hold (4)' -->
+<section class="bg-surface-container-lowest border-b border-outline-variant px-space-xl py-space-md shrink-0">
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-space-sm">
+<div>
+<h1 class="font-headline-sm text-headline-sm text-on-surface font-semibold tracking-tight">Quality Queue</h1>
+<p class="font-body-md text-body-md text-secondary mt-0.5">
+          Company-scoped pending batch approvals • Verification before Warehouse Release
+        </p>
+</div>
+<!-- Filter Chips -->
+<div class="flex items-center gap-space-xs">
+<button class="px-3 py-1 rounded bg-primary text-on-primary text-label-md font-label-md font-medium shadow-xs">
+          All Pending (12)
+        </button>
+<button class="px-3 py-1 rounded bg-surface-container-low hover:bg-surface-container text-on-surface-variant border border-outline-variant text-label-md font-label-md flex items-center gap-1.5 transition-colors">
+<span class="w-2 h-2 rounded-full bg-amber-500"></span>
+<span>Quarantine (8)</span>
+</button>
+<button class="px-3 py-1 rounded bg-surface-container-low hover:bg-surface-container text-on-surface-variant border border-outline-variant text-label-md font-label-md flex items-center gap-1.5 transition-colors">
+<span class="w-2 h-2 rounded-full bg-orange-500"></span>
+<span>On Hold (4)</span>
+</button>
+</div>
+</div>
+</section>
+<!-- Main 2-Column Split Layout -->
+<main class="flex-1 flex overflow-hidden p-space-md gap-space-md bg-surface">
+<!-- COLUMN 1: Pending Queue Table (60% width) -->
+<section class="w-full xl:w-[60%] flex flex-col bg-surface-container-lowest rounded-xl border border-outline-variant shadow-xs overflow-hidden">
+<!-- Summary Bar: Batch counts only (NO lots or samples), Sort: Wait Time (Desc) -->
+<div class="px-space-md py-space-sm bg-surface-container-low border-b border-outline-variant flex flex-wrap items-center justify-between gap-space-sm shrink-0">
+<div class="flex items-center gap-space-md flex-wrap text-body-md">
+<div class="flex items-baseline gap-1">
+<span class="text-label-xs uppercase text-secondary font-semibold">Batches Pending:</span>
+<span class="font-data-tabular-md font-bold text-on-surface">12 batches</span>
+</div>
+<div class="h-3.5 w-px bg-outline-variant"></div>
+<div class="flex items-baseline gap-1">
+<span class="text-label-xs uppercase text-error font-semibold">Longest Wait:</span>
+<span class="font-data-tabular-md font-bold text-error">38h 15m</span>
+<span class="text-[12px] text-secondary">(Chilli Powder #BATCH-CP-8902)</span>
+</div>
+<div class="h-3.5 w-px bg-outline-variant"></div>
+<div class="flex items-baseline gap-1">
+<span class="text-label-xs uppercase text-secondary font-semibold">Quarantined:</span>
+<span class="font-data-tabular-md font-semibold text-amber-800">8 batches</span>
+</div>
+<div class="h-3.5 w-px bg-outline-variant"></div>
+<div class="flex items-baseline gap-1">
+<span class="text-label-xs uppercase text-secondary font-semibold">On Hold:</span>
+<span class="font-data-tabular-md font-semibold text-orange-800">4 batches</span>
+</div>
+</div>
+<div class="flex items-center gap-1">
+<span class="text-label-xs text-secondary">Sort:</span>
+<span class="text-label-xs font-semibold text-on-surface">Wait Time (Desc)</span>
+<span class="material-symbols-outlined text-[16px] text-outline" data-icon="swap_vert">swap_vert</span>
+</div>
+</div>
+<!-- Batches Table Ordered Longest Waiting First -->
+<div class="flex-1 overflow-auto custom-scroll">
+<table class="w-full border-collapse text-left text-body-md">
+<thead class="sticky top-0 z-10 bg-surface-container-high border-b border-outline-variant shadow-xs">
+<tr class="h-9">
+<th class="px-space-sm font-label-xs uppercase text-on-surface-variant font-semibold w-8 text-center">Sel</th>
+<th class="px-space-sm font-label-xs uppercase text-on-surface-variant font-semibold">Batch ID</th>
+<th class="px-space-sm font-label-xs uppercase text-on-surface-variant font-semibold">Item &amp; BOM Variant</th>
+<th class="px-space-sm font-label-xs uppercase text-on-surface-variant font-semibold">Supplier / Source Lot</th>
+<th class="px-space-sm font-label-xs uppercase text-on-surface-variant font-semibold">Bin Location</th>
+<th class="px-space-sm font-label-xs uppercase text-on-surface-variant font-semibold text-right">Quantity</th>
+<th class="px-space-sm font-label-xs uppercase text-on-surface-variant font-semibold">Expiry</th>
+<th class="px-space-sm font-label-xs uppercase text-on-surface-variant font-semibold">Status</th>
+<th class="px-space-sm font-label-xs uppercase text-on-surface-variant font-semibold text-right">Wait Time</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-surface-container text-[13px]">
+<!-- ROW 1 (Active/Selected) -->
+<tr class="bg-primary-fixed/25 border-l-4 border-l-primary cursor-pointer hover:bg-primary-fixed/35 transition-colors">
+<td class="px-space-sm py-2.5 text-center">
+<span class="material-symbols-outlined text-primary text-[17px]" data-icon="radio_button_checked" style="font-variation-settings: 'FILL' 1;">radio_button_checked</span>
+</td>
+<td class="px-space-sm py-2.5 font-data-tabular-sm font-bold text-primary">BATCH-CP-8902</td>
+<td class="px-space-sm py-2.5">
+<div class="font-semibold text-on-surface leading-tight">Chilli Powder Bulk</div>
+<div class="text-[11px] text-secondary">Bulk Ground • Standard Grade 1</div>
+</td>
+<td class="px-space-sm py-2.5 font-data-tabular-sm text-secondary">SL-GNT-2024-041</td>
+<td class="px-space-sm py-2.5">
+<span class="px-1.5 py-0.5 rounded bg-surface-container text-on-surface-variant font-data-tabular-sm text-[11px] border border-outline-variant">W-FG-QUAR-01</span>
+</td>
+<td class="px-space-sm py-2.5 text-right font-data-tabular-sm font-semibold text-on-surface">1,800.00 kg</td>
+<td class="px-space-sm py-2.5 font-data-tabular-sm text-secondary">2025-10-14</td>
+<td class="px-space-sm py-2.5">
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold bg-amber-100 text-amber-900 border border-amber-300">
+<span class="w-1.5 h-1.5 rounded-full bg-amber-600"></span>
+                  QUARANTINE
+                </span>
+</td>
+<td class="px-space-sm py-2.5 text-right">
+<span class="inline-flex items-center gap-1 font-data-tabular-sm font-bold text-error bg-red-50 px-1.5 py-0.5 rounded border border-red-200">
+<span class="material-symbols-outlined text-[13px]" data-icon="schedule">schedule</span>
+                  38h 15m
+                </span>
+</td>
+</tr>
+<!-- ROW 2 -->
+<tr class="hover:bg-surface-container-low transition-colors cursor-pointer">
+<td class="px-space-sm py-2.5 text-center">
+<span class="material-symbols-outlined text-outline text-[17px]" data-icon="radio_button_unchecked">radio_button_unchecked</span>
+</td>
+<td class="px-space-sm py-2.5 font-data-tabular-sm font-semibold text-on-surface">BATCH-GM-2804</td>
+<td class="px-space-sm py-2.5">
+<div class="font-semibold text-on-surface leading-tight">Garam Masala Bulk</div>
+<div class="text-[11px] text-secondary">16-Spice Master Blend</div>
+</td>
+<td class="px-space-sm py-2.5 font-data-tabular-sm text-secondary">SL-MIX-9912</td>
+<td class="px-space-sm py-2.5">
+<span class="px-1.5 py-0.5 rounded bg-surface-container text-on-surface-variant font-data-tabular-sm text-[11px] border border-outline-variant">W-FG-QUAR-02</span>
+</td>
+<td class="px-space-sm py-2.5 text-right font-data-tabular-sm font-semibold text-on-surface">500.00 kg</td>
+<td class="px-space-sm py-2.5 font-data-tabular-sm text-secondary">2025-08-20</td>
+<td class="px-space-sm py-2.5">
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold bg-amber-100 text-amber-900 border border-amber-300">
+<span class="w-1.5 h-1.5 rounded-full bg-amber-600"></span>
+                  QUARANTINE
+                </span>
+</td>
+<td class="px-space-sm py-2.5 text-right font-data-tabular-sm text-on-surface">29h 40m</td>
+</tr>
+<!-- ROW 3 -->
+<tr class="hover:bg-surface-container-low transition-colors cursor-pointer bg-orange-50/15">
+<td class="px-space-sm py-2.5 text-center">
+<span class="material-symbols-outlined text-outline text-[17px]" data-icon="radio_button_unchecked">radio_button_unchecked</span>
+</td>
+<td class="px-space-sm py-2.5 font-data-tabular-sm font-semibold text-on-surface">BATCH-TM-1102</td>
+<td class="px-space-sm py-2.5">
+<div class="font-semibold text-on-surface leading-tight">Turmeric</div>
+<div class="text-[11px] text-secondary">Whole to Powder • Salem Curcumin 3.5%</div>
+</td>
+<td class="px-space-sm py-2.5 font-data-tabular-sm text-secondary">SL-SLM-8821</td>
+<td class="px-space-sm py-2.5">
+<span class="px-1.5 py-0.5 rounded bg-surface-container text-on-surface-variant font-data-tabular-sm text-[11px] border border-outline-variant">W-RM-HOLD-01</span>
+</td>
+<td class="px-space-sm py-2.5 text-right font-data-tabular-sm font-semibold text-on-surface">800.00 kg</td>
+<td class="px-space-sm py-2.5 font-data-tabular-sm text-secondary">2025-11-05</td>
+<td class="px-space-sm py-2.5">
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold bg-orange-100 text-orange-900 border border-orange-300">
+<span class="material-symbols-outlined text-[13px] text-orange-700" data-icon="pause_circle">pause_circle</span>
+                  ON HOLD
+                </span>
+</td>
+<td class="px-space-sm py-2.5 text-right font-data-tabular-sm font-semibold text-orange-800">26h 10m</td>
+</tr>
+<!-- ROW 4 -->
+<tr class="hover:bg-surface-container-low transition-colors cursor-pointer">
+<td class="px-space-sm py-2.5 text-center">
+<span class="material-symbols-outlined text-outline text-[17px]" data-icon="radio_button_unchecked">radio_button_unchecked</span>
+</td>
+<td class="px-space-sm py-2.5 font-data-tabular-sm font-semibold text-on-surface">BATCH-CM-4401</td>
+<td class="px-space-sm py-2.5">
+<div class="font-semibold text-on-surface leading-tight">Cumin Seeds</div>
+<div class="text-[11px] text-secondary">Roasted • Unjha Prime Cleaned</div>
+</td>
+<td class="px-space-sm py-2.5 font-data-tabular-sm text-secondary">SL-GUJ-7714</td>
+<td class="px-space-sm py-2.5">
+<span class="px-1.5 py-0.5 rounded bg-surface-container text-on-surface-variant font-data-tabular-sm text-[11px] border border-outline-variant">W-RM-QUAR-03</span>
+</td>
+<td class="px-space-sm py-2.5 text-right font-data-tabular-sm font-semibold text-on-surface">1,250.00 kg</td>
+<td class="px-space-sm py-2.5 font-data-tabular-sm text-secondary">2025-09-12</td>
+<td class="px-space-sm py-2.5">
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold bg-amber-100 text-amber-900 border border-amber-300">
+<span class="w-1.5 h-1.5 rounded-full bg-amber-600"></span>
+                  QUARANTINE
+                </span>
+</td>
+<td class="px-space-sm py-2.5 text-right font-data-tabular-sm text-on-surface">19h 05m</td>
+</tr>
+<!-- ROW 5 -->
+<tr class="hover:bg-surface-container-low transition-colors cursor-pointer">
+<td class="px-space-sm py-2.5 text-center">
+<span class="material-symbols-outlined text-outline text-[17px]" data-icon="radio_button_unchecked">radio_button_unchecked</span>
+</td>
+<td class="px-space-sm py-2.5 font-data-tabular-sm font-semibold text-on-surface">BATCH-GM-50G-901</td>
+<td class="px-space-sm py-2.5">
+<div class="font-semibold text-on-surface leading-tight">Garam Masala 50g Pouch</div>
+<div class="text-[11px] text-secondary">Retail Packaging Form-Fill-Seal</div>
+</td>
+<td class="px-space-sm py-2.5 font-data-tabular-sm text-secondary">GM-BLK-2804</td>
+<td class="px-space-sm py-2.5">
+<span class="px-1.5 py-0.5 rounded bg-surface-container text-on-surface-variant font-data-tabular-sm text-[11px] border border-outline-variant">W-PK-QUAR-01</span>
+</td>
+<td class="px-space-sm py-2.5 text-right font-data-tabular-sm font-semibold text-on-surface">24,000 pk</td>
+<td class="px-space-sm py-2.5 font-data-tabular-sm text-secondary">2025-08-20</td>
+<td class="px-space-sm py-2.5">
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold bg-amber-100 text-amber-900 border border-amber-300">
+<span class="w-1.5 h-1.5 rounded-full bg-amber-600"></span>
+                  QUARANTINE
+                </span>
+</td>
+<td class="px-space-sm py-2.5 text-right font-data-tabular-sm text-on-surface">14h 22m</td>
+</tr>
+<!-- ROW 6 -->
+<tr class="hover:bg-surface-container-low transition-colors cursor-pointer bg-orange-50/15">
+<td class="px-space-sm py-2.5 text-center">
+<span class="material-symbols-outlined text-outline text-[17px]" data-icon="radio_button_unchecked">radio_button_unchecked</span>
+</td>
+<td class="px-space-sm py-2.5 font-data-tabular-sm font-semibold text-on-surface">BATCH-GM-100G-405</td>
+<td class="px-space-sm py-2.5">
+<div class="font-semibold text-on-surface leading-tight">Garam Masala 100g Pouch</div>
+<div class="text-[11px] text-secondary">Nitro-Flushed 3-ply laminate</div>
+</td>
+<td class="px-space-sm py-2.5 font-data-tabular-sm text-secondary">GM-BLK-2804</td>
+<td class="px-space-sm py-2.5">
+<span class="px-1.5 py-0.5 rounded bg-surface-container text-on-surface-variant font-data-tabular-sm text-[11px] border border-outline-variant">W-PK-QUAR-01</span>
+</td>
+<td class="px-space-sm py-2.5 text-right font-data-tabular-sm font-semibold text-on-surface">12,000 pk</td>
+<td class="px-space-sm py-2.5 font-data-tabular-sm text-secondary">2025-08-20</td>
+<td class="px-space-sm py-2.5">
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold bg-orange-100 text-orange-900 border border-orange-300">
+<span class="material-symbols-outlined text-[13px] text-orange-700" data-icon="pause_circle">pause_circle</span>
+                  ON HOLD
+                </span>
+</td>
+<td class="px-space-sm py-2.5 text-right font-data-tabular-sm font-semibold text-orange-800">08h 45m</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Bottom Pagination -->
+<div class="px-space-md py-space-xs bg-surface-container-lowest border-t border-outline-variant flex items-center justify-between shrink-0">
+<span class="text-label-md text-secondary">
+          Showing <strong class="text-on-surface font-semibold">1–6</strong> of <strong class="text-on-surface font-semibold">12</strong> pending batches
+        </span>
+<div class="flex items-center gap-1">
+<button class="px-2.5 py-1 rounded border border-outline-variant text-label-md text-secondary hover:bg-surface-container-low disabled:opacity-50 cursor-pointer" disabled="">
+            Previous
+          </button>
+<span class="px-2.5 py-1 rounded bg-primary text-on-primary text-label-md font-bold">1</span>
+<button class="px-2.5 py-1 rounded border border-outline-variant text-label-md text-on-surface hover:bg-surface-container-low cursor-pointer">
+            2
+          </button>
+<button class="px-2.5 py-1 rounded border border-outline-variant text-label-md text-on-surface hover:bg-surface-container-low cursor-pointer">
+            Next
+          </button>
+</div>
+</div>
+</section>
+<!-- COLUMN 2: Batch Detail & Inspection Disposition Panel (40% width) -->
+<section class="w-full xl:w-[40%] flex flex-col bg-surface-container-lowest rounded-xl border border-outline-variant shadow-xs overflow-hidden">
+<!-- Panel Header: Selected batch BATCH-CP-8902 -->
+<div class="px-space-md py-space-sm bg-surface-container-low border-b border-outline-variant shrink-0">
+<div class="flex items-start justify-between">
+<div>
+<div class="flex items-center gap-space-xs">
+<span class="font-data-tabular-lg text-data-tabular-lg font-bold text-on-surface">BATCH-CP-8902</span>
+<span class="px-2 py-0.5 rounded text-[11px] font-bold bg-amber-100 text-amber-900 border border-amber-300">QUARANTINE</span>
+</div>
+<div class="font-title-sm text-title-sm text-secondary mt-0.5">
+              Chilli Powder (Bulk Ground) • Lot Quantity: <span class="font-semibold text-on-surface">1,800.00 kg</span>
+</div>
+</div>
+<button class="p-1 rounded text-secondary hover:bg-surface-container border border-outline-variant transition-colors" title="Print Lot Travel Ticket">
+<span class="material-symbols-outlined text-[18px]" data-icon="print">print</span>
+</button>
+</div>
+</div>
+<!-- Scrollable Inspection & Action Details -->
+<div class="flex-1 overflow-y-auto p-space-md space-y-space-md custom-scroll">
+<!-- Accepted Quality Inspection Selector & Result Summary -->
+<div class="border border-outline-variant rounded-lg overflow-hidden bg-surface-container-lowest shadow-2xs">
+<div class="bg-surface-container-high px-space-md py-2 flex items-center justify-between border-b border-outline-variant">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[18px]" data-icon="science">science</span>
+<span class="text-body-md font-semibold text-on-surface">QI-2024-0891 (Accepted)</span>
+</div>
+<div class="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-900 border border-emerald-300 text-label-xs font-bold">
+<span class="material-symbols-outlined text-[14px] text-emerald-700" data-icon="check_circle" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+              ACCEPTED
+            </div>
+</div>
+<!-- Test Parameters Results Table -->
+<table class="w-full text-left text-body-md">
+<thead class="bg-surface-container-low text-secondary text-label-xs border-b border-outline-variant">
+<tr>
+<th class="px-space-md py-1.5 font-semibold">Test Parameter</th>
+<th class="px-space-md py-1.5 font-semibold">Specification Limit</th>
+<th class="px-space-md py-1.5 font-semibold text-right">Lab Result</th>
+<th class="px-space-md py-1.5 font-semibold text-center">Status</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-surface-container font-data-tabular-sm text-[13px]">
+<!-- Moisture Content -->
+<tr>
+<td class="px-space-md py-2 font-sans font-medium text-on-surface">Moisture Content</td>
+<td class="px-space-md py-2 text-secondary">Max 10.0% (m/m)</td>
+<td class="px-space-md py-2 text-right font-bold text-on-surface">9.2%</td>
+<td class="px-space-md py-2 text-center">
+<span class="text-emerald-700 font-bold font-sans text-[11px] bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">PASS</span>
+</td>
+</tr>
+<!-- Total Ash -->
+<tr>
+<td class="px-space-md py-2 font-sans font-medium text-on-surface">Total Ash</td>
+<td class="px-space-md py-2 text-secondary">Max 7.0%</td>
+<td class="px-space-md py-2 text-right font-bold text-on-surface">5.4%</td>
+<td class="px-space-md py-2 text-center">
+<span class="text-emerald-700 font-bold font-sans text-[11px] bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">PASS</span>
+</td>
+</tr>
+<!-- Capsaicin / Scoville -->
+<tr>
+<td class="px-space-md py-2 font-sans font-medium text-on-surface">Capsaicin / Scoville (SHU)</td>
+<td class="px-space-md py-2 text-secondary">40,000 – 45,000 SHU</td>
+<td class="px-space-md py-2 text-right font-bold text-on-surface">42,500 SHU</td>
+<td class="px-space-md py-2 text-center">
+<span class="text-emerald-700 font-bold font-sans text-[11px] bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">PASS</span>
+</td>
+</tr>
+<!-- Microbial Assay -->
+<tr>
+<td class="px-space-md py-2 font-sans font-medium text-on-surface">Microbial assay</td>
+<td class="px-space-md py-2 text-secondary">&lt; 10 ppb</td>
+<td class="px-space-md py-2 text-right font-bold text-on-surface">&lt; 4 ppb</td>
+<td class="px-space-md py-2 text-center">
+<span class="text-emerald-700 font-bold font-sans text-[11px] bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">PASS</span>
+</td>
+</tr>
+<!-- Sensory & Aroma -->
+<tr>
+<td class="px-space-md py-2 font-sans font-medium text-on-surface">Sensory &amp; Aroma</td>
+<td class="px-space-md py-2 text-secondary">Pungent, Red color</td>
+<td class="px-space-md py-2 text-right font-sans text-xs text-on-surface">Deep Red #08</td>
+<td class="px-space-md py-2 text-center">
+<span class="text-emerald-700 font-bold font-sans text-[11px] bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">APPROVED</span>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Batch Genealogy & Traceability -->
+<div class="p-space-sm rounded-lg border border-outline-variant bg-surface-container-low">
+<span class="text-label-xs uppercase text-secondary font-semibold block mb-1.5">Batch Genealogy &amp; Traceability</span>
+<div class="grid grid-cols-2 gap-3 text-body-md">
+<div>
+<span class="text-[12px] text-secondary block">Raw Material Origin Lot</span>
+<span class="font-semibold text-on-surface">SL-GNT-2024-041</span>
+<span class="text-[12px] text-secondary block mt-0.5">Guntur Red Chilli Whole</span>
+</div>
+<div>
+<span class="text-[12px] text-secondary block">Source Run</span>
+<span class="font-semibold text-on-surface">Milling Line #01 (Run #R-1049)</span>
+<span class="text-[12px] text-secondary block mt-0.5">Dest: W-FG-RELEASED-01</span>
+</div>
+</div>
+</div>
+<!-- History & Audit: Actor & Timestamp -->
+<div class="p-space-sm rounded-lg border border-outline-variant bg-surface-container-lowest">
+<span class="text-label-xs uppercase text-secondary font-semibold block mb-1">History &amp; Audit</span>
+<div class="flex items-center gap-1.5 text-body-md text-on-surface">
+<span class="material-symbols-outlined text-[16px] text-secondary" data-icon="history">history</span>
+<span>Logged by: <strong class="font-semibold">Priya Nair (QC Specialist)</strong> • Oct 24, 2024 10:15 AM</span>
+</div>
+</div>
+<!-- Disposition Notes Field -->
+<div>
+<label class="block text-label-xs uppercase text-secondary font-semibold mb-1">Disposition Notes</label>
+<textarea class="w-full text-body-md p-2.5 rounded border border-outline-variant bg-surface-container-lowest text-on-surface focus:outline-none focus:border-primary placeholder-secondary/60 leading-snug" placeholder="Enter disposition rationale or remarks before confirming decision..." rows="3">COA verified against specification limits. All lab parameters within acceptable threshold. Quality disposition approved for packaging release.</textarea>
+</div>
+<!-- Decision Review Confirmation State Preview -->
+<div class="p-2.5 rounded bg-emerald-50/70 border border-emerald-200 text-emerald-950 text-body-sm flex items-start gap-2">
+<span class="material-symbols-outlined text-emerald-700 text-[18px] shrink-0 mt-0.5" data-icon="verified">verified</span>
+<div class="text-[13px] leading-snug">
+<span class="font-semibold">Decision Review Confirmation:</span>
+            Inspection QI-2024-0891 satisfies release criteria. Submitting will update batch status to <strong>Released</strong> and transfer stock to Warehouse Finished Goods.
+          </div>
+</div>
+</div>
+<!-- Actions & Decision Review Buttons -->
+<div class="p-space-md bg-surface-container-high border-t border-outline-variant shrink-0 space-y-2">
+<div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+<!-- Release Batch (Primary Green) -->
+<button class="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-body-md py-2.5 px-3 rounded flex items-center justify-center gap-1.5 shadow-xs transition-colors cursor-pointer">
+<span class="material-symbols-outlined text-[18px]" data-icon="check_circle">check_circle</span>
+<span>Release Batch</span>
+</button>
+<!-- Place on Hold (Warning Amber) -->
+<button class="bg-surface-container-lowest hover:bg-amber-50 text-amber-900 border border-amber-400 font-semibold text-body-md py-2.5 px-3 rounded flex items-center justify-center gap-1.5 transition-colors cursor-pointer">
+<span class="material-symbols-outlined text-[18px] text-amber-700" data-icon="pause_circle">pause_circle</span>
+<span>Place on Hold</span>
+</button>
+<!-- Reject Batch (Danger Red) -->
+<button class="bg-surface-container-lowest hover:bg-red-50 text-error border border-error/50 font-semibold text-body-md py-2.5 px-3 rounded flex items-center justify-center gap-1.5 transition-colors cursor-pointer">
+<span class="material-symbols-outlined text-[18px] text-error" data-icon="block">block</span>
+<span>Reject Batch</span>
+</button>
+</div>
+<div class="flex items-center justify-between text-[12px] text-secondary pt-1 border-t border-outline-variant/60">
+<span>Target Lot: <strong class="text-on-surface">BATCH-CP-8902</strong></span>
+<span>Status: <strong class="text-amber-800">Pending Decision</strong></span>
+</div>
+</div>
+</section>
+</main>
+</div>
+</body></html>

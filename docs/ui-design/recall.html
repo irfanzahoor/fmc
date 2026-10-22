@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+
+<html class="h-full bg-surface" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>FMC Food Manufacturing - Recall &amp; Traceability</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "primary-fixed": "#d5e3ff",
+            "on-surface": "#191c1e",
+            "on-secondary-container": "#586377",
+            "on-tertiary-container": "#fdfcff",
+            "error": "#ba1a1a",
+            "surface-dim": "#d8dadd",
+            "tertiary-fixed-dim": "#b7c8e1",
+            "on-background": "#191c1e",
+            "surface": "#f7f9fc",
+            "secondary-fixed": "#d8e3fb",
+            "primary-container": "#2474d2",
+            "primary-fixed-dim": "#a8c8ff",
+            "tertiary-fixed": "#d3e4fe",
+            "surface-container-high": "#e6e8eb",
+            "on-tertiary-fixed-variant": "#38485d",
+            "secondary-container": "#d5e0f8",
+            "on-primary-fixed": "#001b3c",
+            "inverse-surface": "#2d3133",
+            "primary": "#005bb0",
+            "on-error-container": "#93000a",
+            "background": "#f7f9fc",
+            "on-primary-fixed-variant": "#00468a",
+            "tertiary-container": "#66768d",
+            "surface-container-low": "#f2f4f7",
+            "on-surface-variant": "#414752",
+            "on-secondary": "#ffffff",
+            "on-primary-container": "#fefcff",
+            "surface-tint": "#005eb4",
+            "on-tertiary": "#ffffff",
+            "secondary": "#545f73",
+            "on-tertiary-fixed": "#0b1c30",
+            "surface-container": "#eceef1",
+            "surface-variant": "#e0e3e6",
+            "surface-container-highest": "#e0e3e6",
+            "tertiary": "#4d5d73",
+            "inverse-primary": "#a8c8ff",
+            "error-container": "#ffdad6",
+            "inverse-on-surface": "#eff1f4",
+            "secondary-fixed-dim": "#bcc7de",
+            "on-primary": "#ffffff",
+            "outline": "#727784",
+            "on-secondary-fixed-variant": "#3c475a",
+            "on-secondary-fixed": "#111c2d",
+            "surface-container-lowest": "#ffffff",
+            "on-error": "#ffffff",
+            "surface-bright": "#f7f9fc",
+            "outline-variant": "#c1c6d4"
+          },
+          borderRadius: {
+            "DEFAULT": "0.125rem",
+            "lg": "0.25rem",
+            "xl": "0.5rem",
+            "full": "0.75rem",
+            "card": "10px"
+          },
+          spacing: {
+            "space-sm": "0.5rem",
+            "space-2xl": "2rem",
+            "gutter": "1rem",
+            "space-md": "0.75rem",
+            "space-2xs": "0.125rem",
+            "space-lg": "1rem",
+            "gutter-dense": "0.75rem",
+            "space-xs": "0.25rem",
+            "margin-mobile": "0.75rem",
+            "space-xl": "1.5rem",
+            "margin": "1.5rem"
+          },
+          fontFamily: {
+            "display-lg-mobile": ["Inter"],
+            "data-tabular-md": ["Inter"],
+            "data-tabular-lg": ["Inter"],
+            "headline-md": ["Inter"],
+            "data-tabular-sm": ["Inter"],
+            "headline-sm": ["Inter"],
+            "label-md": ["Inter"],
+            "body-md": ["Inter"],
+            "body-sm": ["Inter"],
+            "label-xs": ["Inter"],
+            "title-sm": ["Inter"],
+            "title-md": ["Inter"],
+            "display-lg": ["Inter"],
+            "mono": ["JetBrains Mono", "monospace"]
+          },
+          fontSize: {
+            "display-lg-mobile": ["26px", { lineHeight: "34px", letterSpacing: "-0.015em", fontWeight: "700" }],
+            "data-tabular-md": ["14px", { lineHeight: "20px", fontWeight: "500" }],
+            "data-tabular-lg": ["24px", { lineHeight: "28px", letterSpacing: "-0.02em", fontWeight: "700" }],
+            "headline-md": ["22px", { lineHeight: "28px", letterSpacing: "-0.01em", fontWeight: "600" }],
+            "data-tabular-sm": ["12px", { lineHeight: "16px", fontWeight: "500" }],
+            "headline-sm": ["18px", { lineHeight: "24px", letterSpacing: "-0.005em", fontWeight: "600" }],
+            "label-md": ["12px", { lineHeight: "16px", letterSpacing: "0.01em", fontWeight: "500" }],
+            "body-md": ["14px", { lineHeight: "20px", fontWeight: "400" }],
+            "body-sm": ["12px", { lineHeight: "16px", fontWeight: "400" }],
+            "label-xs": ["11px", { lineHeight: "14px", letterSpacing: "0.04em", fontWeight: "600" }],
+            "title-sm": ["13px", { lineHeight: "18px", fontWeight: "600" }],
+            "title-md": ["15px", { lineHeight: "20px", fontWeight: "600" }],
+            "display-lg": ["32px", { lineHeight: "40px", letterSpacing: "-0.02em", fontWeight: "700" }]
+          }
+        }
+      }
+    }
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 20;
+      font-size: 18px;
+      line-height: 1;
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+      height: 6px;
+      width: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: #f2f4f7;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #c1c6d4;
+      border-radius: 3px;
+    }
+    .connector-line {
+      background: repeating-linear-gradient(90deg, #c1c6d4, #c1c6d4 4px, transparent 4px, transparent 8px);
+    }
+  </style>
+</head>
+<body class="h-full text-on-surface bg-surface flex flex-col antialiased selection:bg-primary selection:text-on-primary font-body-md text-body-md">
+<!-- Fixed Left Sidebar (SideNavBar Shared Component Specification) -->
+<aside class="fixed top-0 left-0 h-screen w-60 z-30 bg-surface-container-lowest border-r border-outline-variant flex flex-col justify-between p-space-md select-none">
+<div class="flex flex-col gap-space-md">
+<!-- Header / Logo -->
+<div class="flex items-center gap-space-sm pb-space-sm border-b border-surface-container-high">
+<div class="w-8 h-8 rounded bg-primary-container flex items-center justify-center text-on-primary-container font-headline-sm text-headline-sm">
+<span class="material-symbols-outlined" data-icon="factory">factory</span>
+</div>
+<div class="flex flex-col overflow-hidden">
+<span class="text-title-md font-title-md font-bold tracking-tight text-on-surface truncate">FMC Manufacturing</span>
+<span class="text-label-xs font-label-xs text-secondary truncate">Plant #02 • Active</span>
+</div>
+</div>
+<!-- Navigation Tabs -->
+<nav class="flex flex-col gap-space-2xs">
+<!-- 1. Overview -->
+<a class="flex items-center gap-space-sm px-space-md py-space-xs rounded text-secondary font-body-sm hover:bg-surface-container-low transition-colors duration-150 cursor-pointer" href="#">
+<span class="material-symbols-outlined text-secondary" data-icon="dashboard">dashboard</span>
+<span>Overview</span>
+</a>
+<!-- 2. Production -->
+<a class="flex items-center gap-space-sm px-space-md py-space-xs rounded text-secondary font-body-sm hover:bg-surface-container-low transition-colors duration-150 cursor-pointer" href="#">
+<span class="material-symbols-outlined text-secondary" data-icon="precision_manufacturing">precision_manufacturing</span>
+<span>Production</span>
+</a>
+<!-- 3. Quality (With Badge) -->
+<a class="flex items-center justify-between px-space-md py-space-xs rounded text-secondary font-body-sm hover:bg-surface-container-low transition-colors duration-150 cursor-pointer" href="#">
+<div class="flex items-center gap-space-sm">
+<span class="material-symbols-outlined text-secondary" data-icon="verified">verified</span>
+<span>Quality</span>
+</div>
+<span class="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-error-container text-on-error-container">12</span>
+</a>
+<!-- 4. Receiving -->
+<a class="flex items-center gap-space-sm px-space-md py-space-xs rounded text-secondary font-body-sm hover:bg-surface-container-low transition-colors duration-150 cursor-pointer" href="#">
+<span class="material-symbols-outlined text-secondary" data-icon="local_shipping">local_shipping</span>
+<span>Receiving</span>
+</a>
+<!-- 5. Dispatch -->
+<a class="flex items-center gap-space-sm px-space-md py-space-xs rounded text-secondary font-body-sm hover:bg-surface-container-low transition-colors duration-150 cursor-pointer" href="#">
+<span class="material-symbols-outlined text-secondary" data-icon="forklift">forklift</span>
+<span>Dispatch</span>
+</a>
+<!-- 6. Recall (ACTIVE) -->
+<a class="flex items-center gap-space-sm px-space-md py-space-xs rounded bg-surface-container-high text-primary font-title-sm border-l-2 border-primary cursor-pointer" href="#">
+<span class="material-symbols-outlined text-primary" data-icon="warning" data-weight="fill" style="font-variation-settings: 'FILL' 1;">warning</span>
+<span class="font-semibold">Recall</span>
+</a>
+</nav>
+</div>
+<!-- Clean Industrial Sidebar Footer -->
+</aside>
+<!-- Topbar (Dense ERP Header) -->
+<header class="fixed top-0 left-60 right-0 h-12 bg-surface-container-lowest border-b border-outline-variant z-20 flex items-center justify-between px-space-lg"><div class="flex items-center gap-space-xs font-body-sm text-body-sm"><div class="flex items-center gap-1 text-secondary hover:text-on-surface cursor-pointer font-medium"><span>FM Demo Foods</span><span class="material-symbols-outlined text-xs">expand_more</span></div><span class="text-outline-variant">/</span><span class="font-title-sm text-title-sm text-on-surface font-semibold">Recall &amp; Traceability</span><span class="text-outline-variant">/</span><span class="text-secondary">Batch Investigation</span></div></header>
+<!-- Main Canvas Canvas Container -->
+<main class="ml-60 pt-12 pb-16 flex-1 flex flex-col overflow-y-auto custom-scrollbar">
+<div class="p-space-lg flex flex-col gap-space-lg max-w-[1680px] w-full mx-auto">
+<!-- Page Title & Primary Actions Header -->
+<div class="flex flex-col gap-1 pt-space-xs pb-space-xs border-b border-surface-container-high"><h1 class="text-headline-md font-headline-md text-on-surface tracking-tight font-bold">Recall &amp; Traceability</h1><p class="text-body-sm font-body-sm text-secondary">Read-only batch investigation • Upstream raw lot to downstream dispatch lineage</p></div>
+<!-- Investigation & Search Card Section -->
+<section class="bg-surface-container-lowest rounded-card border border-outline-variant p-space-lg shadow-sm"><div class="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-space-md pb-space-md border-b border-surface-container-high"><div class="flex flex-1 items-center gap-space-sm max-w-3xl"><div class="relative flex-1"><span class="absolute inset-y-0 left-3 flex items-center text-secondary"><span class="material-symbols-outlined">search</span></span><input class="w-full pl-9 pr-32 py-2 bg-surface-container-low border border-outline-variant rounded font-mono font-semibold text-title-sm text-on-surface focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary" placeholder="Search or scan exact batch ID..." type="text" value="SL-GNT-2024-041"/><span class="absolute inset-y-0 right-2 flex items-center"><span class="text-[11px] text-secondary bg-surface-container px-2 py-0.5 rounded border border-outline-variant font-mono">SCANNER MODE</span></span></div><button class="px-4 py-2 bg-primary text-on-primary hover:bg-primary-container rounded font-title-sm text-title-sm font-semibold transition-colors flex items-center gap-1.5 shadow-sm"><span class="material-symbols-outlined text-base">search</span><span>Trace Batch</span></button></div></div><div class="mt-space-md grid grid-cols-1 md:grid-cols-4 gap-space-md"><div class="p-3 bg-surface-container-low rounded border border-outline-variant flex flex-col justify-between"><div><div class="text-label-xs font-label-xs text-secondary uppercase font-semibold">Investigated Batch ID</div><div class="font-mono text-title-md font-bold text-on-surface mt-1 flex items-center gap-1.5"><span class="material-symbols-outlined text-error text-base">radio_button_checked</span><span>SL-GNT-2024-041</span></div></div><div class="text-[11px] text-secondary mt-2">Inward: <span class="font-mono font-semibold text-on-surface">PO-FM-0042 / CH-2024-8841</span></div></div><div class="p-3 bg-surface-container-low rounded border border-outline-variant flex flex-col justify-between"><div><div class="text-label-xs font-label-xs text-secondary uppercase font-semibold">Material &amp; Received Qty</div><div class="text-title-sm font-semibold text-on-surface mt-1">Chilli Whole Dry - Guntur Sannam Grade 1</div></div><div class="flex items-baseline justify-between mt-2"><span class="text-[11px] text-secondary">Received:</span><span class="font-mono font-bold text-title-md text-primary">1,500.00 kg</span></div></div><div class="p-3 bg-surface-container-low rounded border border-outline-variant flex flex-col justify-between"><div><div class="text-label-xs font-label-xs text-secondary uppercase font-semibold">Supplier &amp; Location</div><div class="text-title-sm font-semibold text-on-surface mt-1 truncate" title="Southern Agro-Spice Farms Ltd">Southern Agro-Spice Farms Ltd</div></div><div class="text-[11px] text-secondary mt-2 font-mono">Raw Material Quarantine - W-RM-QUAR-01</div></div><div class="p-3 bg-error-container/40 rounded border border-error/30 flex flex-col justify-between"><div><div class="flex items-center justify-between"><span class="text-label-xs font-label-xs text-error uppercase font-bold">Current Quality Status</span><span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-error text-on-error">QUARANTINE</span></div><div class="text-[11px] text-on-surface font-medium mt-1 leading-snug">Quarantine - Flagged Aflatoxin B1 exceedance (14.2 ppb vs 10 ppb limit).</div></div><a class="text-label-xs font-label-xs text-primary font-bold hover:underline inline-flex items-center gap-1 mt-2" href="#"><span>Open in Quality Queue</span><span class="material-symbols-outlined text-xs">open_in_new</span></a></div></div><div class="mt-space-md p-space-sm bg-surface-container rounded border border-outline-variant flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-label-xs font-label-xs"><div class="flex items-center gap-2"><span class="material-symbols-outlined text-primary text-base">account_tree</span><span class="font-semibold text-on-surface">Lineage Scope: Multi-Tier Genealogy</span><span class="text-secondary">(PO Inward → Grinding WO → Packaging Batches → Customer Delivery Notes)</span></div><div class="text-secondary italic flex items-center gap-1"><span class="material-symbols-outlined text-xs text-amber-600">info</span><span>Traversal Limit Notice: Displaying up to 6 lineage tiers / 200 batches. Tertiary downstream transfers truncated.</span></div></div></section>
+<!-- Visual Lineage & Genealogy Flow (Connected Nodes Graph) -->
+<section class="bg-surface-container-lowest rounded-card border border-outline-variant p-space-lg shadow-sm overflow-hidden"><div class="flex items-center justify-between pb-space-sm border-b border-surface-container-high mb-space-md"><div class="flex items-center gap-2"><span class="material-symbols-outlined text-primary">account_tree</span><h2 class="text-title-md font-title-md font-bold text-on-surface">Visual Forward Lineage &amp; Lot Genealogy</h2></div><div class="flex items-center gap-3 text-label-xs font-label-xs text-secondary"><div class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-error"></span><span>Quarantined Source</span></div><div class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-primary"></span><span>Intermediate Bulk</span></div><div class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span><span>Packaged / Dispatched</span></div></div></div><div class="overflow-x-auto pb-4 custom-scrollbar"><div class="min-w-[1240px] flex items-stretch justify-between relative py-2 gap-3"><div class="w-64 bg-surface-container-lowest border-2 border-error rounded-card p-3 shadow-sm flex flex-col justify-between"><div class="flex items-center justify-between"><span class="text-[10px] font-bold text-error uppercase tracking-wider flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-error"></span> Node 1: Raw Lot</span><span class="font-mono text-[10px] bg-error-container text-on-error-container px-1 rounded font-bold">FLAGGED</span></div><div><div class="font-mono text-title-sm font-bold text-on-surface mt-1">SL-GNT-2024-041</div><div class="text-[11px] text-secondary font-medium">Chilli Whole Dry (Guntur Sannam)</div></div><div class="p-1.5 bg-surface-container-low rounded border border-outline-variant text-[11px] font-mono space-y-0.5"><div class="flex justify-between"><span class="text-secondary">Inwarded:</span><span class="font-bold text-on-surface">1,500.00 kg</span></div><div class="flex justify-between text-amber-700"><span class="text-secondary">Consumed:</span><span class="font-bold">1,200.00 kg</span></div></div><div class="text-[10px] text-secondary leading-tight">Supplier: <span class="text-on-surface font-medium">Southern Agro-Spice Farms</span><br/><span class="text-error font-medium">Status: Quarantine</span></div></div><div class="flex items-center justify-center px-1"><div class="flex flex-col items-center gap-1 text-[10px] text-secondary font-mono"><span class="material-symbols-outlined text-outline-variant">arrow_forward</span><span>1,200 kg</span></div></div><div class="w-72 bg-surface-container-lowest border border-primary rounded-card p-3 shadow-sm flex flex-col justify-between"><div class="flex items-center justify-between"><span class="text-[10px] font-bold text-primary uppercase tracking-wider flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-primary"></span> Node 2: Consuming WO</span><span class="text-[10px] bg-surface-container text-secondary px-1 rounded font-mono">COMPLETED</span></div><div><div class="font-mono text-title-sm font-bold text-on-surface mt-1">WO-FM-0025</div><div class="text-[11px] text-secondary font-medium">Chilli Grinding → Bulk Output</div><div class="font-mono font-bold text-on-surface text-[12px] mt-0.5 text-primary">BATCH-CP-8902</div></div><div class="p-1.5 bg-surface-container-low rounded border border-outline-variant text-[11px] font-mono space-y-0.5"><div class="flex justify-between"><span class="text-secondary">Produced:</span><span class="font-bold text-on-surface">1,180.00 kg</span></div><div class="flex justify-between text-secondary"><span class="text-secondary">To Packing:</span><span class="font-bold text-on-surface">560.00 kg</span></div><div class="flex justify-between text-amber-700"><span class="text-secondary">Remaining:</span><span class="font-bold">620.00 kg (W-FG-QUAR-01)</span></div></div><div class="text-[10px] text-secondary leading-tight">Operation: <span class="text-on-surface font-medium">Pin Mill Grinding Line</span></div></div><div class="flex items-center justify-center px-1"><div class="flex flex-col items-center gap-1 text-[10px] text-secondary font-mono"><span class="material-symbols-outlined text-outline-variant">arrow_forward</span><span>560 kg</span></div></div><div class="w-80 bg-surface-container-lowest border border-outline-variant rounded-card p-3 shadow-sm flex flex-col justify-between"><div class="flex items-center justify-between"><span class="text-[10px] font-bold text-secondary uppercase tracking-wider">Node 3: Packaging WOs &amp; SKUs</span><span class="text-[10px] font-mono text-secondary">3 Batches</span></div><div class="flex flex-col gap-1.5 text-[11px]"><div class="p-1.5 bg-surface-container-low rounded border border-outline-variant"><div class="flex justify-between font-mono font-bold"><span>BATCH-GM-2408-14</span><span class="text-amber-700">60 Cartons</span></div><div class="text-[10px] text-secondary">Garam Masala 100g Pouch (1,200 Packs)</div></div><div class="p-1.5 bg-surface-container-low rounded border border-outline-variant"><div class="flex justify-between font-mono font-bold"><span>BATCH-GM-2408-01</span><span class="text-amber-700">48 Cartons</span></div><div class="text-[10px] text-secondary">Garam Masala 50g Boxed (1,152 Packs)</div></div><div class="p-1.5 bg-surface-container-low rounded border border-outline-variant"><div class="flex justify-between font-mono font-bold"><span>BATCH-CP-2409-02</span><span class="text-amber-700">25 Jars</span></div><div class="text-[10px] text-secondary">Chilli Powder 500g Jar</div></div></div><div class="text-[10px] text-secondary italic">Packaged finished goods linked to grinding lot</div></div><div class="flex items-center justify-center px-1"><div class="flex flex-col items-center gap-1 text-[10px] text-secondary font-mono"><span class="material-symbols-outlined text-outline-variant">arrow_forward</span><span>Dispatched</span></div></div><div class="w-72 bg-surface-container-lowest border-2 border-amber-500 rounded-card p-3 shadow-sm flex flex-col justify-between"><div class="flex items-center justify-between"><span class="text-[10px] font-bold text-amber-700 uppercase tracking-wider flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-amber-500"></span> Node 4: Dispatched DNs</span><span class="text-[10px] bg-amber-100 text-amber-900 font-bold px-1 rounded font-mono">2 CONSIGNEES</span></div><div class="flex flex-col gap-1.5 text-[11px]"><div class="p-1.5 rounded bg-amber-50 border border-amber-200"><div class="font-mono font-bold text-on-surface">DN-2024-0182</div><div class="text-[10px] text-secondary">Apex National Retailers Ltd (SO-FM-0036)</div><div class="text-[10px] text-amber-800 font-medium font-mono">48 Cartons • In-Transit / Bay #04</div></div><div class="p-1.5 rounded bg-amber-50 border border-amber-200"><div class="font-mono font-bold text-on-surface">DN-2024-0195</div><div class="text-[10px] text-secondary">Metro Wholesale Hub (SO-FM-0039)</div><div class="text-[10px] text-amber-800 font-medium font-mono">60 Cartons • Dispatched</div></div></div><div class="text-[10px] text-secondary italic">Customer notifications required</div></div></div></div></section>
+<!-- Table 1: Downstream Affected Batches & Internal Stock Status -->
+<section class="bg-surface-container-lowest rounded-card border border-outline-variant shadow-sm overflow-hidden"><div class="px-space-lg py-space-md bg-surface-container-low border-b border-outline-variant flex items-center justify-between"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-primary">inventory_2</span><div><h3 class="font-title-md text-title-md font-bold text-on-surface">Affected Internal Batches &amp; Warehouse Stock</h3><p class="text-body-sm text-secondary">Warehouse containment and disposition status for derived parent and packaging lots</p></div></div><span class="px-2 py-0.5 rounded text-label-xs font-label-xs font-semibold bg-surface-container text-secondary border border-outline-variant">5 Batches Traced</span></div><div class="overflow-x-auto custom-scrollbar"><table class="w-full text-left border-collapse"><thead><tr class="h-8 bg-surface-container-low border-b border-outline-variant text-label-xs font-label-xs text-secondary uppercase font-semibold"><th class="px-space-md py-1">Batch ID</th><th class="px-space-md py-1">Item &amp; Variant</th><th class="px-space-md py-1">Consumed / Parent Lot</th><th class="px-space-md py-1">Warehouse Bin</th><th class="px-space-md py-1 text-right">Total Produced</th><th class="px-space-md py-1 text-right">In-Stock On Hand</th><th class="px-space-md py-1 text-right">Dispatched Qty</th><th class="px-space-md py-1">Quality Status</th><th class="px-space-md py-1 text-center">Action</th></tr></thead><tbody class="text-body-sm font-body-sm divide-y divide-surface-container"><tr class="hover:bg-surface-container-low transition-colors h-9"><td class="px-space-md py-1 font-mono font-bold text-on-surface">BATCH-CP-8902</td><td class="px-space-md py-1 font-medium text-on-surface">Chilli Powder Bulk Ground</td><td class="px-space-md py-1 text-secondary font-mono text-[11px]">1,200.00 kg from <span class="text-on-surface">SL-GNT-2024-041</span></td><td class="px-space-md py-1 font-mono text-[11px] text-error font-medium">W-FG-QUAR-01</td><td class="px-space-md py-1 font-mono text-right">1,180.00 kg</td><td class="px-space-md py-1 font-mono font-bold text-right text-on-surface">620.00 kg</td><td class="px-space-md py-1 font-mono text-right text-secondary">560.00 kg (in pack)</td><td class="px-space-md py-1"><span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] font-bold bg-amber-100 text-amber-800 border border-amber-300"><span class="w-1.5 h-1.5 rounded-full bg-amber-600"></span>QUARANTINE</span></td><td class="px-space-md py-1 text-center"><a class="text-[11px] font-title-sm text-primary hover:underline font-semibold inline-flex items-center gap-1" href="#"><span>View in Quality Queue</span><span class="material-symbols-outlined text-xs">open_in_new</span></a></td></tr><tr class="hover:bg-surface-container-low transition-colors h-9 bg-surface-container-lowest"><td class="px-space-md py-1 font-mono font-bold text-on-surface">BATCH-GM-2804</td><td class="px-space-md py-1 font-medium text-on-surface">Garam Masala Bulk (16-Spice)</td><td class="px-space-md py-1 text-secondary font-mono text-[11px]">200.00 kg from <span class="text-on-surface">BATCH-CP-8902</span></td><td class="px-space-md py-1 font-mono text-[11px] text-error font-medium">W-FG-QUAR-02</td><td class="px-space-md py-1 font-mono text-right">500.00 kg</td><td class="px-space-md py-1 font-mono font-bold text-right text-on-surface">180.00 kg</td><td class="px-space-md py-1 font-mono text-right text-secondary">320.00 kg</td><td class="px-space-md py-1"><span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] font-bold bg-amber-100 text-amber-800 border border-amber-300"><span class="w-1.5 h-1.5 rounded-full bg-amber-600"></span>QUARANTINE</span></td><td class="px-space-md py-1 text-center"><a class="text-[11px] font-title-sm text-primary hover:underline font-semibold inline-flex items-center gap-1" href="#"><span>View in Quality Queue</span><span class="material-symbols-outlined text-xs">open_in_new</span></a></td></tr><tr class="hover:bg-surface-container-low transition-colors h-9"><td class="px-space-md py-1 font-mono font-bold text-on-surface">BATCH-GM-2408-01</td><td class="px-space-md py-1 font-medium text-on-surface">Garam Masala 50g Boxed</td><td class="px-space-md py-1 text-secondary font-mono text-[11px]">120.00 kg from <span class="text-on-surface">BATCH-GM-2804</span></td><td class="px-space-md py-1 font-mono text-[11px] text-secondary">Bay #04 Outward / In-Transit</td><td class="px-space-md py-1 font-mono text-right">48 Cartons (1,152 pk)</td><td class="px-space-md py-1 font-mono text-right text-outline">0 Cartons</td><td class="px-space-md py-1 font-mono font-bold text-right text-error">48 Cartons</td><td class="px-space-md py-1"><span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] font-bold bg-error-container text-on-error-container border border-error/30"><span class="w-1.5 h-1.5 rounded-full bg-error"></span>DISPATCHED</span></td><td class="px-space-md py-1 text-center"><a class="text-[11px] font-title-sm text-primary hover:underline font-semibold inline-flex items-center gap-1" href="#"><span>View in Quality Queue</span><span class="material-symbols-outlined text-xs">open_in_new</span></a></td></tr><tr class="hover:bg-surface-container-low transition-colors h-9 bg-surface-container-lowest"><td class="px-space-md py-1 font-mono font-bold text-on-surface">BATCH-GM-2408-14</td><td class="px-space-md py-1 font-medium text-on-surface">Garam Masala 100g Pouch</td><td class="px-space-md py-1 text-secondary font-mono text-[11px]">200.00 kg from <span class="text-on-surface">BATCH-GM-2804</span></td><td class="px-space-md py-1 font-mono text-[11px] text-secondary">Bay #04 Outward / In-Transit</td><td class="px-space-md py-1 font-mono text-right">60 Cartons (1,200 pk)</td><td class="px-space-md py-1 font-mono text-right text-outline">0 Cartons</td><td class="px-space-md py-1 font-mono font-bold text-right text-error">60 Cartons</td><td class="px-space-md py-1"><span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] font-bold bg-error-container text-on-error-container border border-error/30"><span class="w-1.5 h-1.5 rounded-full bg-error"></span>DISPATCHED</span></td><td class="px-space-md py-1 text-center"><a class="text-[11px] font-title-sm text-primary hover:underline font-semibold inline-flex items-center gap-1" href="#"><span>View in Quality Queue</span><span class="material-symbols-outlined text-xs">open_in_new</span></a></td></tr><tr class="hover:bg-surface-container-low transition-colors h-9"><td class="px-space-md py-1 font-mono font-bold text-on-surface">BATCH-CP-2409-02</td><td class="px-space-md py-1 font-medium text-on-surface">Chilli Powder 500g Jar</td><td class="px-space-md py-1 text-secondary font-mono text-[11px]">12.50 kg from <span class="text-on-surface">BATCH-CP-8902</span></td><td class="px-space-md py-1 font-mono text-[11px] text-amber-700 font-medium">W-FG-RELEASED-01</td><td class="px-space-md py-1 font-mono text-right">25 Jars (12.50 kg)</td><td class="px-space-md py-1 font-mono font-bold text-right text-on-surface">15 Jars</td><td class="px-space-md py-1 font-mono font-bold text-right text-error">10 Jars</td><td class="px-space-md py-1"><span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] font-bold bg-error-container text-on-error-container border border-error/40"><span class="w-1.5 h-1.5 rounded-full bg-error"></span>QUARANTINE / RECALL</span></td><td class="px-space-md py-1 text-center"><a class="text-[11px] font-title-sm text-primary hover:underline font-semibold inline-flex items-center gap-1" href="#"><span>View in Quality Queue</span><span class="material-symbols-outlined text-xs">open_in_new</span></a></td></tr></tbody><tfoot><tr class="h-9 bg-surface-container-low font-semibold text-[11px] border-t-2 border-outline-variant"><td class="px-space-md py-1 text-secondary uppercase" colspan="4">Separated Subtotals by Unit Type (Non-aggregated)</td><td class="px-space-md py-1 font-mono text-right text-on-surface">1,680.00 kg<br/><span class="text-secondary text-[10px]">108 Ctn + 25 Jars</span></td><td class="px-space-md py-1 font-mono text-right text-on-surface">800.00 kg<br/><span class="text-secondary text-[10px]">0 Ctn + 15 Jars</span></td><td class="px-space-md py-1 font-mono text-right text-error">880.00 kg<br/><span class="text-error text-[10px]">108 Ctn + 10 Jars</span></td><td class="px-space-md py-1 text-secondary" colspan="2">Strictly Separated UOMs</td></tr></tfoot></table></div></section>
+<!-- Table 2: Customer Delivery Notes & Outward Traceability -->
+<section class="bg-surface-container-lowest rounded-card border border-outline-variant shadow-sm overflow-hidden"><div class="px-space-lg py-space-md bg-surface-container-low border-b border-outline-variant flex flex-col sm:flex-row sm:items-center justify-between gap-2"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-primary">local_shipping</span><div><h3 class="font-title-md text-title-md font-bold text-on-surface">Affected Customer Deliveries &amp; Dispatched Stock</h3><p class="text-body-sm text-secondary">Outward consignee shipments linked to investigated batches with customer returns and quarantine tracking</p></div></div><div class="flex items-center gap-2"><span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-300 uppercase">3 Dispatches Tracked</span></div></div><div class="overflow-x-auto custom-scrollbar"><table class="w-full text-left border-collapse"><thead><tr class="h-8 bg-surface-container-low border-b border-outline-variant text-label-xs font-label-xs text-secondary uppercase font-semibold"><th class="px-space-md py-1">Delivery Note #</th><th class="px-space-md py-1">Sales Order</th><th class="px-space-md py-1">Customer Account</th><th class="px-space-md py-1">Dispatched Batch ID</th><th class="px-space-md py-1 text-right">Dispatched Qty (Stock UOM)</th><th class="px-space-md py-1">Delivery Date</th><th class="px-space-md py-1">Dispatch Status</th></tr></thead><tbody class="text-body-sm font-body-sm divide-y divide-surface-container"><tr class="hover:bg-surface-container-low transition-colors h-9"><td class="px-space-md py-1 font-mono font-bold text-primary">DN-2024-0182</td><td class="px-space-md py-1 font-mono text-secondary text-[11px]">SO-FM-0036</td><td class="px-space-md py-1"><div class="font-medium text-on-surface">Apex National Retailers Ltd</div><div class="text-[10px] text-secondary">Mumbai Hub (Bhiwandi DC)</div></td><td class="px-space-md py-1 font-mono font-semibold text-on-surface text-[12px]">BATCH-GM-2408-01</td><td class="px-space-md py-1 font-mono text-right font-medium"><div>48 Cartons (1,152 pk)</div><div class="text-[10px] text-emerald-700 font-semibold">12 Cartons Returned to Bay #04</div></td><td class="px-space-md py-1 font-mono text-[11px] text-secondary">2024-10-23</td><td class="px-space-md py-1"><span class="inline-flex items-center gap-1.5 text-[11px] font-semibold text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200"><span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>Quarantine In-Transit</span></td></tr><tr class="hover:bg-surface-container-low transition-colors h-9 bg-surface-container-lowest"><td class="px-space-md py-1 font-mono font-bold text-primary">DN-2024-0195</td><td class="px-space-md py-1 font-mono text-secondary text-[11px]">SO-FM-0039</td><td class="px-space-md py-1"><div class="font-medium text-on-surface">Metro Wholesale Hub</div><div class="text-[10px] text-secondary">Bhiwandi Central DC #02</div></td><td class="px-space-md py-1 font-mono font-semibold text-on-surface text-[12px]">BATCH-GM-2408-14</td><td class="px-space-md py-1 font-mono text-right font-medium"><div>60 Cartons (1,200 pk)</div><div class="text-[10px] text-secondary">0 Returns Registered</div></td><td class="px-space-md py-1 font-mono text-[11px] text-secondary">2024-10-24</td><td class="px-space-md py-1"><span class="inline-flex items-center gap-1.5 text-[11px] font-semibold text-secondary bg-surface-container px-2 py-0.5 rounded border border-outline-variant"><span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>Delivered / Customer Notified</span></td></tr><tr class="hover:bg-surface-container-low transition-colors h-9"><td class="px-space-md py-1 font-mono font-bold text-primary">DN-2024-0201</td><td class="px-space-md py-1 font-mono text-secondary text-[11px]">SO-FM-0044</td><td class="px-space-md py-1"><div class="font-medium text-on-surface">Heritage Fresh Mart</div><div class="text-[10px] text-secondary">Pune Central Store #18</div></td><td class="px-space-md py-1 font-mono font-semibold text-on-surface text-[12px]">BATCH-CP-2409-02</td><td class="px-space-md py-1 font-mono text-right font-medium"><div>10 Jars (5.00 kg)</div><div class="text-[10px] text-secondary">0 Returns Registered</div></td><td class="px-space-md py-1 font-mono text-[11px] text-secondary">2024-10-24</td><td class="px-space-md py-1"><span class="inline-flex items-center gap-1.5 text-[11px] font-semibold text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200"><span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>Dispatched / Recall Notice Sent</span></td></tr></tbody></table></div></section>
+<!-- Summary Footer Metrics Bar & Audit Operations -->
+<footer class="bg-surface-container-lowest rounded-card border border-outline-variant p-space-md shadow-sm flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-space-md"><div class="grid grid-cols-2 md:grid-cols-4 gap-space-sm flex-1"><div class="px-3 py-2 bg-surface-container-low rounded border border-outline-variant"><span class="text-label-xs font-label-xs text-secondary uppercase font-semibold">Raw Lot Received</span><div class="font-mono text-title-md font-bold text-on-surface mt-0.5">1,500.00 kg</div><span class="text-[10px] text-secondary">SL-GNT-2024-041</span></div><div class="px-3 py-2 bg-surface-container-low rounded border border-outline-variant"><span class="text-label-xs font-label-xs text-secondary uppercase font-semibold">Internal Quarantine</span><div class="font-mono text-title-md font-bold text-amber-700 mt-0.5">800.00 kg</div><span class="text-[10px] text-secondary">W-FG-QUAR-01 &amp; 02</span></div><div class="px-3 py-2 bg-error-container/20 rounded border border-error/30"><span class="text-label-xs font-label-xs text-error uppercase font-bold">Customer Dispatched</span><div class="font-mono text-title-md font-bold text-error mt-0.5">108 Ctn + 10 Jars</div><span class="text-[10px] text-error font-medium">Across 3 Delivery Notes</span></div><div class="px-3 py-2 bg-emerald-50 rounded border border-emerald-200"><span class="text-label-xs font-label-xs text-emerald-800 uppercase font-semibold">Quarantined Returns</span><div class="font-mono text-title-md font-bold text-emerald-700 mt-0.5">12 Cartons</div><span class="text-[10px] text-emerald-800">Isolated in Bay #04</span></div></div><div class="flex items-center gap-space-sm justify-end border-t lg:border-t-0 pt-space-sm lg:pt-0 border-surface-container-high"><a class="px-3 py-2 bg-primary text-on-primary hover:bg-primary-container rounded text-title-sm font-title-sm font-semibold transition-colors flex items-center gap-1.5 shadow-sm" href="#"><span class="material-symbols-outlined text-base">verified</span><span>Open Quality Queue</span></a></div></footer>
+</div>
+</main>
+</body></html>
