@@ -1,0 +1,80 @@
+[
+  {
+    "screen": "overview",
+    "desktop": {
+      "viewport": 1440,
+      "pageWidth": 1440,
+      "clippedTables": 0
+    },
+    "mobile": {
+      "viewport": 390,
+      "pageWidth": 390,
+      "navLinks": 6
+    }
+  },
+  {
+    "screen": "production",
+    "desktop": {
+      "viewport": 1440,
+      "pageWidth": 1440,
+      "clippedTables": 0
+    },
+    "mobile": {
+      "viewport": 390,
+      "pageWidth": 390,
+      "navLinks": 6
+    }
+  },
+  {
+    "screen": "quality",
+    "desktop": {
+      "viewport": 1440,
+      "pageWidth": 1440,
+      "clippedTables": 0
+    },
+    "mobile": {
+      "viewport": 390,
+      "pageWidth": 390,
+      "navLinks": 6
+    }
+  },
+  {
+    "screen": "receiving",
+    "desktop": {
+      "viewport": 1440,
+      "pageWidth": 1440,
+      "clippedTables": 0
+    },
+    "mobile": {
+      "viewport": 390,
+      "pageWidth": 390,
+      "navLinks": 6
+    }
+  },
+  {
+    "screen": "dispatch",
+    "desktop": {
+      "viewport": 1440,
+      "pageWidth": 1440,
+      "clippedTables": 0
+    },
+    "mobile": {
+      "viewport": 390,
+      "pageWidth": 390,
+      "navLinks": 6
+    }
+  },
+  {
+    "screen": "recall",
+    "desktop": {
+      "viewport": 1440,
+      "pageWidth": 1440,
+      "clippedTables": 0
+    },
+    "mobile": {
+      "viewport": 390,
+      "pageWidth": 390,
+      "navLinks": 6
+    }
+  }
+]

@@ -48,7 +48,7 @@ checks are wired into CI and still need a CI run.
 
 ## Documentation
 
-- [UI designs and Claude handoff](docs/ui-design/README.md) — Stitch references for the planned redesign (6 desktop and 3 mobile screens)
+- [UI designs and Claude handoff](docs/ui-design/README.md) — premium redesign references (6 desktop and 6 mobile screens)
 - `docs/PRD.md` — scope and assumptions
 - `docs/data-model.md` — standard-feature reuse map and custom DocTypes
 - `docs/workflows.md` — operational flows

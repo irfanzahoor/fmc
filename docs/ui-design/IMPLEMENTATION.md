@@ -1,5 +1,17 @@
 # Implementation handoff for Claude
 
+## Current visual direction
+
+The user approved the Premium v2 Overview/Production direction and asked for all
+remaining screens in that style. Use `premium/index.html` and `premium/README.md`
+for the complete six-workflow desktop and phone set. Shared presentation lives
+in `premium/preview.css`; `premium/DESIGN.md` describes the visual rules. Preserve the business rules in this handoff.
+
+Premium v2 uses forest green accents, a warm ivory canvas, generous spacing,
+larger typography and fewer badges. Its green example chart is a visual concept:
+do not replace the application's validated chart colors without running the
+required data-viz validation. Reference values remain illustrative.
+
 ## Request
 
 Implement the Stitch UI designs in the existing FMC Vue application. The user
@@ -22,20 +34,20 @@ fit a screenshot.
 
 ## Design direction
 
-Use the screenshots and HTML listed in this directory's README. Implement with
+Use the screenshots and HTML listed in `premium/README.md`. Implement with
 the existing Vue 3, frappe-ui, Tailwind and lucide-vue-next stack. Adapt the
 reference markup into Vue components instead of embedding exported HTML or
 copying CDN scripts into the application.
 
 Desktop: compact left sidebar with Overview, Production, Quality, Receiving,
 Dispatch and Recall; topbar with active company selector and page context.
-Light neutral background, white cards, restrained blue actions, navy text,
-tabular quantities, subtle borders and compact readable tables. Reuse common
+Warm ivory background, white cards, forest green actions, pine text,
+tabular quantities, subtle borders and comfortable readable tables. Reuse common
 components and tokens in `frontend/src/components/` and `frontend/src/index.css`.
 
 Mobile: compact navigation, stacked forms/cards and at least 44px touch targets.
-Use the overview yield table instead of squeezing a chart. Make all six pages
-responsive even though only three explicit mobile references are included.
+Use the overview yield list instead of squeezing a chart. All six pages have
+phone references; preserve their labeled cards and complete navigation.
 
 ## Preserve existing behavior
 
@@ -65,13 +77,10 @@ contain invented labels, dates, totals and controls. In particular:
   scale. Keep output charts grouped by UOM and quality mix as batch counts.
 - Do not invent trend comparisons, fixed yield targets or totals absent from
   API responses. Missing measurements display as an em dash, not zero.
-- Recall currently returns affected batches and deliveries, not the intermediate
-  graph edges shown by Stitch. Do not fabricate genealogy connections. Render
+- Recall currently returns affected batches and deliveries, not intermediate
+  manufacturing graph edges. Do not fabricate genealogy connections. Render
   available data honestly; any API expansion requires a separate justified,
   permission-checked implementation.
-- The generated design-system text sometimes contradicts these requirements
-  (mixed-unit bars, telemetry, small touch targets). This handoff and the actual
-  application rules take precedence.
 - Preserve the validated chart palette and white chart surface. Repository
   instructions require rerunning the data-viz validator before changing chart
   colors. Status meaning must remain visible in words/icons as well as color.
@@ -98,5 +107,5 @@ Do not seed test fixtures into the populated shared site. Do not add schema or
 backend changes solely for visual parity. Follow `CLAUDE.md` for bench deployment
 commands and explain any checks that could not be run locally.
 
-All nine screenshots and HTML exports are stored in this repository so the work
+All twelve desktop/phone screenshots and HTML previews are stored in this repository so the work
 can proceed without reconnecting Stitch. No API credentials belong in these files.
