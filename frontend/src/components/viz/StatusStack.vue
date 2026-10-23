@@ -10,38 +10,64 @@
 		<template v-else>
 			<!-- Part-to-whole as a single stacked bar. A 2px surface gap sits
 			     between segments so adjacent fills never bleed together. -->
-			<div class="flex h-7 w-full overflow-hidden rounded-md" role="img" :aria-label="ariaLabel">
-				<div
-					v-for="(row, index) in segments"
-					:key="row.label"
-					class="relative flex items-center justify-center"
-					:style="{
-						width: `${row.percent}%`,
-						background: row.color,
-						marginLeft: index ? '2px' : '0',
-					}"
-					:title="`${row.label}: ${row.value}`"
-				>
-					<!-- Direct value labels: the mandated relief for the two
-					     status hues that sit below 3:1 on a white surface. -->
-					<span
-						v-if="row.percent >= 9"
-						class="text-xs font-semibold"
-						:style="{ color: row.labelInk }"
-						style="font-variant-numeric: tabular-nums"
+			<div class="relative" @pointerleave="active = null">
+				<div class="flex h-8 w-full overflow-hidden rounded-lg" role="img" :aria-label="ariaLabel">
+					<button
+						v-for="(row, index) in segments"
+						:key="row.label"
+						type="button"
+						class="relative flex items-center justify-center transition-[filter] motion-reduce:transition-none"
+						:style="{
+							width: `${row.percent}%`,
+							background: row.color,
+							marginLeft: index ? '2px' : '0',
+							filter: active && active.label !== row.label ? 'saturate(0.45) opacity(0.65)' : 'none',
+						}"
+						:aria-label="`${row.label}: ${row.value} of ${total} batches`"
+						@pointerenter="active = row"
+						@focus="active = row"
+						@blur="active = null"
 					>
-						{{ row.value }}
+						<!-- Direct value labels: the mandated relief for the two
+						     status hues that sit below 3:1 on a white surface.
+						     Only where the number actually fits the segment. -->
+						<span
+							v-if="row.percent >= 9"
+							class="fm-num text-xs font-semibold"
+							:style="{ color: row.labelInk }"
+						>
+							{{ row.value }}
+						</span>
+					</button>
+				</div>
+
+				<!-- A 3-of-63 segment is too thin to label, so hovering or
+				     tabbing to it is how its number is read. -->
+				<div
+					v-if="active"
+					class="pointer-events-none absolute -top-1 z-10 -translate-y-full rounded-lg px-2.5 py-1.5 text-xs shadow-lg"
+					:style="tooltipStyle"
+					role="status"
+				>
+					<span class="flex items-center gap-1.5 font-semibold">
+						<component :is="active.icon" class="h-3.5 w-3.5" :style="{ color: active.color }" aria-hidden="true" />
+						{{ active.label }}
+					</span>
+					<span class="fm-num block" :style="{ color: 'var(--fm-muted)' }">
+						{{ active.value }} of {{ total }} batches · {{ Math.round(active.percent) }}%
 					</span>
 				</div>
 			</div>
 
 			<!-- Legend is always present, and each entry carries an icon plus a
 			     word, so a status is never conveyed by colour alone. -->
-			<ul class="mt-3 grid grid-cols-2 gap-y-1.5 text-xs sm:grid-cols-4">
+			<!-- Two columns, not four: at rail width four entries run into one
+			     another and "8" sits against the next entry's icon. -->
+			<ul class="mt-3 grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs">
 				<li v-for="row in segments" :key="`k${row.label}`" class="flex items-center gap-1.5">
 					<component :is="row.icon" class="h-3.5 w-3.5 shrink-0" :style="{ color: row.color }" aria-hidden="true" />
 					<span :style="{ color: 'var(--viz-ink-secondary)' }">{{ row.label }}</span>
-					<span class="font-semibold" :style="{ color: 'var(--viz-ink)' }">{{ row.value }}</span>
+					<span class="fm-num font-semibold" :style="{ color: 'var(--viz-ink)' }">{{ row.value }}</span>
 				</li>
 			</ul>
 		</template>
@@ -49,7 +75,7 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { AlertTriangle, CheckCircle, XOctagon, PauseCircle } from 'lucide-vue-next'
 
 const props = defineProps({
@@ -68,7 +94,33 @@ const ROLE = {
 	serious: { color: 'var(--viz-serious)', icon: PauseCircle, labelInk: '#0b0b0b' },
 }
 
+const active = ref(null)
+
 const total = computed(() => props.rows.reduce((sum, row) => sum + (Number(row.value) || 0), 0))
+
+const tooltipStyle = computed(() => {
+	if (!active.value) return {}
+
+	const index = segments.value.indexOf(active.value)
+	const start = segments.value
+		.slice(0, index)
+		.reduce((sum, row) => sum + row.percent, 0)
+	const middle = start + active.value.percent / 2
+
+	// Anchored to whichever edge of its own segment keeps the box inside the
+	// card: left-anchored past the halfway mark pushes it out of a narrow one.
+	const edge =
+		middle > 50
+			? { right: `${Math.max(100 - start - active.value.percent, 0)}%` }
+			: { left: `${start}%` }
+
+	return {
+		...edge,
+		background: 'var(--fm-surface)',
+		color: 'var(--fm-ink)',
+		border: '1px solid var(--fm-border)',
+	}
+})
 
 const segments = computed(() =>
 	props.rows

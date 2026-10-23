@@ -64,8 +64,11 @@
 							Actual yield across the most recent completed runs.
 						</p>
 
+						<!-- The one hero figure on this view, set above the stat
+						     row's 31px so the panel reads as the focal point.
+						     Proportional figures: it stands alone. -->
 						<p class="fm-figure mt-4 flex items-baseline gap-1.5">
-							<span class="fm-num text-[31px] font-extrabold leading-none text-white">
+							<span class="text-[44px] font-extrabold leading-none text-white">
 								{{ heroYield }}
 							</span>
 							<span class="text-sm" :style="{ color: 'var(--fm-side-ink)' }">
@@ -89,7 +92,10 @@
 						</ul>
 					</div>
 
-					<div class="fm-card p-5">
+					<!-- The rail carries two cards so it stands as tall as the
+					     hero beside it; one short card left the column half empty. -->
+					<div class="space-y-4">
+						<div class="fm-card p-5">
 						<div class="flex items-start justify-between gap-2">
 							<div>
 								<h2 class="text-lg font-bold">Needs your attention</h2>
@@ -130,10 +136,17 @@
 						<p class="mt-4 border-t pt-3 text-xs fm-muted" :style="{ borderColor: 'var(--fm-border)' }">
 							Company-scoped stock and quality decisions.
 						</p>
+						</div>
+
+						<StatusStack
+							title="Stock quality"
+							:subtitle="`${qualityTotal} batches currently holding company stock.`"
+							:rows="data.quality_mix"
+						/>
 					</div>
 				</div>
 
-				<div class="grid gap-4 lg:grid-cols-2">
+				<div class="grid items-start gap-4 lg:grid-cols-2">
 					<BarRanking
 						title="Output by item"
 						subtitle="Separate scales for each unit."
@@ -141,20 +154,14 @@
 						empty-text="No output recorded in this period."
 					/>
 
-					<div class="space-y-4">
-						<StatusStack
-							title="Stock quality"
-							:subtitle="`${qualityTotal} batches currently holding company stock.`"
-							:rows="data.quality_mix"
-						/>
-						<BarRanking
-							title="Expiry horizon"
-							subtitle="Most urgent stock first."
-							:rows="expiryRows"
-							:decimals="0"
-							empty-text="No batch expires within 90 days."
-						/>
-					</div>
+					<BarRanking
+						title="Expiry horizon"
+						:sorted="false"
+						subtitle="Most urgent stock first."
+						:rows="expiryRows"
+						:decimals="0"
+						empty-text="No batch expires within 90 days."
+					/>
 				</div>
 
 				<ul class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">

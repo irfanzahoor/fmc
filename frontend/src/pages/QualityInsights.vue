@@ -11,6 +11,10 @@
 					<RefreshCw class="h-4 w-4" aria-hidden="true" />
 					Refresh
 				</button>
+				<RouterLink :to="{ name: 'Quality' }" class="fm-btn-primary fm-tap flex items-center gap-2 px-4 text-sm">
+					Open the queue
+					<ArrowRight class="h-4 w-4" aria-hidden="true" />
+				</RouterLink>
 			</template>
 		</PageHeader>
 
@@ -27,14 +31,19 @@
 					<KpiCard label="Holding stock" :value="qualityTotal" unit="batches" :icon="Boxes" />
 				</div>
 
-				<div class="grid gap-4 lg:grid-cols-2">
+				<!-- The expiry ranking carries four labelled rows to the stack's
+				     one bar, so it gets the wider column rather than an equal half. -->
+				<div class="grid items-start gap-4 lg:grid-cols-5">
 					<StatusStack
+						class="lg:col-span-2"
 						title="Stock by quality status"
 						:subtitle="`${qualityTotal} batches currently holding company stock.`"
 						:rows="data.quality_mix"
 					/>
 					<BarRanking
+						class="lg:col-span-3"
 						title="Expiry horizon"
+						:sorted="false"
 						subtitle="Batch counts by how close they are to expiry, most urgent first."
 						:rows="expiryRows"
 						:decimals="0"
@@ -42,20 +51,10 @@
 					/>
 				</div>
 
-				<div class="fm-card p-5">
-					<h2 class="text-base font-bold">Act on the queue</h2>
-					<p class="mt-0.5 text-sm fm-muted">
-						Decisions are audited. Release, hold and reject each record who decided and why.
-					</p>
-					<RouterLink :to="{ name: 'Quality' }" class="fm-btn-primary fm-tap mt-3 inline-flex items-center gap-2 px-4 text-sm">
-						<ArrowRight class="h-4 w-4" aria-hidden="true" />
-						Open the quality queue
-					</RouterLink>
-				</div>
-
 				<p class="text-xs fm-muted">
 					Counts cover batches holding stock in this company only. Rejected batches are excluded from the
-					expiry horizon because they are already out of use.
+					expiry horizon because they are already out of use. Every release, hold and reject is audited
+					with who decided and why.
 				</p>
 			</div>
 		</StateBlock>

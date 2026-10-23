@@ -13,7 +13,9 @@
 		</div>
 
 		<p class="fm-figure mt-2 flex items-baseline gap-1">
-			<span class="fm-num text-[31px] font-extrabold leading-none">{{ display }}</span>
+			<!-- Proportional, not tabular: these do not align in a column, and
+			     zero-width digits make a figure like 121 read loose. -->
+			<span class="text-[31px] font-extrabold leading-none">{{ display }}</span>
 			<span v-if="unit && display !== emptyText" class="text-sm font-medium fm-muted">{{ unit }}</span>
 		</p>
 

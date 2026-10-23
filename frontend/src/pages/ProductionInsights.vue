@@ -44,8 +44,13 @@
 				<div class="grid gap-4 lg:grid-cols-2">
 					<BarRanking title="Output by item" subtitle="Separate scales for each unit."
 						:rows="outputRows" empty-text="No output recorded in this period." />
-					<BarRanking title="Process loss by item" subtitle="Non-recoverable loss, in each item's own unit."
-						:rows="lossRows" empty-text="No process loss recorded in this period." />
+					<BarRanking
+						title="Process loss rate"
+						subtitle="Non-recoverable loss as a share of what went in. One scale, so items compare."
+						:rows="lossRows"
+						:show-share="false"
+						empty-text="No process loss recorded in this period."
+					/>
 				</div>
 
 				<p class="text-xs fm-muted">
@@ -93,19 +98,36 @@ const outputRows = computed(() =>
 	}))
 )
 
-/* Only items that actually recorded loss; a zero row would imply a measurement
-   that was never taken. */
+/*
+ * Loss as a share of what went in, not as a raw quantity.
+ *
+ * Ranked by kilograms, the biggest product always looks like the worst
+ * offender: 56 kg lost on 1,842 kg is 3%, while 34 kg lost on 420 kg is 8% -
+ * the chart named the wrong item. A rate also puts every item on one scale, so
+ * these bars are comparable where the output bars are not.
+ *
+ * Only items that actually recorded loss; a zero row would imply a measurement
+ * that was never taken.
+ */
 const lossRows = computed(() =>
 	(data.value?.production_by_item || [])
 		.filter((row) => Number(row.loss) > 0)
-		.map((row) => ({
-			key: `${row.item_code}-loss`,
-			label: row.label,
-			value: row.loss,
-			unit: row.uom,
-			color: 'var(--viz-ordinal-3)',
-		}))
+		.map((row) => {
+			const loss = Number(row.loss)
+			const input = Number(row.value) + loss
+			return {
+				key: `${row.item_code}-loss`,
+				label: row.label,
+				value: input > 0 ? Math.round((loss / input) * 1000) / 10 : 0,
+				unit: '%',
+				note: `${formatQty(loss)} of ${formatQty(input)} ${row.uom}`,
+				color: 'var(--viz-series-2)',
+			}
+		})
 )
+
+const formatQty = (value) =>
+	Number(value || 0).toLocaleString(undefined, { maximumFractionDigits: 1 })
 
 async function load() {
 	loading.value = true

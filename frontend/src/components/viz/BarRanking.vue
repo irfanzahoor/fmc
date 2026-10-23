@@ -5,7 +5,9 @@
 			<p v-if="subtitle" class="text-xs" :style="{ color: 'var(--viz-ink-secondary)' }">{{ subtitle }}</p>
 		</figcaption>
 
-		<p v-if="!rows.length" class="py-10 text-center text-sm text-gray-500">{{ emptyText }}</p>
+		<p v-if="!rows.length" class="py-10 text-center text-sm" :style="{ color: 'var(--viz-ink-secondary)' }">
+			{{ emptyText }}
+		</p>
 
 		<!-- Horizontal bars: long item names read without rotating labels, and
 		     length already carries magnitude so one hue is enough.
@@ -18,21 +20,52 @@
 			<div v-for="group in groups" :key="group.unit">
 				<p
 					v-if="groups.length > 1"
-					class="fm-label mb-1.5 border-b border-gray-100 pb-1"
+					class="fm-label mb-1.5 border-b pb-1"
+					:style="{ borderColor: 'var(--viz-grid)' }"
 				>
 					{{ group.unit || 'Unitless' }}
 				</p>
 
-				<ul class="space-y-2.5">
-					<li v-for="row in group.rows" :key="row.key">
+				<!-- A single row is not a ranking: one full-width bar says only
+				     "this is 100% of itself". It reads as a figure instead. -->
+				<div
+					v-if="group.rows.length === 1"
+					class="flex items-baseline justify-between gap-3 rounded-xl px-3 py-2.5"
+					:style="{ background: 'var(--viz-plane)' }"
+				>
+					<span class="truncate text-sm" :style="{ color: 'var(--viz-ink)' }">
+						{{ group.rows[0].label }}
+						<span v-if="group.rows[0].note" class="block text-[11px]" :style="{ color: 'var(--viz-ink-secondary)' }">
+							{{ group.rows[0].note }}
+						</span>
+					</span>
+					<span class="shrink-0 text-lg font-semibold" :style="{ color: 'var(--viz-ink)' }">
+						{{ format(group.rows[0].value) }}<span
+							class="ml-1 text-xs font-normal"
+							:style="{ color: 'var(--viz-ink-secondary)' }"
+						>{{ group.rows[0].unitLabel }}</span>
+					</span>
+				</div>
+
+				<ul v-else class="space-y-2.5">
+					<li
+						v-for="row in group.rows"
+						:key="row.key"
+						class="group rounded-md px-1 py-0.5 transition-colors"
+						:class="active === row.key ? 'fm-bar-hover' : ''"
+						tabindex="0"
+						@pointerenter="active = row.key"
+						@pointerleave="active = null"
+						@focus="active = row.key"
+						@blur="active = null"
+					>
 						<div class="flex items-baseline justify-between gap-2 text-xs">
 							<span class="truncate" :style="{ color: 'var(--viz-ink)' }">{{ row.label }}</span>
-							<span
-								class="shrink-0 font-semibold"
-								style="font-variant-numeric: tabular-nums"
-								:style="{ color: 'var(--viz-ink)' }"
-							>
-								{{ format(row.value) }}<span class="ml-0.5 font-normal text-gray-500">{{ row.unitLabel }}</span>
+							<span class="fm-num shrink-0 font-semibold" :style="{ color: 'var(--viz-ink)' }">
+								{{ format(row.value) }}<span
+									class="ml-0.5 font-normal"
+									:style="{ color: 'var(--viz-ink-secondary)' }"
+								>{{ row.unitLabel }}</span>
 							</span>
 						</div>
 
@@ -40,7 +73,7 @@
 							class="mt-1 h-2.5 w-full overflow-hidden rounded-full"
 							:style="{ background: 'var(--viz-grid)' }"
 							role="img"
-							:aria-label="`${row.label}: ${format(row.value)} ${row.unitLabel}`"
+							:aria-label="`${row.label}: ${format(row.value)} ${row.unitLabel}, ${row.share}% of ${group.unit || 'the total'}`"
 						>
 							<!-- 4px rounded data-end, anchored to the baseline at the left. -->
 							<div
@@ -49,8 +82,14 @@
 							/>
 						</div>
 
-						<p v-if="row.note" class="mt-0.5 text-[11px]" :style="{ color: 'var(--viz-ink-secondary)' }">
-							{{ row.note }}
+						<p
+							v-if="showShare || row.note"
+							class="mt-0.5 flex items-center gap-1.5 text-[11px]"
+							:style="{ color: 'var(--viz-ink-secondary)' }"
+						>
+							<span v-if="showShare" class="fm-num">{{ row.share }}% of group</span>
+							<span v-if="showShare && row.note" aria-hidden="true">·</span>
+							<span v-if="row.note" class="truncate">{{ row.note }}</span>
 						</p>
 					</li>
 				</ul>
@@ -60,7 +99,7 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 
 const props = defineProps({
 	title: { type: String, required: true },
@@ -69,7 +108,15 @@ const props = defineProps({
 	emptyText: { type: String, default: 'Nothing to show yet.' },
 	decimals: { type: Number, default: 1 },
 	barColor: { type: String, default: 'var(--viz-series-1)' },
+	// Off when the values are already shares - "12.3% ... 29% of group" reads
+	// as two competing percentages of the same thing.
+	showShare: { type: Boolean, default: true },
+	// Off for an ORDERED scale. Expiry buckets run expired -> 90 days: sorting
+	// them by count puts "31-90 days" first and makes the subtitle a lie.
+	sorted: { type: Boolean, default: true },
 })
+
+const active = ref(null)
 
 const format = (value) =>
 	Number(value || 0).toLocaleString(undefined, {
@@ -77,7 +124,7 @@ const format = (value) =>
 		maximumFractionDigits: props.decimals,
 	})
 
-/** Rows bucketed by unit, each bucket scaled against its own maximum. */
+/** Rows bucketed by unit, each bucket ranked and scaled against its own maximum. */
 const groups = computed(() => {
 	const buckets = new Map()
 
@@ -88,10 +135,18 @@ const groups = computed(() => {
 	}
 
 	return [...buckets.entries()].map(([unit, rows]) => {
-		const max = Math.max(...rows.map((row) => Number(row.value) || 0), 0)
+		// A ranking chart has to be ranked: bars in arbitrary order make the
+		// reader do the sorting the chart exists to do. An ordered scale keeps
+		// the order it arrived in - that order is the information.
+		const ordered = props.sorted
+			? [...rows].sort((a, b) => (Number(b.value) || 0) - (Number(a.value) || 0))
+			: [...rows]
+		const max = Math.max(...ordered.map((row) => Number(row.value) || 0), 0)
+		const total = ordered.reduce((sum, row) => sum + (Number(row.value) || 0), 0)
+
 		return {
 			unit,
-			rows: rows.map((row) => ({
+			rows: ordered.map((row) => ({
 				key: row.key || row.item_code || row.label || row._index,
 				label: row.label,
 				value: Number(row.value) || 0,
@@ -99,6 +154,8 @@ const groups = computed(() => {
 				note: row.note || '',
 				color: row.color || props.barColor,
 				percent: max > 0 ? Math.max((Number(row.value) / max) * 100, 1.5) : 0,
+				// Length shows the comparison; the share says what it is worth.
+				share: total > 0 ? Math.round((Number(row.value) / total) * 100) : 0,
 			})),
 		}
 	})

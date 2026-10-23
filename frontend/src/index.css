@@ -159,6 +159,10 @@
 	--viz-axis: #c3c2b7;
 
 	--viz-series-1: #2a78d6;
+	/* Slot 2, for a measure that is not output. Validated with slot 1 against
+	   this app's white card surface: CVD dE 24.7, normal-vision dE 33.6, both
+	   clear 3:1. Not used on the dark hero panel, where this step is too light. */
+	--viz-series-2: #eb6834;
 
 	/* Ordinal ramp, light -> dark with magnitude. */
 	--viz-ordinal-1: #86b6ef;
@@ -175,39 +179,20 @@
 	--viz-delta-up: #006300;
 }
 
-@media (prefers-color-scheme: dark) {
-	:root:where(:not([data-theme='light'])) .fm-app {
-		color-scheme: dark;
-		--viz-surface: #1a1a19;
-		--viz-plane: #0d0d0d;
-		--viz-ink: #f0efec;
-		--viz-ink-secondary: #c3c2b7;
-		--viz-grid: #2c2c2a;
-		--viz-axis: #383835;
-		--viz-series-1: #3987e5;
-		--viz-ordinal-1: #184f95;
-		--viz-ordinal-2: #256abf;
-		--viz-ordinal-3: #3987e5;
-		--viz-ordinal-4: #86b6ef;
-		--viz-delta-up: #0ca30c;
-	}
-}
-
-:root[data-theme='dark'] .fm-app {
-	color-scheme: dark;
-	--viz-surface: #1a1a19;
-	--viz-plane: #0d0d0d;
-	--viz-ink: #f0efec;
-	--viz-ink-secondary: #c3c2b7;
-	--viz-grid: #2c2c2a;
-	--viz-axis: #383835;
-	--viz-series-1: #3987e5;
-	--viz-ordinal-1: #184f95;
-	--viz-ordinal-2: #256abf;
-	--viz-ordinal-3: #3987e5;
-	--viz-ordinal-4: #86b6ef;
-	--viz-delta-up: #0ca30c;
-}
+/*
+ * There is deliberately NO automatic dark palette here.
+ *
+ * Every theme this app ships is light: `--fm-surface` is #ffffff in all five,
+ * and nothing sets a dark chrome. A `prefers-color-scheme: dark` block used to
+ * flip the chart tokens anyway, so on an OS-dark machine `--viz-ink` became
+ * #f0efec and chart labels rendered near-white on a white card - 1.07:1. The
+ * companion `:root[data-theme='dark']` rule could never match either, because
+ * the theme attribute lives on `.fm-app`, not on `:root`.
+ *
+ * The visualization method asks for dark mode to be *selected*, not inferred.
+ * A dark theme therefore means a dark chrome palette plus chart steps
+ * validated against that card surface - both, together, or neither.
+ */
 
 @layer components {
 	.fm-app {
@@ -224,6 +209,13 @@
 	.fm-app .fm-figure {
 		font-family: var(--fm-heading);
 		letter-spacing: -0.015em;
+		/* Headings break into even lines instead of leaving one short word. */
+		text-wrap: balance;
+	}
+
+	/* Supporting copy keeps its last line from becoming a single orphan word. */
+	.fm-app p {
+		text-wrap: pretty;
 	}
 
 	/* Quantities line up only when the figures are tabular. */
@@ -236,6 +228,12 @@
 	.fm-app .fm-id {
 		font-variant-numeric: tabular-nums;
 		white-space: nowrap;
+	}
+
+	/* A chart row's hover/focus wash. The row is the hit target, not the 10px
+	   bar, so pointing at a thin mark never means landing on it exactly. */
+	.fm-app .fm-bar-hover {
+		background: var(--viz-plane);
 	}
 
 	/* Sized for a gloved hand on a shop-floor tablet. */

@@ -222,3 +222,56 @@ allocation that blocks an aged batch in words. 241 tests pass.
 
 **Still not verified:** posting a receipt, a run completion or a delivery note through the live
 UI; those paths are covered by tests but have not been clicked end to end.
+
+
+### Fourth pass (2026-10-23) — the charts themselves
+
+Rendered every chart first, then changed it. What the renders showed:
+
+**The line chart was drawing a 92–97% series inside an 85–105% band.** The axis padded
+the data by a fixed amount, snapped to multiples of five, and treated the 100% planned
+line as a value to pad *beyond* — so the data used a quarter of the plot and eighteen
+runs looked identical. `frontend/src/utils/scale.js` picks the step from the data's own
+range and caps the ceiling at the planned line; the same series now spans 90–100%, and
+the dips are the first thing you see. A 10% area wash gives the line weight, and the
+direct labels are the latest run plus every flagged one — a flagged trough is labelled
+*below* its marker, where the text no longer lands on the line coming into it.
+
+**"Process loss by item" named the wrong item.** Ranked in kilograms, the biggest product
+is always the worst offender: 56 kg lost on 1,842 kg is 3.0%, while 34 kg on 420 kg is
+8.1%. It is now a loss *rate*, which also puts every item on one scale — and it carries
+the absolute figures in each row's note. Nothing was added to the API; `production_by_item`
+already returns output and loss per item.
+
+**A ranking chart was not ranked**, so `BarRanking` sorts descending — except on an
+ordered scale, where `:sorted="false"` keeps expiry buckets in time order. Sorting them by
+count had put "31-90 days" first under a subtitle reading "most urgent first".
+
+**A one-row group was a one-bar bar chart**, which says only "this is 100% of itself";
+it now renders as a figure. Every row gained its share of the group, a hover/focus wash
+on the row rather than on the 10px bar, and the stacked status bar gained a tooltip with
+keyboard focus — a 3-of-63 segment is too thin to label, so pointing at it is how its
+number is read.
+
+**Colour.** A second validated slot (`--viz-series-2`, light `#eb6834`) so loss and output
+are not both blue; it passes every check against this app's white card surface
+(CVD ΔE 24.7, normal-vision ΔE 33.6, both clear 3:1). The expiry ordinal ramp and the hero
+series/flag pair were re-validated unchanged on all five hero surfaces. Status colours are
+untouched and still ship an icon and a word.
+
+**A latent dark-mode break was removed.** The `--viz-*` tokens flipped to their dark steps
+under `prefers-color-scheme: dark`, but no theme this app ships has a dark chrome —
+`--fm-surface` is `#ffffff` in all five — so on an OS-dark machine chart labels rendered
+`#f0efec` on white, 1.07:1. The companion `:root[data-theme='dark']` rule could never match,
+since the theme attribute sits on `.fm-app`. Both are gone, with a note on what a real dark
+theme would require. **Not verified by rendering:** this headless Chrome would not emulate
+the media query, so the break was read off the cascade rather than photographed.
+
+**Type.** The hero figure moved to 44px — above the 31px stat row, so the panel reads as the
+one focal point — and both it and the KPI values dropped `tabular-nums`, which gives every
+digit the width of a zero and makes a display-size figure look loose. Tabular figures stay
+where numbers align vertically: table rows and axis ticks. Headings balance; paragraphs
+avoid orphans.
+
+`preview/pages.js` gained `?hover=<selector>`, which drives one pointer event after mount:
+headless Chrome never moves a mouse, and a chart's hover layer is part of the chart.

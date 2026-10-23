@@ -46,11 +46,12 @@
 							:fill="inkSecondary"
 							style="font-variant-numeric: tabular-nums"
 						>
-							{{ tick.value }}%
+							{{ tick.label }}%
 						</text>
 					</g>
 
-					<!-- target reference line, labelled in words -->
+					<!-- Target reference line. Dashed deliberately: this is a
+					     threshold, not a gridline, and must not read as one. -->
 					<template v-if="targetY !== null">
 						<line
 							:x1="PAD.l"
@@ -63,7 +64,7 @@
 						/>
 						<text
 							:x="W - PAD.r"
-							:y="targetY - 4"
+							:y="targetY - 5"
 							text-anchor="end"
 							font-size="10"
 							:fill="inkSecondary"
@@ -71,6 +72,10 @@
 							Planned {{ target }}%
 						</text>
 					</template>
+
+					<!-- Area wash: the series hue at 10%, so the line carries
+					     weight without the fill becoming a block. -->
+					<path :d="areaPath" :fill="seriesColor" fill-opacity="0.1" />
 
 					<!-- baseline -->
 					<line
@@ -93,23 +98,27 @@
 					/>
 
 					<!-- markers: >=8px, with a 2px surface ring so overlaps stay readable -->
-					<g v-for="(point, index) in points" :key="point.label">
+					<g v-for="point in points" :key="point.label">
 						<circle
 							:cx="point.x"
 							:cy="point.y"
-							r="4.5"
+							:r="point.flagged ? 5 : 4.5"
 							:fill="point.flagged ? flagColor : seriesColor"
 							:stroke="ringColor"
 							stroke-width="2"
 						/>
-						<!-- Selective direct labels: first, last and any flagged run. -->
+						<!-- Selective direct labels: the latest run and any
+						     flagged one. A flagged dip is labelled below its own
+						     marker, so the text never lands on the line into it. -->
 						<text
-							v-if="index === 0 || index === points.length - 1 || point.flagged"
-							:x="point.x"
-							:y="point.y - 10"
-							text-anchor="middle"
+							v-if="point.labelled"
+							:x="point.labelX"
+							:y="point.labelY"
+							:text-anchor="point.labelAnchor"
 							font-size="10"
+							:font-weight="point.flagged ? 600 : 400"
 							:fill="point.flagged ? flagColor : inkSecondary"
+							style="font-variant-numeric: tabular-nums"
 						>
 							{{ point.actual }}%
 						</text>
@@ -129,17 +138,17 @@
 
 				<div
 					v-if="active"
-					class="pointer-events-none absolute z-10 rounded-md border border-gray-200 bg-white px-2 py-1 text-xs shadow-md"
+					class="pointer-events-none absolute z-10 rounded-lg px-2.5 py-1.5 text-xs shadow-lg"
 					:style="tooltipStyle"
 					role="status"
 				>
-					<p class="font-medium">{{ active.item }}</p>
-					<p class="text-gray-600">{{ active.label }} · {{ active.on }}</p>
-					<p>
-						Actual <span class="font-semibold">{{ active.actual }}%</span>
-						· planned {{ active.planned }}%
+					<p class="font-semibold">{{ active.item }}</p>
+					<p :style="{ color: 'var(--fm-muted)' }">{{ active.label }} · {{ active.on }}</p>
+					<p class="mt-0.5">
+						Actual <span class="font-semibold fm-num">{{ active.actual }}%</span>
+						<span :style="{ color: 'var(--fm-muted)' }"> · planned {{ active.planned }}%</span>
 					</p>
-					<p v-if="active.flagged" :style="{ color: 'var(--viz-critical)' }">
+					<p v-if="active.flagged" class="font-medium" :style="{ color: 'var(--viz-critical)' }">
 						Variance outside tolerance
 					</p>
 				</div>
@@ -158,7 +167,7 @@
 							<th scope="col" class="py-1 font-medium" :style="{ color: inkSecondary }">Planned %</th>
 						</tr>
 					</thead>
-					<tbody style="font-variant-numeric: tabular-nums">
+					<tbody class="fm-num">
 						<tr v-for="row in series" :key="`m${row.label}`" :style="{ borderBottom: `1px solid ${rule}` }">
 							<td class="py-1 pr-2">
 								<span class="block">{{ row.item }}</span>
@@ -191,7 +200,7 @@
 							<th scope="col" class="py-1 font-medium">Planned %</th>
 						</tr>
 					</thead>
-					<tbody style="font-variant-numeric: tabular-nums">
+					<tbody class="fm-num">
 						<tr v-for="row in series" :key="row.label" :style="{ borderBottom: `1px solid ${rule}` }">
 							<td class="py-1 pr-3">{{ row.label }}</td>
 							<td class="py-1 pr-3">{{ row.item }}</td>
@@ -207,6 +216,8 @@
 
 <script setup>
 import { computed, ref } from 'vue'
+
+import { niceScale } from '@/utils/scale'
 
 const props = defineProps({
 	title: { type: String, default: 'Yield trend' },
@@ -235,9 +246,9 @@ const rule = computed(() => (onHero.value ? 'rgba(255,255,255,0.16)' : 'var(--vi
 // The hero panel is a narrower column than a full-width card, so it gets its
 // own box rather than inheriting one tuned for a different width.
 const W = computed(() => (onHero.value ? 620 : 960))
-const H = computed(() => (onHero.value ? 240 : 260))
+const H = computed(() => (onHero.value ? 230 : 250))
 const PAD = computed(() =>
-	onHero.value ? { t: 20, r: 16, b: 26, l: 40 } : { t: 22, r: 20, b: 28, l: 46 }
+	onHero.value ? { t: 22, r: 16, b: 22, l: 40 } : { t: 24, r: 20, b: 24, l: 46 }
 )
 
 const active = ref(null)
@@ -248,22 +259,29 @@ const target = computed(() => {
 	return Math.round(planned.reduce((a, b) => a + b, 0) / planned.length)
 })
 
-const domain = computed(() => {
-	const values = props.series.map((row) => Number(row.actual))
-	if (target.value) values.push(target.value)
-	if (!values.length) return { min: 0, max: 100 }
+/*
+ * The planned line is the thing every run is read against, so it belongs in the
+ * domain - but as its edge, not as a value to pad beyond. Capping the ceiling at
+ * the target is what stops a 92-97% series from being drawn inside an 85-105%
+ * band, where every run looks the same.
+ */
+const scale = computed(() => {
+	const values = props.series.map((row) => Number(row.actual)).filter(Number.isFinite)
+	if (!values.length) return niceScale(0, 100, { ticks: 5 })
 
-	const min = Math.min(...values)
-	const max = Math.max(...values)
-	// Pad the band so the line never sits on the frame, and never imply a
-	// zero baseline we did not measure.
-	const lo = Math.max(0, Math.floor((min - 4) / 5) * 5)
-	const hi = Math.min(110, Math.ceil((max + 4) / 5) * 5)
-	return { min: lo, max: hi === lo ? lo + 5 : hi }
+	const lo = Math.min(...values)
+	const hi = Math.max(...values, target.value ?? -Infinity)
+	const overTarget = target.value !== null && Math.max(...values) > target.value
+
+	return niceScale(lo, hi, {
+		ticks: 5,
+		floor: 0,
+		ceiling: overTarget ? null : target.value,
+	})
 })
 
 const yFor = (value) => {
-	const { min, max } = domain.value
+	const { min, max } = scale.value
 	const ratio = (Number(value) - min) / (max - min)
 	return H.value - PAD.value.b - ratio * (H.value - PAD.value.t - PAD.value.b)
 }
@@ -271,25 +289,66 @@ const yFor = (value) => {
 const points = computed(() => {
 	const count = props.series.length
 	const span = W.value - PAD.value.l - PAD.value.r
-	return props.series.map((row, index) => ({
+	const rows = props.series.map((row, index) => ({
 		...row,
 		x: count === 1 ? PAD.value.l + span / 2 : PAD.value.l + (index / (count - 1)) * span,
 		y: yFor(row.actual),
 	}))
+
+	return rows.map((row, index) => {
+		// Selective by design: the latest run and every flagged one. Labelling
+		// the first point too only crowds the left edge, and the axis already
+		// carries it.
+		const labelled = index === rows.length - 1 || Boolean(row.flagged)
+		// A dip labelled above its marker lands on the line coming into it.
+		const prev = rows[index - 1]
+		const next = rows[index + 1]
+		const isTrough =
+			(!prev || prev.y < row.y) && (!next || next.y < row.y)
+		const below = Boolean(row.flagged) && isTrough
+
+		// The end points sit against the plot frame, so their labels go beside
+		// the marker rather than above it, where they would crowd the axis.
+		const first = index === 0
+		const last = index === rows.length - 1
+
+		return {
+			...row,
+			labelled,
+			labelY: below ? row.y + 16 : first || last ? row.y + 4 : row.y - 11,
+			labelX: first ? row.x + 9 : last ? row.x - 9 : row.x,
+			labelAnchor: first ? 'start' : last ? 'end' : 'middle',
+		}
+	})
 })
 
 const polyline = computed(() => points.value.map((p) => `${p.x},${p.y}`).join(' '))
 
-const ticks = computed(() => {
-	const { min, max } = domain.value
-	const step = (max - min) / 4
-	return Array.from({ length: 5 }, (_, i) => {
-		const value = Math.round(min + i * step)
-		return { value, y: yFor(value) }
-	})
+const areaPath = computed(() => {
+	if (!points.value.length) return ''
+	const base = H.value - PAD.value.b
+	const first = points.value[0]
+	const last = points.value[points.value.length - 1]
+	const line = points.value.map((p) => `L${p.x},${p.y}`).join(' ')
+	return `M${first.x},${base} ${line} L${last.x},${base} Z`
 })
 
-const targetY = computed(() => (target.value === null ? null : yFor(target.value)))
+const ticks = computed(() =>
+	scale.value.ticks.map((value) => ({
+		value,
+		// Trailing ".0" on a whole-number axis is noise.
+		label: Number.isInteger(value) ? value : value.toFixed(1),
+		y: yFor(value),
+	}))
+)
+
+const targetY = computed(() => {
+	if (target.value === null) return null
+	const { min, max } = scale.value
+	// Off-scale targets would be drawn outside the plot frame.
+	if (target.value < min || target.value > max) return null
+	return yFor(target.value)
+})
 
 const ariaLabel = computed(() => {
 	if (!props.series.length) return props.title
@@ -299,10 +358,20 @@ const ariaLabel = computed(() => {
 
 const tooltipStyle = computed(() => {
 	if (!active.value) return {}
+
 	const left = (active.value.x / W.value) * 100
+	const topRatio = active.value.y / H.value
+	// Hung off the hovered marker rather than pinned to the top of the plot,
+	// where it sat on the "Planned" reference label. It flips above the point
+	// in the lower half so it never runs out of the card.
+	const top = topRatio > 0.55 ? `${topRatio * 100 - 34}%` : `${topRatio * 100 + 8}%`
+
 	return {
-		left: `${Math.min(Math.max(left, 4), 72)}%`,
-		top: '4px',
+		left: `${Math.min(Math.max(left, 2), 66)}%`,
+		top,
+		background: 'var(--fm-surface)',
+		color: 'var(--fm-ink)',
+		border: '1px solid var(--fm-border)',
 	}
 })
 

@@ -26,3 +26,27 @@ for (const [name, component] of Object.entries({ Badge, Button, Dialog, FeatherI
 }
 
 app.mount('#app')
+
+/*
+ * `?hover=<selector>` drives one pointer interaction after mount.
+ *
+ * Headless Chrome takes a screenshot but never moves a mouse, so a tooltip or
+ * hover state cannot otherwise be looked at - and a chart's hover layer is a
+ * required part of it, not a nicety. Harness-only: nothing here ships.
+ */
+const hover = new URLSearchParams(location.search).get('hover')
+if (hover) {
+	setTimeout(() => {
+		const target = document.querySelector(hover)
+		if (!target) return console.warn('[harness] no element for', hover)
+
+		const box = target.getBoundingClientRect()
+		const x = box.left + box.width * 0.62
+		const y = box.top + box.height / 2
+		for (const type of ['pointerenter', 'pointermove']) {
+			target.dispatchEvent(
+				new PointerEvent(type, { clientX: x, clientY: y, bubbles: true })
+			)
+		}
+	}, 900)
+}
