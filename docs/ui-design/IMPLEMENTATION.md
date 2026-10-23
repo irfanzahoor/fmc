@@ -275,3 +275,38 @@ avoid orphans.
 
 `preview/pages.js` gained `?hover=<selector>`, which drives one pointer event after mount:
 headless Chrome never moves a mouse, and a chart's hover layer is part of the chart.
+
+
+### Fifth pass (2026-10-23) — form variety, themes, widths
+
+**Two forms the data was asking for.** The expiry horizon is now a **column chart**:
+these buckets are an ordered *time* scale, and time reads left to right. The yield stat
+card carries a **sparkline** — the stat-tile contract's trend slot, built from the same
+completed runs the panel plots, so the number has its recent shape beside it. The
+dashboards now use five distinct forms (line+area, sparkline, ranked bars, stacked bar,
+columns) plus the meters already on Quality and Dispatch, each picked by the data's job.
+
+**A recolor-on-filter bug, caught by rendering it.** The column ramp stepped by row
+position, but `expiry_buckets` omits an empty bucket — so on a day with no expired stock,
+"Within 7 days" wore the darkest step, and on a day with some it wore the second. The
+step is keyed to the bucket now, kept in step with `EXPIRY_BUCKETS` in `api/dashboard.py`.
+
+**The sparkline's end dot was an ellipse.** `preserveAspectRatio="none"` stretches
+geometry as well as the box, so the dot was flattened and clipped against the right edge.
+It uses a uniform scale with the dot inset by its own radius.
+
+**All five palettes rendered**, via a new `?theme=` / `?font=` stamp in the harness —
+the appearance menu is behind a click a screenshot cannot make, and it has to run in a
+classic script because the appearance store reads `localStorage` during module
+evaluation, before any top-level code in `pages.js`. Chrome tints; charts do not.
+
+**Widths checked at 360, 390, 768, 1024, 1440 and 1920.** No horizontal overflow
+anywhere. The two Insights pages stacked their KPI cards one per row on a phone while
+Overview and the Quality queue showed two; they match now, which halves the scroll before
+the first chart. The column chart holds four labelled columns at 360px without rotating a
+label.
+
+**README rewritten** as a guide to using the app rather than a project summary: install,
+the company policy field by field, material natures, the recipe's confidentiality, the
+daily round as a flow, every console route, the chart-form table, the role matrix and a
+troubleshooting section covering each failure earlier passes produced.

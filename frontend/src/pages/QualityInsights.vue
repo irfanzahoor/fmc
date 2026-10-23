@@ -20,7 +20,7 @@
 
 		<StateBlock :loading="loading && !data" :error="error" loading-text="Loading quality overview…" :on-retry="load" :required-roles="SCREEN_ROLES.overview">
 			<div v-if="data" class="space-y-4">
-				<div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+				<div class="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
 					<KpiCard label="Awaiting a decision" :value="k.pending_qc" unit="batches" :icon="ShieldCheck"
 						:note="k.pending_qc ? 'Quarantined or held' : 'Queue is clear'"
 						:tone="k.pending_qc ? 'warn' : 'good'" />
@@ -40,13 +40,12 @@
 						:subtitle="`${qualityTotal} batches currently holding company stock.`"
 						:rows="data.quality_mix"
 					/>
-					<BarRanking
+					<ColumnBuckets
 						class="lg:col-span-3"
 						title="Expiry horizon"
-						:sorted="false"
-						subtitle="Batch counts by how close they are to expiry, most urgent first."
+						subtitle="Batches by how close they are to expiry. Most urgent on the left."
 						:rows="expiryRows"
-						:decimals="0"
+						unit-label="batches"
 						empty-text="No batch expires within 90 days."
 					/>
 				</div>
@@ -70,7 +69,7 @@ import PageHeader from '@/components/PageHeader.vue'
 import StateBlock from '@/components/StateBlock.vue'
 import { SCREEN_ROLES } from '@/data/access'
 import { dashboard } from '@/data/api'
-import BarRanking from '@/components/viz/BarRanking.vue'
+import ColumnBuckets from '@/components/viz/ColumnBuckets.vue'
 import StatusStack from '@/components/viz/StatusStack.vue'
 
 const props = defineProps({ company: { type: String, required: true } })
@@ -90,18 +89,29 @@ const qualityTotal = computed(() =>
 	(data.value?.quality_mix || []).reduce((sum, row) => sum + Number(row.value || 0), 0)
 )
 
-const ORDINAL = ['var(--viz-ordinal-1)', 'var(--viz-ordinal-2)', 'var(--viz-ordinal-3)', 'var(--viz-ordinal-4)']
+/*
+ * The expiry scale, and the ramp step each bucket owns.
+ *
+ * `expiry_buckets` leaves out a bucket with no batches in it, so stepping the
+ * ramp by row position would repaint the rest on a day when "Expired" is empty:
+ * "Within 7 days" would wear the darkest step one day and the second the next.
+ * The step follows the bucket. Kept in step with EXPIRY_BUCKETS in
+ * `food_manufacturing/api/dashboard.py`.
+ */
+const EXPIRY_STEP = {
+	Expired: 'var(--viz-ordinal-4)',
+	'Within 7 days': 'var(--viz-ordinal-3)',
+	'8-30 days': 'var(--viz-ordinal-2)',
+	'31-90 days': 'var(--viz-ordinal-1)',
+}
 
-const expiryRows = computed(() => {
-	const ramp = [...ORDINAL].reverse()
-	return (data.value?.expiry_buckets || []).map((row, index) => ({
-		key: row.label,
+const expiryRows = computed(() =>
+	(data.value?.expiry_buckets || []).map((row) => ({
 		label: row.label,
 		value: row.value,
-		unit: 'batches',
-		color: ramp[Math.min(index, ramp.length - 1)],
+		color: EXPIRY_STEP[row.label],
 	}))
-})
+)
 
 async function load() {
 	loading.value = true

@@ -26,7 +26,7 @@
 				<div class="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
 					<KpiCard
 						label="Average actual yield" :value="k.average_yield_percent" unit="%" :decimals="1"
-						:icon="TrendingUp" :note="yieldNote" :tone="yieldTone"
+						:icon="TrendingUp" :note="yieldNote" :tone="yieldTone" :trend="yieldSpark"
 					/>
 					<KpiCard
 						label="Awaiting quality" :value="k.pending_qc" unit="batches" :icon="ShieldCheck"
@@ -154,12 +154,12 @@
 						empty-text="No output recorded in this period."
 					/>
 
-					<BarRanking
+					<ColumnBuckets
 						title="Expiry horizon"
-						:sorted="false"
-						subtitle="Most urgent stock first."
+						subtitle="Batches by how close they are to expiry. Most urgent on the left."
 						:rows="expiryRows"
-						:decimals="0"
+						unit-label="batches"
+						footnote="Rejected batches are left out: they are already out of use."
 						empty-text="No batch expires within 90 days."
 					/>
 				</div>
@@ -208,6 +208,7 @@ import StateBlock from '@/components/StateBlock.vue'
 import { SCREEN_ROLES } from '@/data/access'
 import { dashboard } from '@/data/api'
 import BarRanking from '@/components/viz/BarRanking.vue'
+import ColumnBuckets from '@/components/viz/ColumnBuckets.vue'
 import LineTrend from '@/components/viz/LineTrend.vue'
 import StatusStack from '@/components/viz/StatusStack.vue'
 
@@ -231,7 +232,6 @@ const qualityTotal = computed(() =>
 )
 
 /* Ordinal ramp, darkest = most urgent. The API returns most urgent first. */
-const ORDINAL = ['var(--viz-ordinal-1)', 'var(--viz-ordinal-2)', 'var(--viz-ordinal-3)', 'var(--viz-ordinal-4)']
 
 const productionRows = computed(() =>
 	(data.value?.production_by_item || []).map((row) => ({
@@ -243,16 +243,35 @@ const productionRows = computed(() =>
 	}))
 )
 
-const expiryRows = computed(() => {
-	const ramp = [...ORDINAL].reverse()
-	return (data.value?.expiry_buckets || []).map((row, index) => ({
-		key: row.label,
+/*
+ * The expiry scale, and the ramp step each bucket owns.
+ *
+ * `expiry_buckets` leaves out a bucket with no batches in it, so stepping the
+ * ramp by row position would repaint the rest on a day when "Expired" is empty:
+ * "Within 7 days" would wear the darkest step one day and the second the next.
+ * The step follows the bucket. Kept in step with EXPIRY_BUCKETS in
+ * `food_manufacturing/api/dashboard.py`.
+ */
+const EXPIRY_STEP = {
+	Expired: 'var(--viz-ordinal-4)',
+	'Within 7 days': 'var(--viz-ordinal-3)',
+	'8-30 days': 'var(--viz-ordinal-2)',
+	'31-90 days': 'var(--viz-ordinal-1)',
+}
+
+const expiryRows = computed(() =>
+	(data.value?.expiry_buckets || []).map((row) => ({
 		label: row.label,
 		value: row.value,
-		unit: 'batches',
-		color: ramp[Math.min(index, ramp.length - 1)],
+		color: EXPIRY_STEP[row.label],
 	}))
-})
+)
+
+/* The stat tile's trend: the same completed runs the panel plots, as a mark
+   rather than a second chart. */
+const yieldSpark = computed(() =>
+	(data.value?.yield_trend || []).map((row) => Number(row.actual)).filter(Number.isFinite)
+)
 
 const yieldNote = computed(() => {
 	if (k.value.average_yield_percent === null || k.value.average_yield_percent === undefined) {

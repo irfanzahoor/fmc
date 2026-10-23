@@ -24,11 +24,19 @@
 			<span class="h-1.5 w-1.5 shrink-0 rounded-full" :style="{ background: dotColor }" aria-hidden="true" />
 			<span :style="{ color: toneColor }">{{ note }}</span>
 		</p>
+
+		<!-- Trend last, per the stat-tile contract, so the label, figure and
+		     note still line up across a row where only some cards carry one.
+		     It has no axis and no values: it says "shape of the recent run",
+		     and the chart below says the rest. -->
+		<Sparkline v-if="trend.length > 1" class="mt-2.5" :values="trend" :label="`${label} trend`" />
 	</div>
 </template>
 
 <script setup>
 import { computed } from 'vue'
+
+import Sparkline from '@/components/viz/Sparkline.vue'
 
 const props = defineProps({
 	label: { type: String, required: true },
@@ -40,6 +48,8 @@ const props = defineProps({
 	icon: { type: [Object, Function], default: null },
 	decimals: { type: Number, default: 0 },
 	emptyText: { type: String, default: '—' },
+	/** Plain numbers, oldest first; fewer than two draws nothing. */
+	trend: { type: Array, default: () => [] },
 })
 
 const display = computed(() => {

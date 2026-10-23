@@ -24,7 +24,7 @@
 
 		<StateBlock :loading="loading && !data" :error="error" loading-text="Loading insights…" :on-retry="load" :required-roles="SCREEN_ROLES.overview">
 			<div v-if="data" class="space-y-4">
-				<div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+				<div class="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
 					<KpiCard label="Average actual yield" :value="k.average_yield_percent" unit="%" :decimals="1"
 						:icon="TrendingUp" :note="k.average_yield_percent === null ? 'No completed runs' : 'Across completed runs'"
 						:tone="k.average_yield_percent === null ? 'neutral' : 'good'" />

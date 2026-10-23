@@ -7,6 +7,16 @@
 	</head>
 	<body>
 		<div id="app"></div>
+		<script>
+			// ?theme= / ?font= stamp an appearance before any module loads, so
+			// every palette can be screenshotted without opening the menu.
+			for (const [key, storageKey] of [['theme', 'fm:theme'], ['font', 'fm:font']]) {
+				const value = new URLSearchParams(location.search).get(key)
+				if (value) {
+					try { localStorage.setItem(storageKey, value) } catch (e) { /* private window */ }
+				}
+			}
+		</script>
 		<script type="module" src="./pages.js"></script>
 	</body>
 </html>
