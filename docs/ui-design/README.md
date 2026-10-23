@@ -1,6 +1,7 @@
 # FMC UI design handoff
 
-The current design set covers all six workflows on desktop and phone.
+The presentation edition covers all six workflows, three dashboards, five
+selectable color themes and two premium font pairings on desktop and phone.
 
 **[Open the premium design gallery](premium/index.html)** ·
 [Screen previews and screenshots](premium/README.md) ·
@@ -17,7 +18,7 @@ The current design set covers all six workflows on desktop and phone.
 
 [Design direction](premium/DESIGN.md) · [Stitch screen IDs](premium/manifest.json)
 
-The user approved the premium visual direction. The previous design drafts have
-been removed. Application implementation is pending; these HTML files are static
-references with illustrative data. Full HTML styling uses external fonts and CDN
-scripts, while PNG screenshots can be viewed offline.
+The current edition enhances the earlier premium direction for presentations.
+Previous design drafts have been removed. Application implementation is pending;
+the local HTML/JS prototype uses illustrative data and never posts ERPNext records.
+Fonts, icons and assets are local, so the presentation works offline.

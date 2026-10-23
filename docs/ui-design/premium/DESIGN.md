@@ -1,41 +1,61 @@
-# FMC premium design direction
+# FMC presentation design system
 
-## Foundation
+## Typography and composition
 
-Warm ivory canvas `#F7F8F5`, white surfaces, pine text `#172E28`, forest actions
-`#24634D`, sage selection `#EAF1E8`, secondary text `#738078`. Use amber/red only
-for meaningful attention and blocked states, alongside readable words/icons.
-Manrope/Inter typography; roughly 34px desktop headings, 28px phone headings,
-38px main metrics, 14–15px readable data, and tabular quantities.
+Primary pairing: Plus Jakarta Sans for headings/figures, Inter for operational
+copy. Alternate pairing reverses those roles. Variable WOFF2 fonts are self-hosted
+with their OFL licenses. Use tabular quantities, 31px desktop headings, 25px phone
+headings, 31px KPI figures, readable 12–14px operational data and compact secondary
+metadata. The dark sidebar establishes navigation; white surfaces and a lightly
+tinted canvas keep forms readable. Standard cards have 16px corners, subtle
+borders and restrained elevation. The overview's dark performance panel creates
+one focal point rather than giving every card the same weight.
 
-## Shared shell
+## Selectable palettes
 
-216px white desktop sidebar, 72px company/context topbar, generous 24–32px
-workspace spacing, light borders and 14px card corners. Phone uses compact brand
-and company header plus six visible navigation destinations, stacked workspaces,
-44px input/touch targets and labeled data cards. Shared rules live in `preview.css`.
+| Theme | Sidebar | Primary action | Soft accent | Canvas |
+| --- | --- | --- | --- | --- |
+| Midnight Blue (default) | `#111D33` | `#4263EB` | `#EDF1FF` | `#F4F6FB` |
+| Forest | `#142F29` | `#247861` | `#EAF4EE` | `#F4F7F3` |
+| Amethyst | `#251D39` | `#7552B5` | `#F1ECFA` | `#F7F5FA` |
+| Graphite | `#202831` | `#445366` | `#EDF0F3` | `#F4F5F6` |
+| Copper | `#342A23` | `#9C5B35` | `#FAF0E8` | `#F8F5F0` |
 
-## Workflows
+`--primary`, `--soft`, `--canvas`, `--ink`, `--muted`, `--border`, `--sidebar`,
+`--side-ink`, `--hero` and `--line` vary by theme. Semantic quality meanings keep
+stable colors and explicit labels/icons across themes. Do not use theme color
+alone to imply that a batch is released or blocked.
 
-Overview prioritizes three metrics, then production yield and stock status;
-units remain separate. Production places work order selection beside the selected
-run, available ingredient lots and completion form. Quality puts batch review
-beside the queue and offers a matching inspection, notes and audited decision flow.
-Goods in groups quantities, supplier lots and manufacturing dates per item.
-Dispatch shows sales-to-stock conversion, FEFO eligibility and stock quantities.
-Recall is a read-only batch-and-delivery investigation with negative returns and
-an incomplete-result notice, using data the current API actually returns.
+## Pages and dashboards
+
+Six operations pages form the main navigation. Production and Quality also have
+separate Insights views, accessible by tabs and sidebar links; together with
+Plant Overview, they make three dashboards. Work-order/batch selection, quantity
+editing, search, filters and review dialogs support a coherent presentation.
+The gallery embeds the actual HTML runtime rather than stale screenshot thumbnails.
+
+## Responsive behavior
+
+240px desktop sidebar, a company/context topbar and comfortable card spacing.
+Tablet layouts reduce column counts. Phone layouts use six visible navigation
+items, horizontal work-order selection, labeled table cards, stacked forms and
+a yield run list instead of a squeezed overview graph. Phone input/action targets
+are at least 44px, with secondary filter/navigation controls sized for their role.
 
 ## Functional boundaries
 
-References are visual concepts with example data. Keep actual server permissions,
-company scoping, retries and batch policies. Scanner Enter must not post receipts;
-dispatch scanning focuses the matching quantity. Suggestions do not reserve stock.
-Do not add fake telemetry, unsupported overrides, recipe percentages, print/export
-features or fabricated genealogy. Intermediate statuses and placeholder supplier
-or scheduling metadata must be mapped to real API fields or omitted.
+All figures are illustrative. Sample stock counts reconcile (48 Released +
+8 Quarantine + 4 Hold + 3 Rejected = 63 batches); 54 batches in the expiry buckets
+match the 90-day near-expiry figure. Recent-run yields and the overall period
+average represent different populations. No trend comparison or revenue is invented.
 
-Static previews use English copy; production implementation must follow the
-repository's translation standards. Preserve or revalidate the existing chart
-palette before changing application chart colors. No schema migration is needed
-for these documentation artifacts.
+The app's real company scope, permissions, inspections, retry keys and server policy
+must govern implementation. Suggestions do not reserve stock. Dispatch scanning
+focuses quantity; receiving scanner Enter does not post. Recall remains read-only,
+with negative returns and a visibly illustrative incomplete-result state. Do not
+introduce machine telemetry, recipe percentages or bypass controls.
+
+These palettes are presentation references. Before changing application chart
+colors, run the required visualization validation on each applicable surface;
+the prototype does not establish chart-palette certification. Production copy
+must follow repository translation requirements.

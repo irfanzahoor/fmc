@@ -35,9 +35,10 @@ Planned Stitch redesign: read `docs/ui-design/README.md` and
 `docs/ui-design/IMPLEMENTATION.md` for the saved screenshots, HTML references and
 implementation handoff. The redesign is not implemented yet; preserve the
 existing API behavior and use actual server data over generated mockup content.
-The original visual direction was rejected. The approved replacement direction
-is in `docs/ui-design/premium/`, with all six workflows on desktop and phone.
-Start with its `index.html` gallery and README.
+The current presentation edition is in `docs/ui-design/premium/`: six workflows,
+three dashboards, five color themes and local premium fonts on desktop and phone.
+Start with its `index.html` presentation hub and README. The entry HTML files
+render through `preview.js`; consult that file and `preview.css` for the design.
 
 Vue 3 + frappe-ui + Tailwind + lucide-vue-next, in `frontend/`, served at `/fm`. Matches the
 `marley_frontend` convention in this bench. Note `frappe-ui` 0.1.278 exposes its Tailwind

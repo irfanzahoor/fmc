@@ -2,15 +2,21 @@
 
 ## Current visual direction
 
-The user approved the Premium v2 Overview/Production direction and asked for all
-remaining screens in that style. Use `premium/index.html` and `premium/README.md`
-for the complete six-workflow desktop and phone set. Shared presentation lives
-in `premium/preview.css`; `premium/DESIGN.md` describes the visual rules. Preserve the business rules in this handoff.
+The user requested a stronger, presentation-ready edition with multiple color
+themes, premium fonts and proper dashboards. The current local reference is
+`premium/index.html`: five selectable palettes, two font pairings, six operational
+pages and three dashboards (Overview plus Production/Quality Insights).
+Read `premium/README.md` and `premium/DESIGN.md` for use and design rules.
 
-Premium v2 uses forest green accents, a warm ivory canvas, generous spacing,
-larger typography and fewer badges. Its green example chart is a visual concept:
-do not replace the application's validated chart colors without running the
-required data-viz validation. Reference values remain illustrative.
+`premium/preview.js` now renders the shared shell, page templates, sample data and
+interactive demo behavior. HTML files are entry points, so inspect the runtime
+and browser views as well as screenshots. `premium/preview.css` contains layout
+and theme tokens. Fonts and licenses are local in `premium/fonts/`.
+
+This presentation edition supersedes the previous forest-only static exports.
+Midnight Blue is the default; Forest, Amethyst, Graphite and Copper are selectable.
+Preserve the business rules below, and validate application chart colors before
+adopting the new palette. Figures and client-side checks remain illustrative.
 
 ## Request
 
@@ -34,16 +40,23 @@ fit a screenshot.
 
 ## Design direction
 
-Use the screenshots and HTML listed in `premium/README.md`. Implement with
+Use the screenshots and interactive views listed in `premium/README.md`. Implement with
 the existing Vue 3, frappe-ui, Tailwind and lucide-vue-next stack. Adapt the
 reference markup into Vue components instead of embedding exported HTML or
 copying CDN scripts into the application.
 
-Desktop: compact left sidebar with Overview, Production, Quality, Receiving,
-Dispatch and Recall; topbar with active company selector and page context.
-Warm ivory background, white cards, forest green actions, pine text,
-tabular quantities, subtle borders and comfortable readable tables. Reuse common
+Desktop: dark left sidebar with Overview, Production, Quality, Receiving,
+Dispatch and Recall plus Production/Quality Insights; topbar with company,
+appearance controls and context. Use the selected theme's tinted canvas, white
+surfaces, tabular quantities, clear hierarchy and readable tables. Reuse common
 components and tokens in `frontend/src/components/` and `frontend/src/index.css`.
+
+Use Plus Jakarta Sans / Inter (or the alternate pairing) with font licenses intact.
+Implement theme selection as a user preference with safe storage fallback and
+consistent application across routes. Use the existing Lucide icon library.
+Do not copy the prototype's demo datasets or demo-only review handlers as live
+business logic. Build analytics from actual permitted API data; omit unavailable
+fields rather than fabricating numbers.
 
 Mobile: compact navigation, stacked forms/cards and at least 44px touch targets.
 Use the overview yield list instead of squeezing a chart. All six pages have
@@ -107,5 +120,6 @@ Do not seed test fixtures into the populated shared site. Do not add schema or
 backend changes solely for visual parity. Follow `CLAUDE.md` for bench deployment
 commands and explain any checks that could not be run locally.
 
-All twelve desktop/phone screenshots and HTML previews are stored in this repository so the work
-can proceed without reconnecting Stitch. No API credentials belong in these files.
+All sixteen workspace/dashboard desktop/phone entries and screenshots are local.
+The presentation hub and its fonts/icons work offline; no Stitch reconnection is
+required for implementation. No API credentials belong in these files.

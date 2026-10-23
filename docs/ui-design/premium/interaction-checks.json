@@ -1,0 +1,192 @@
+{
+  "results": [
+    {
+      "check": "Theme/font controls update live frame; dashboard and phone switching work",
+      "passed": true
+    },
+    {
+      "check": "Work order selection switches materials and review quantities",
+      "passed": true
+    },
+    {
+      "check": "Chosen theme survives page navigation",
+      "passed": true
+    },
+    {
+      "check": "Quality filters, search, matching inspection guard and review",
+      "passed": true
+    },
+    {
+      "check": "Purchase order selection, quantity totals and scanner Enter prevention",
+      "passed": true
+    },
+    {
+      "check": "Scanner focus, blocked stock, stock-UOM totals and dispatch review",
+      "passed": true
+    },
+    {
+      "check": "Recall sample trace, negative returns, empty state and escaped search",
+      "passed": true
+    },
+    {
+      "check": "All five palettes and local font files load without internet",
+      "passed": true
+    },
+    {
+      "check": "Eight views fit phone, tablet and desktop; mobile presentation hub fits",
+      "passed": true
+    },
+    {
+      "check": "No external network dependencies or JavaScript errors",
+      "passed": true
+    }
+  ],
+  "layouts": [
+    {
+      "page": "overview",
+      "width": 390,
+      "scroll": 390,
+      "clippedTables": 0
+    },
+    {
+      "page": "overview",
+      "width": 768,
+      "scroll": 768,
+      "clippedTables": 0
+    },
+    {
+      "page": "overview",
+      "width": 1440,
+      "scroll": 1440,
+      "clippedTables": 0
+    },
+    {
+      "page": "production",
+      "width": 390,
+      "scroll": 390,
+      "clippedTables": 0
+    },
+    {
+      "page": "production",
+      "width": 768,
+      "scroll": 768,
+      "clippedTables": 0
+    },
+    {
+      "page": "production",
+      "width": 1440,
+      "scroll": 1440,
+      "clippedTables": 0
+    },
+    {
+      "page": "production-insights",
+      "width": 390,
+      "scroll": 390,
+      "clippedTables": 0
+    },
+    {
+      "page": "production-insights",
+      "width": 768,
+      "scroll": 768,
+      "clippedTables": 0
+    },
+    {
+      "page": "production-insights",
+      "width": 1440,
+      "scroll": 1440,
+      "clippedTables": 0
+    },
+    {
+      "page": "quality",
+      "width": 390,
+      "scroll": 390,
+      "clippedTables": 0
+    },
+    {
+      "page": "quality",
+      "width": 768,
+      "scroll": 768,
+      "clippedTables": 0
+    },
+    {
+      "page": "quality",
+      "width": 1440,
+      "scroll": 1440,
+      "clippedTables": 0
+    },
+    {
+      "page": "quality-insights",
+      "width": 390,
+      "scroll": 390,
+      "clippedTables": 0
+    },
+    {
+      "page": "quality-insights",
+      "width": 768,
+      "scroll": 768,
+      "clippedTables": 0
+    },
+    {
+      "page": "quality-insights",
+      "width": 1440,
+      "scroll": 1440,
+      "clippedTables": 0
+    },
+    {
+      "page": "receiving",
+      "width": 390,
+      "scroll": 390,
+      "clippedTables": 0
+    },
+    {
+      "page": "receiving",
+      "width": 768,
+      "scroll": 768,
+      "clippedTables": 0
+    },
+    {
+      "page": "receiving",
+      "width": 1440,
+      "scroll": 1440,
+      "clippedTables": 0
+    },
+    {
+      "page": "dispatch",
+      "width": 390,
+      "scroll": 390,
+      "clippedTables": 0
+    },
+    {
+      "page": "dispatch",
+      "width": 768,
+      "scroll": 768,
+      "clippedTables": 0
+    },
+    {
+      "page": "dispatch",
+      "width": 1440,
+      "scroll": 1440,
+      "clippedTables": 0
+    },
+    {
+      "page": "recall",
+      "width": 390,
+      "scroll": 390,
+      "clippedTables": 0
+    },
+    {
+      "page": "recall",
+      "width": 768,
+      "scroll": 768,
+      "clippedTables": 0
+    },
+    {
+      "page": "recall",
+      "width": 1440,
+      "scroll": 1440,
+      "clippedTables": 0
+    }
+  ],
+  "externalRequests": [],
+  "errors": []
+}
