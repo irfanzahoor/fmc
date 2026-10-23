@@ -1,0 +1,46 @@
+{
+ "app": "food_manufacturing",
+ "creation": "2026-01-01 00:00:00.000000",
+ "docstatus": 0,
+ "doctype": "Dock",
+ "idx": 0,
+ "items": [
+  {
+   "added": 0,
+   "hidden": 0,
+   "icon": "beer",
+   "link_to": "Batchwell Plant",
+   "link_type": "Sidebar",
+   "title": "Plant"
+  },
+  {
+   "added": 0,
+   "hidden": 0,
+   "icon": "shield-check",
+   "link_to": "Batchwell Quality",
+   "link_type": "Sidebar",
+   "title": "Quality"
+  },
+  {
+   "added": 0,
+   "hidden": 0,
+   "icon": "dollar-sign",
+   "link_to": "Batchwell Recipes and Cost",
+   "link_type": "Sidebar",
+   "title": "Recipes and cost"
+  },
+  {
+   "added": 0,
+   "hidden": 0,
+   "icon": "settings",
+   "link_to": "Batchwell Setup",
+   "link_type": "Sidebar",
+   "title": "Setup"
+  }
+ ],
+ "modified": "2026-10-23 14:42:48.665548",
+ "modified_by": "Administrator",
+ "name": "food_manufacturing",
+ "owner": "Administrator",
+ "standard": 1
+}

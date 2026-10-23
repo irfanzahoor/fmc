@@ -450,3 +450,50 @@ at a time.
 Carried forward across all phases: fresh-install verification **NOT RUN** (no DB
 root), two-process concurrency **NOT TESTED**, `ruff` **NOT RUN** (absent from
 this bench), and no HTTP round-trip test for the new endpoints.
+
+
+---
+
+## Branding and Desk presence (2026-10-23)
+
+The app had no icon and a single generic workspace. It now presents the way
+`realestate` does on this bench, which was the reference.
+
+| Piece | Where |
+|---|---|
+| App icon | `public/images/batchwell-logo.svg` — a filled batch container, geometry only so it reads at 24px |
+| Apps screen tile | `add_to_apps_screen` in `hooks.py`, gated by `api/permission.has_app_permission` |
+| Icon rail | `dock/food_manufacturing/` — four panes |
+| Pane contents | a `Sidebar` record per module, under each module's `sidebar/` folder |
+| Landing pages | four `Workspace` records: Batchwell, Quality, Costing, Setup |
+
+### What the reference taught
+
+**The rail is a `Dock` record pointing at `Sidebar` records, not at Workspaces.**
+A Workspace entry gives the pane the *module's* name as its header — so the app
+read "Food Manufacturing Setup". A Sidebar entry supplies its own header and
+link list.
+
+**The pane header renders the Sidebar's `name`, not its `title`.** Realestate's
+are identical, which hid the difference; each Sidebar here is named as a phrase
+(`Batchwell Plant`) rather than a bare word, so nothing collides with another
+app's and the header still reads well.
+
+**The landing route follows the workspace's module.** `/app/batchwell` opened
+the Setup pane until the workspace moved to `Food Manufacturing Production`.
+
+**The workspace rename needed a patch.** A Workspace's record name is its
+primary key, so the sync created `Batchwell` and left `Food Manufacturing`
+behind — two sidebar entries, one stale. `patches/v0_3/rename_workspace_to_batchwell`
+removes the old one, and only once the new one exists, so a half-finished
+migrate never leaves the app with no entry at all.
+
+**A fixture is re-imported only when its file is newer than the record.** Every
+content change here needed its `modified` stamp moved with it.
+
+`app_title` is now `Batchwell`; `app_name`, the module names and every import
+path are unchanged, so existing installs, fixtures and code keep working. The
+console's own mark uses the same SVG, so the Desk and `/fm` read as one product.
+
+**NOT RUN:** `ruff`. Verified by rendering against a live session at 1440px with
+a temporary user, created and deleted.

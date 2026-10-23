@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="Batchwell">
+	<title>Batchwell</title>
+	<!-- A sealed, filled batch container: the one object every workflow in this
+	     app is about. Geometry only, so it stays legible at 24px in the Desk
+	     sidebar and on the apps screen. -->
+	<rect width="64" height="64" rx="14" fill="#1b2a4a"/>
+	<!-- Lid -->
+	<rect x="22" y="13" width="20" height="6" rx="3" fill="#ffffff"/>
+	<!-- Jar body, drawn as an outline so the fill line below reads as contents -->
+	<path
+		d="M19 25a5 5 0 0 1 5-5h16a5 5 0 0 1 5 5v21a5 5 0 0 1-5 5H24a5 5 0 0 1-5-5z"
+		fill="none" stroke="#ffffff" stroke-width="3.5" stroke-linejoin="round"
+	/>
+	<!-- Contents, filled to the batch line -->
+	<path d="M22.5 35h19v11a2.5 2.5 0 0 1-2.5 2.5H25a2.5 2.5 0 0 1-2.5-2.5z" fill="#f0a93b"/>
+</svg>

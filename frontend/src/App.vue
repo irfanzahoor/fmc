@@ -8,17 +8,13 @@
 			:style="{ background: 'var(--fm-sidebar)' }"
 		>
 			<div class="flex items-center gap-3 px-5 py-5">
-				<span
-					class="grid h-10 w-10 shrink-0 place-items-center rounded-xl text-sm font-bold"
-					style="background: #ffffff; color: var(--fm-sidebar)"
-					aria-hidden="true"
-				>
-					FMC
-				</span>
+				<!-- The same mark the Desk apps screen shows, so the console and
+				     the Desk read as one product. -->
+				<img :src="logo" alt="" class="h-10 w-10 shrink-0 rounded-xl" aria-hidden="true" />
 				<span class="min-w-0">
-					<span class="block text-lg font-bold leading-tight text-white">FMC</span>
+					<span class="block text-lg font-bold leading-tight text-white">Batchwell</span>
 					<span class="block text-xs leading-tight" :style="{ color: 'var(--fm-side-ink)' }">
-						Food manufacturing, connected.
+						Spice and masala, batch by batch.
 					</span>
 				</span>
 			</div>
@@ -71,11 +67,10 @@
 				<div class="flex items-center gap-3 px-4 py-3 lg:px-7">
 					<span class="flex items-center gap-2 text-sm lg:hidden">
 						<span
-							class="grid h-8 w-8 place-items-center rounded-lg text-[11px] font-bold text-white"
-							:style="{ background: 'var(--fm-sidebar)' }"
+							class="grid h-8 w-8 place-items-center"
 							aria-hidden="true"
 						>
-							FMC
+							<img :src="logo" alt="" class="h-8 w-8 rounded-lg" />
 						</span>
 					</span>
 
@@ -181,6 +176,7 @@
 </template>
 
 <script setup>
+import logo from '@/assets/batchwell-logo.svg'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import {

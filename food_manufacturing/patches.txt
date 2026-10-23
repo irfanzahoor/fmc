@@ -6,3 +6,4 @@ food_manufacturing.patches.v0_2.ensure_module_defs
 food_manufacturing.patches.v0_2.create_custom_fields
 
 food_manufacturing.patches.v0_2.operator_retry_fields
+food_manufacturing.patches.v0_3.rename_workspace_to_batchwell

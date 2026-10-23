@@ -1,0 +1,95 @@
+{
+ "app": "food_manufacturing",
+ "charts": [],
+ "content": "[{\"id\": \"bsJump\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Jump to</b></span>\", \"col\": 12}}, {\"id\": \"bsS0\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Policy\", \"col\": 4}}, {\"id\": \"bsS1\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Recipes\", \"col\": 4}}, {\"id\": \"bsSp0\", \"type\": \"spacer\", \"data\": {\"col\": 12}}, {\"id\": \"bsHead\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Configure the plant</b></span>\", \"col\": 12}}, {\"id\": \"bsC0\", \"type\": \"card\", \"data\": {\"card_name\": \"Setup\", \"col\": 6}}]",
+ "creation": "2026-01-01 00:00:00.000000",
+ "custom_blocks": [],
+ "docstatus": 0,
+ "doctype": "Workspace",
+ "for_user": "",
+ "hide_custom": 0,
+ "icon": "settings",
+ "idx": 0,
+ "indicator_color": "blue",
+ "is_hidden": 0,
+ "label": "Setup",
+ "links": [
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Setup",
+   "link_count": 4,
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "FM Manufacturing Policy",
+   "link_count": 0,
+   "link_to": "FM Manufacturing Policy",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Item",
+   "link_count": 0,
+   "link_to": "Item",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Warehouse",
+   "link_count": 0,
+   "link_to": "Warehouse",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "UOM",
+   "link_count": 0,
+   "link_to": "UOM",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  }
+ ],
+ "modified": "2026-10-23 14:38:55.435008",
+ "modified_by": "Administrator",
+ "module": "Food Manufacturing Setup",
+ "name": "Batchwell Setup",
+ "number_cards": [],
+ "owner": "Administrator",
+ "parent_page": "",
+ "public": 1,
+ "quick_lists": [],
+ "restrict_to_domain": "",
+ "roles": [],
+ "sequence_id": 4.0,
+ "shortcuts": [
+  {
+   "color": "Grey",
+   "label": "Policy",
+   "link_to": "FM Manufacturing Policy",
+   "type": "DocType"
+  },
+  {
+   "color": "Grey",
+   "label": "Recipes",
+   "link_to": "FM Recipe",
+   "type": "DocType"
+  }
+ ],
+ "title": "Setup",
+ "type": "Workspace"
+}

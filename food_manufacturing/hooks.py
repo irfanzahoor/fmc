@@ -1,5 +1,7 @@
 app_name = "food_manufacturing"
-app_title = "Food Manufacturing"
+# Batchwell is the product brand; the technical app and module names are
+# unchanged, so existing installs, fixtures and imports keep working.
+app_title = "Batchwell"
 app_publisher = "Irfan Zahoor"
 app_description = (
 	"Spice and masala manufacturing on ERPNext: supplier lots, approved recipes, "
@@ -8,6 +10,21 @@ app_description = (
 app_email = "support@nextash.com"
 app_license = "mit"
 required_apps = ["frappe/erpnext"]
+
+# Apps screen
+# -----------
+# The tile opens the Desk workspace, which is also the module's sidebar entry.
+# `has_permission` keeps the icon off the screen of someone with no business in
+# the plant, rather than showing a tile that refuses on click.
+add_to_apps_screen = [
+	{
+		"name": app_name,
+		"logo": "/assets/food_manufacturing/images/batchwell-logo.svg",
+		"title": "Batchwell",
+		"route": "/app/batchwell",
+		"has_permission": "food_manufacturing.api.permission.has_app_permission",
+	}
+]
 
 # Installation
 # ------------

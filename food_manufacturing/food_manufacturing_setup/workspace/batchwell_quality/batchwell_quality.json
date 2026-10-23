@@ -1,0 +1,153 @@
+{
+ "app": "food_manufacturing",
+ "charts": [],
+ "content": "[{\"id\": \"bqJump\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Jump to</b></span>\", \"col\": 12}}, {\"id\": \"bqS0\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Pending QC\", \"col\": 4}}, {\"id\": \"bqS1\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Recall\", \"col\": 4}}, {\"id\": \"bqS2\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Near Expiry\", \"col\": 4}}, {\"id\": \"bqSp0\", \"type\": \"spacer\", \"data\": {\"col\": 12}}, {\"id\": \"bqHead\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Hold, release and trace</b></span>\", \"col\": 12}}, {\"id\": \"bqC0\", \"type\": \"card\", \"data\": {\"card_name\": \"Decisions\", \"col\": 6}}, {\"id\": \"bqC1\", \"type\": \"card\", \"data\": {\"card_name\": \"Traceability\", \"col\": 6}}]",
+ "creation": "2026-01-01 00:00:00.000000",
+ "custom_blocks": [],
+ "docstatus": 0,
+ "doctype": "Workspace",
+ "for_user": "",
+ "hide_custom": 0,
+ "icon": "shield-check",
+ "idx": 0,
+ "indicator_color": "blue",
+ "is_hidden": 0,
+ "label": "Quality",
+ "links": [
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Decisions",
+   "link_count": 5,
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "FM Batch Release",
+   "link_count": 0,
+   "link_to": "FM Batch Release",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Quality Inspection",
+   "link_count": 0,
+   "link_to": "Quality Inspection",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Quality Inspection Template",
+   "link_count": 0,
+   "link_to": "Quality Inspection Template",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Batch",
+   "link_count": 0,
+   "link_to": "Batch",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 1,
+   "label": "FM Pending Batch Release",
+   "link_count": 0,
+   "link_to": "FM Pending Batch Release",
+   "link_type": "Report",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Traceability",
+   "link_count": 3,
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 1,
+   "label": "FM Recall Investigation",
+   "link_count": 0,
+   "link_to": "FM Recall Investigation",
+   "link_type": "Report",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 1,
+   "label": "FM Near Expiry Stock",
+   "link_count": 0,
+   "link_to": "FM Near Expiry Stock",
+   "link_type": "Report",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Serial and Batch Bundle",
+   "link_count": 0,
+   "link_to": "Serial and Batch Bundle",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  }
+ ],
+ "modified": "2026-10-23 14:38:55.435008",
+ "modified_by": "Administrator",
+ "module": "Food Manufacturing Quality",
+ "name": "Batchwell Quality",
+ "number_cards": [],
+ "owner": "Administrator",
+ "parent_page": "",
+ "public": 1,
+ "quick_lists": [],
+ "restrict_to_domain": "",
+ "roles": [],
+ "sequence_id": 2.0,
+ "shortcuts": [
+  {
+   "color": "Orange",
+   "label": "Pending QC",
+   "link_to": "FM Pending Batch Release",
+   "type": "Report",
+   "doc_view": "Report"
+  },
+  {
+   "color": "Red",
+   "label": "Recall",
+   "link_to": "FM Recall Investigation",
+   "type": "Report",
+   "doc_view": "Report"
+  },
+  {
+   "color": "Red",
+   "label": "Near Expiry",
+   "link_to": "FM Near Expiry Stock",
+   "type": "Report",
+   "doc_view": "Report"
+  }
+ ],
+ "title": "Quality",
+ "type": "Workspace"
+}

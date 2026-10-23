@@ -1,0 +1,188 @@
+{
+ "app": "food_manufacturing",
+ "charts": [],
+ "content": "[{\"id\": \"bwJump\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Jump to</b></span>\", \"col\": 12}}, {\"id\": \"bwS0\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Operator console\", \"col\": 3}}, {\"id\": \"bwS1\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Work Order\", \"col\": 3}}, {\"id\": \"bwS2\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Pending QC\", \"col\": 3}}, {\"id\": \"bwS3\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Yield Variance\", \"col\": 3}}, {\"id\": \"bwSp0\", \"type\": \"spacer\", \"data\": {\"col\": 12}}, {\"id\": \"bwHead\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Daily operations</b></span>\", \"col\": 12}}, {\"id\": \"bwC0\", \"type\": \"card\", \"data\": {\"card_name\": \"Production\", \"col\": 6}}, {\"id\": \"bwC1\", \"type\": \"card\", \"data\": {\"card_name\": \"Receiving and Dispatch\", \"col\": 6}}]",
+ "creation": "2026-01-01 00:00:00.000000",
+ "custom_blocks": [],
+ "docstatus": 0,
+ "doctype": "Workspace",
+ "for_user": "",
+ "hide_custom": 0,
+ "icon": "beer",
+ "idx": 0,
+ "indicator_color": "blue",
+ "is_hidden": 0,
+ "label": "Batchwell",
+ "links": [
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Production",
+   "link_count": 6,
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Work Order",
+   "link_count": 0,
+   "link_to": "Work Order",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Job Card",
+   "link_count": 0,
+   "link_to": "Job Card",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Stock Entry",
+   "link_count": 0,
+   "link_to": "Stock Entry",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "FM Recipe",
+   "link_count": 0,
+   "link_to": "FM Recipe",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "BOM",
+   "link_count": 0,
+   "link_to": "BOM",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 1,
+   "label": "FM Production Yield",
+   "link_count": 0,
+   "link_to": "FM Production Yield",
+   "link_type": "Report",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Receiving and Dispatch",
+   "link_count": 5,
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Purchase Order",
+   "link_count": 0,
+   "link_to": "Purchase Order",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Purchase Receipt",
+   "link_count": 0,
+   "link_to": "Purchase Receipt",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Material Request",
+   "link_count": 0,
+   "link_to": "Material Request",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Delivery Note",
+   "link_count": 0,
+   "link_to": "Delivery Note",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Sales Order",
+   "link_count": 0,
+   "link_to": "Sales Order",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  }
+ ],
+ "modified": "2026-10-23 14:42:48.665548",
+ "modified_by": "Administrator",
+ "module": "Food Manufacturing Production",
+ "name": "Batchwell",
+ "number_cards": [],
+ "owner": "Administrator",
+ "parent_page": "",
+ "public": 1,
+ "quick_lists": [],
+ "restrict_to_domain": "",
+ "roles": [],
+ "sequence_id": 1.0,
+ "shortcuts": [
+  {
+   "color": "Blue",
+   "label": "Operator console",
+   "type": "URL",
+   "url": "/fm/workspace"
+  },
+  {
+   "color": "Blue",
+   "label": "Work Order",
+   "link_to": "Work Order",
+   "type": "DocType"
+  },
+  {
+   "color": "Orange",
+   "label": "Pending QC",
+   "link_to": "FM Pending Batch Release",
+   "type": "Report",
+   "doc_view": "Report"
+  },
+  {
+   "color": "Green",
+   "label": "Yield Variance",
+   "link_to": "FM Production Yield",
+   "type": "Report",
+   "doc_view": "Report"
+  }
+ ],
+ "title": "Batchwell",
+ "type": "Workspace"
+}
