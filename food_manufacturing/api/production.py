@@ -57,10 +57,32 @@ def get_production_queue(company: str, status: str | None = None, limit: int = 5
 		limit=cint(limit) or 50,
 	)
 
+	uoms = _production_item_uoms([row["production_item"] for row in rows])
 	for row in rows:
 		row["pending_qty"] = flt(row["qty"]) - flt(row["produced_qty"]) - flt(row["process_loss_qty"])
+		row["stock_uom"] = uoms.get(row["production_item"], row["stock_uom"])
 
 	return rows
+
+
+def _production_item_uoms(item_codes: list) -> dict:
+	"""Stock UOM per produced item, read from the Item.
+
+	``Work Order.stock_uom`` is only fetched by the Desk form, so a Work Order
+	created through the API or an import keeps the field default of ``Nos`` -
+	a blend planned in kilograms then reads "500 Nos" everywhere. The Item is
+	the authority, so it is asked, once for the whole page rather than per row.
+	"""
+	codes = {code for code in item_codes if code}
+	if not codes:
+		return {}
+
+	rows = frappe.get_all(
+		"Item",
+		filters={"name": ("in", list(codes))},
+		fields=["name", "stock_uom"],
+	)
+	return {row.name: row.stock_uom for row in rows}
 
 
 @frappe.whitelist()
@@ -102,7 +124,9 @@ def get_work_order_detail(work_order: str) -> dict:
 			"produced_qty": flt(doc.produced_qty),
 			"process_loss_qty": flt(doc.process_loss_qty),
 			"status": doc.status,
-			"stock_uom": doc.stock_uom,
+			"stock_uom": _production_item_uoms([doc.production_item]).get(
+				doc.production_item, doc.stock_uom
+			),
 			"company": doc.company,
 			"fg_warehouse": doc.fg_warehouse,
 			"wip_warehouse": doc.wip_warehouse,
@@ -155,7 +179,12 @@ def finish_production_run(
 	remaining = flt(order.qty) - flt(order.produced_qty) - flt(order.process_loss_qty)
 	if qty + process_loss_qty > remaining + 0.0001:
 		frappe.throw(
-			_("Only {0} {1} is left to finish on this Work Order.").format(flt(remaining), order.stock_uom),
+			_("Only {0} {1} is left to finish on this Work Order.").format(
+				flt(remaining),
+				_production_item_uoms([order.production_item]).get(
+					order.production_item, order.stock_uom
+				),
+			),
 			title=_("Quantity Exceeds the Work Order"),
 		)
 

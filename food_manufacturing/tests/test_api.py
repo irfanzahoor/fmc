@@ -127,6 +127,36 @@ class TestProductionAPI(APITestCase):
 		self.assertIn(work_order.name, names)
 		self.assertEqual(flt(names[work_order.name]["pending_qty"]), 100)
 
+	def test_queue_reports_the_items_unit_not_the_work_order_default(self):
+		"""A blend planned in kilograms must not read as "500 Nos".
+
+		``Work Order.stock_uom`` is only fetched by the Desk form, so an order
+		created through the API or an import keeps the ``Nos`` default. The
+		Item is the authority.
+		"""
+		self.receive(self.chilli, 60, f"C-{self.tag}")
+		self.receive(self.cumin, 40, f"U-{self.tag}")
+		recipe = self.approve_recipe()
+		work_order = self.make_work_order(recipe.bom)
+
+		item_uom = frappe.db.get_value("Item", self.blend, "stock_uom")
+		self.assertEqual(frappe.db.get_value("Work Order", work_order.name, "stock_uom"), "Nos")
+
+		queue = {row["name"]: row for row in production_api.get_production_queue(self.site["company"])}
+		self.assertEqual(queue[work_order.name]["stock_uom"], item_uom)
+
+	def test_detail_reports_the_items_unit(self):
+		self.receive(self.chilli, 60, f"C-{self.tag}")
+		self.receive(self.cumin, 40, f"U-{self.tag}")
+		recipe = self.approve_recipe()
+		work_order = self.make_work_order(recipe.bom)
+
+		detail = production_api.get_work_order_detail(work_order.name)
+		self.assertEqual(
+			detail["work_order"]["stock_uom"],
+			frappe.db.get_value("Item", self.blend, "stock_uom"),
+		)
+
 	def test_detail_offers_released_lots_in_fefo_order(self):
 		chilli = self.receive(self.chilli, 60, f"C-{self.tag}")
 		self.receive(self.cumin, 40, f"U-{self.tag}")

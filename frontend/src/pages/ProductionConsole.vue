@@ -15,6 +15,7 @@
 		</PageHeader>
 
 		<StateBlock
+			:required-roles="SCREEN_ROLES.production"
 			:loading="loading && !rows.length"
 			:error="error"
 			:empty="!loading && !rows.length"
@@ -68,7 +69,7 @@
 
 				<!-- Detail -->
 				<div v-if="selected" class="space-y-4">
-					<StateBlock :loading="detailLoading" :error="detailError" loading-text="Loading run…">
+					<StateBlock :loading="detailLoading" :error="detailError" loading-text="Loading run…" :required-roles="SCREEN_ROLES.production">
 						<div v-if="detail" class="space-y-4">
 							<div class="fm-card p-5">
 								<div class="flex flex-wrap items-start justify-between gap-3">
@@ -229,6 +230,7 @@ import { AlertTriangle, Check, CheckCircle, Clock, Factory, LineChart, RefreshCw
 
 import PageHeader from '@/components/PageHeader.vue'
 import StateBlock from '@/components/StateBlock.vue'
+import { SCREEN_ROLES } from '@/data/access'
 import { errorMessage, production } from '@/data/api'
 
 const props = defineProps({ company: { type: String, required: true } })

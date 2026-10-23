@@ -1,0 +1,28 @@
+/**
+ * The standard ERPNext roles each screen reads through.
+ *
+ * The console shows ERPNext's own documents, and the FM roles deliberately do
+ * not widen access to them, so an operator needs both. These lists are the
+ * narrowest role that grants read on what each screen's endpoint gates on
+ * (`frappe.has_permission` calls in `food_manufacturing/api/`); they are shown
+ * only when the server has already refused, to say what is missing.
+ *
+ * Kept in step with the role table in `docs/workflows.md`.
+ */
+export const SCREEN_ROLES = {
+	// get_dashboard gates on Work Order and Batch.
+	overview: ['Item Manager', 'Manufacturing User'],
+	// get_production_queue and get_work_order_detail gate on Work Order.
+	production: ['Manufacturing User'],
+	// get_release_queue gates on Batch, Company and FM Batch Release; Company
+	// is what an FM-only account is missing. get_batch_context also reads the
+	// matching Quality Inspection, which on a stock site only ERPNext's own
+	// Quality Manager grants - no FM role does.
+	quality: ['Item Manager', 'Stock User', 'Quality Manager'],
+	// get_open_purchase_orders gates on Purchase Order.
+	receiving: ['Purchase User'],
+	// get_open_sales_orders gates on Sales Order.
+	dispatch: ['Sales User'],
+	// get_recall gates on Company, Batch, Delivery Note and Stock Ledger Entry.
+	recall: ['Item Manager', 'Stock User'],
+}

@@ -14,6 +14,7 @@
 		</PageHeader>
 
 		<StateBlock
+			:required-roles="SCREEN_ROLES.receiving"
 			:loading="loading && !orders.length"
 			:error="error"
 			:empty="!loading && !orders.length"
@@ -200,6 +201,7 @@ import { Check, CheckCircle, PackageCheck, RefreshCw, ShieldAlert } from 'lucide
 
 import PageHeader from '@/components/PageHeader.vue'
 import StateBlock from '@/components/StateBlock.vue'
+import { SCREEN_ROLES } from '@/data/access'
 import StatusChip from '@/components/StatusChip.vue'
 import { errorMessage, receiving } from '@/data/api'
 

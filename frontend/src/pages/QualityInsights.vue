@@ -14,7 +14,7 @@
 			</template>
 		</PageHeader>
 
-		<StateBlock :loading="loading && !data" :error="error" loading-text="Loading quality overview…" :on-retry="load">
+		<StateBlock :loading="loading && !data" :error="error" loading-text="Loading quality overview…" :on-retry="load" :required-roles="SCREEN_ROLES.overview">
 			<div v-if="data" class="space-y-4">
 				<div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
 					<KpiCard label="Awaiting a decision" :value="k.pending_qc" unit="batches" :icon="ShieldCheck"
@@ -69,6 +69,7 @@ import { ArrowRight, Boxes, CheckCircle, ClipboardCheck, Clock, RefreshCw, Shiel
 import KpiCard from '@/components/KpiCard.vue'
 import PageHeader from '@/components/PageHeader.vue'
 import StateBlock from '@/components/StateBlock.vue'
+import { SCREEN_ROLES } from '@/data/access'
 import { dashboard } from '@/data/api'
 import BarRanking from '@/components/viz/BarRanking.vue'
 import StatusStack from '@/components/viz/StatusStack.vue'

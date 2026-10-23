@@ -1,5 +1,6 @@
 import { reactive } from 'vue'
-import { call } from 'frappe-ui'
+
+import { bootstrap } from '@/data/api'
 
 /**
  * Who is logged in, and which company they are working in.
@@ -7,8 +8,19 @@ import { call } from 'frappe-ui'
  * The company is a browser preference and is never trusted: every endpoint
  * re-checks permission server-side, so choosing a company you cannot see
  * returns nothing rather than someone else's data.
+ *
+ * The list comes from one app endpoint rather than a direct Company query:
+ * Company is not readable by the FM roles, so an operator holding only those
+ * roles could not get past the first request.
  */
 const STORAGE_KEY = 'fm:company'
+
+/*
+ * Boot data is written onto `window` key by key by the page template, so these
+ * live at the top level - not under `window.frappe.boot`, which this SPA does
+ * not have.
+ */
+const boot = window.fm_boot || {}
 
 function readStored() {
 	try {
@@ -18,13 +30,6 @@ function readStored() {
 		return null
 	}
 }
-
-/*
- * Boot data is written onto `window` key by key by the page template, so these
- * live at the top level - not under `window.frappe.boot`, which this SPA does
- * not have.
- */
-const boot = window.fm_boot || {}
 
 export const session = reactive({
 	user: boot.user || null,
@@ -57,27 +62,20 @@ export const session = reactive({
 	/**
 	 * Which company to open on.
 	 *
-	 * Landing on a company with no FM policy shows an empty dashboard and reads
-	 * as a broken app, so a configured company wins over a merely alphabetical
-	 * first one. Order: a remembered choice, then the user's own ERPNext
-	 * default, then the first configured company, then the first company.
+	 * A remembered choice wins - but not one that has nothing to show while a
+	 * configured company exists. Letting it win is how a browser gets stuck on
+	 * an empty company: the value is stored on a first visit and re-chosen on
+	 * every visit after.
 	 */
-	pickCompany(stored) {
+	pickCompany(stored, serverDefault) {
 		const configured = this.configuredCompanies
 
-		// A remembered choice wins - but not a remembered choice that has
-		// nothing to show while a configured company exists. Letting it win is
-		// how a browser gets permanently stuck on an empty company: the value
-		// was stored on a first visit and then re-chosen on every visit after.
 		if (stored && this.companies.includes(stored)) {
 			if (!configured.length || configured.includes(stored)) return stored
 		}
 
-		const userDefault = window.sysdefaults?.company
-		if (userDefault && configured.includes(userDefault)) return userDefault
-
+		if (serverDefault && this.companies.includes(serverDefault)) return serverDefault
 		if (configured.length) return configured[0]
-		if (userDefault && this.companies.includes(userDefault)) return userDefault
 
 		return this.companies[0] || null
 	},
@@ -87,33 +85,13 @@ export const session = reactive({
 		this.error = null
 
 		try {
-			const companies = await call('frappe.client.get_list', {
-				doctype: 'Company',
-				fields: ['name'],
-				limit_page_length: 0,
-				order_by: 'name asc',
-			})
-			this.companies = companies.map((row) => row.name)
+			const data = await bootstrap.get()
 
-			try {
-				const policies = await call('frappe.client.get_list', {
-					doctype: 'FM Manufacturing Policy',
-					filters: { enabled: 1 },
-					fields: ['name'],
-					limit_page_length: 0,
-					order_by: 'name asc',
-				})
-				// The policy is named after its company.
-				this.configuredCompanies = policies
-					.map((row) => row.name)
-					.filter((name) => this.companies.includes(name))
-			} catch {
-				// No read access to the policy is not fatal; fall back to all
-				// companies rather than refusing to render.
-				this.configuredCompanies = []
-			}
+			this.companies = data.companies || []
+			this.configuredCompanies = data.configured || []
+			if (data.user) this.user = data.user
 
-			const chosen = this.pickCompany(this.company)
+			const chosen = this.pickCompany(this.company, data.default)
 			if (chosen && chosen !== this.company) {
 				this.setCompany(chosen)
 			} else if (chosen) {

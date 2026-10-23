@@ -6,7 +6,26 @@
  * replaced. Shapes mirror food_manufacturing/api/ exactly; if a page renders
  * here it renders against the real endpoint.
  */
-const delay = (value) => new Promise((resolve) => setTimeout(() => resolve(value), 0))
+/*
+ * `?deny` makes every read fail the way the server does when the account is
+ * missing one of the standard ERPNext roles, so that state can be looked at
+ * rather than reasoned about.
+ */
+const DENIED = typeof location !== 'undefined' && new URLSearchParams(location.search).has('deny')
+
+const refuse = () =>
+	Promise.reject(
+		Object.assign(new Error('Insufficient Permission'), {
+			exc_type: 'PermissionError',
+			status: 403,
+			messages: [
+				'User <strong>operator@fmc.local</strong> does not have doctype access via role permission for document <strong>Work Order</strong>',
+			],
+		}),
+	)
+
+const delay = (value) =>
+	DENIED ? refuse() : new Promise((resolve) => setTimeout(() => resolve(value), 0))
 
 const KG = 'Kg'
 const NOS = 'Nos'
@@ -84,6 +103,16 @@ const WORK_ORDERS = [
 		pending_qty: 294,
 	},
 ]
+
+// Mirrors mockSession: four companies, one of them actually set up.
+export const bootstrap = {
+	get: () => delay({
+		companies: ['Steps ERP', 'Steps ERP (Demo)', 'Steps Real Estate (Qatar)', 'Steps Real Estate Group'],
+		configured: ['Steps ERP (Demo)'],
+		default: 'Steps ERP (Demo)',
+		user: 'demo@fmc.local',
+	}),
+}
 
 export const production = {
 	queue: () => delay(WORK_ORDERS),
@@ -235,5 +264,13 @@ export const recall = {
 
 export function errorMessage(error) {
 	if (!error) return null
+	const messages = error.messages
+	if (Array.isArray(messages) && messages.length) {
+		return messages.map((m) => String(m).replace(/<[^>]*>/g, '')).join('\n')
+	}
 	return error.message || String(error)
+}
+
+export function isPermissionError(error) {
+	return error?.exc_type === 'PermissionError' || error?.status === 403
 }

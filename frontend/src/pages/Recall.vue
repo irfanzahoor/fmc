@@ -48,7 +48,7 @@
 			</p>
 		</div>
 
-		<StateBlock :loading="loading" :error="error" loading-text="Tracing batch…">
+		<StateBlock :loading="loading" :error="error" loading-text="Tracing batch…" :required-roles="SCREEN_ROLES.recall">
 			<div v-if="result" class="space-y-4">
 				<p
 					v-if="result.truncated"
@@ -159,6 +159,7 @@ import { AlertTriangle, Search, ShieldCheck, Truck, Undo2 } from 'lucide-vue-nex
 
 import PageHeader from '@/components/PageHeader.vue'
 import StateBlock from '@/components/StateBlock.vue'
+import { SCREEN_ROLES } from '@/data/access'
 import { recall } from '@/data/api'
 import StatusChip from '@/components/StatusChip.vue'
 

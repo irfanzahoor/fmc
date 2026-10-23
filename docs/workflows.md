@@ -125,17 +125,36 @@ The screens read standard ERPNext documents, so an operator needs ERPNext's own 
 addition to the FM ones. Missing any of these produces a permission error rather than an
 empty page:
 
-| Screen | Needs |
-|---|---|
-| Any screen | **Item Manager** — `Batch` is readable by that role alone on a stock site |
-| Overview, Production | Manufacturing User, Stock User |
-| Receiving | Purchase User |
-| Dispatch, Recall | Sales User |
-| Quality decisions | FM Quality Manager |
-| Completing runs | FM Production Manager |
+Each row is the narrowest standard role that grants read on what the screen's endpoint
+gates on, read off this site's DocPerm rather than assumed:
+
+| Screen | Gates on | Needs |
+|---|---|---|
+| Overview, Insights | Work Order, Batch | Item Manager, Manufacturing User |
+| Production | Work Order | Manufacturing User |
+| Quality | Batch, Company, FM Batch Release, Quality Inspection | Item Manager, Stock User, Quality Manager |
+| Receiving | Purchase Order | Purchase User |
+| Dispatch | Sales Order | Sales User |
+| Recall | Company, Batch, Delivery Note, Stock Ledger Entry | Item Manager, Stock User |
+| Quality decisions | FM Batch Release | FM Quality Manager |
+| Completing runs | Work Order, Stock Entry | FM Production Manager |
+
+`Batch` is readable by **Item Manager** alone on a stock site, `Company` by none of the FM
+roles — Stock User, Sales User or Purchase User is what supplies it — and `Quality
+Inspection` by ERPNext's **Quality Manager** alone, which is why a batch's matching
+inspection does not load without it.
 
 Granting these through ERPNext's own roles is deliberate: the app does not widen access to
-standard documents through its own roles.
+standard documents through its own roles. Because the pairing is a provisioning step rather
+than something the app can infer, a refusal on any screen names the roles it needs
+(`frontend/src/data/access.js`, shown by `StateBlock` only once the server has refused)
+instead of repeating the server's sentence about one DocType.
+
+An account holding **only** FM roles cannot even list companies: `Company` is readable by
+Stock/Sales/Purchase User and by no FM role. `api/session.py` therefore derives the company
+list from `FM Manufacturing Policy`, which every FM role can read, and treats `Company` as a
+fallback — otherwise the console failed on its first request with
+`Insufficient Permission for Company` before rendering anything.
 
 ### The security model
 

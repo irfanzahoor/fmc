@@ -241,8 +241,13 @@ const phoneNavigation = computed(() => [
 ])
 
 const allItems = computed(() => navigation.value.flatMap((group) => group.items))
+// Falls back to the route's own title so an off-nav route (a mistyped link)
+// is still named in the breadcrumb rather than reading "Workspace > Workspace".
 const currentLabel = computed(
-	() => allItems.value.find((item) => item.name === route.name)?.label || 'Workspace'
+	() =>
+		allItems.value.find((item) => item.name === route.name)?.label ||
+		route.meta?.title ||
+		'Workspace'
 )
 
 /* Mark companies this app is not configured for, so an empty screen is

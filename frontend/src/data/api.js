@@ -37,6 +37,10 @@ export const receiving = {
 	receive: method('receiving.receive_purchase_order'),
 }
 
+export const bootstrap = {
+	get: method('session.get_bootstrap'),
+}
+
 export const dashboard = {
 	get: method('dashboard.get_dashboard'),
 }
@@ -51,7 +55,13 @@ export const dispatch = {
 	createDeliveryNote: method('dispatch.create_delivery_note'),
 }
 
-/** Pull a readable message out of a Frappe error response. */
+/**
+ * Pull a readable message out of a Frappe error response.
+ *
+ * Server messages are Frappe-flavoured HTML ("Insufficient Permission for
+ * <strong>Company</strong>"), and this is rendered as text, so the tags are
+ * stripped rather than shown.
+ */
 export function errorMessage(error) {
 	if (!error) return null
 	const messages = error.messages || error._server_messages
@@ -59,12 +69,36 @@ export function errorMessage(error) {
 		return messages
 			.map((m) => {
 				try {
-					return JSON.parse(m).message || m
+					return stripHtml(JSON.parse(m).message || m)
 				} catch {
-					return m
+					return stripHtml(m)
 				}
 			})
 			.join('\n')
 	}
-	return error.message || String(error)
+	return stripHtml(error.message) || String(error)
+}
+
+function stripHtml(value) {
+	if (typeof value !== 'string') return value
+	return value
+		.replace(/<[^>]*>/g, '')
+		.replace(/&nbsp;/g, ' ')
+		.replace(/&amp;/g, '&')
+		.replace(/&lt;/g, '<')
+		.replace(/&gt;/g, '>')
+		.replace(/&quot;/g, '"')
+		.replace(/&#39;/g, "'")
+		.trim()
+}
+
+/**
+ * Whether a failure is the server refusing, rather than anything being broken.
+ *
+ * The console reads standard ERPNext documents, so a user missing one of the
+ * stock or selling roles gets a refusal on a screen that is otherwise fine.
+ * Naming the missing role is more use than repeating the server's sentence.
+ */
+export function isPermissionError(error) {
+	return error?.exc_type === 'PermissionError' || error?.status === 403
 }

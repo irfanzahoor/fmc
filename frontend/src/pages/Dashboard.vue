@@ -21,7 +21,7 @@
 			</template>
 		</PageHeader>
 
-		<StateBlock :loading="loading && !data" :error="error" loading-text="Building the overview…" :on-retry="load">
+		<StateBlock :loading="loading && !data" :error="error" loading-text="Building the overview…" :on-retry="load" :required-roles="SCREEN_ROLES.overview">
 			<div v-if="data" class="space-y-4">
 				<div class="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
 					<KpiCard
@@ -198,6 +198,7 @@ import {
 import KpiCard from '@/components/KpiCard.vue'
 import PageHeader from '@/components/PageHeader.vue'
 import StateBlock from '@/components/StateBlock.vue'
+import { SCREEN_ROLES } from '@/data/access'
 import { dashboard } from '@/data/api'
 import BarRanking from '@/components/viz/BarRanking.vue'
 import LineTrend from '@/components/viz/LineTrend.vue'

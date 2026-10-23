@@ -14,6 +14,7 @@
 		</PageHeader>
 
 		<StateBlock
+			:required-roles="SCREEN_ROLES.dispatch"
 			:loading="loading && !orders.length"
 			:error="error"
 			:empty="!loading && !orders.length"
@@ -40,7 +41,7 @@
 				</li>
 			</ul>
 
-			<StateBlock v-if="selected" :loading="pickLoading" :error="pickError" loading-text="Loading picklist…">
+			<StateBlock v-if="selected" :loading="pickLoading" :error="pickError" loading-text="Loading picklist…" :required-roles="SCREEN_ROLES.dispatch">
 				<form v-if="picklist" class="space-y-4" @submit.prevent="submit">
 					<!-- Context bar -->
 					<div class="fm-card p-5">
@@ -241,6 +242,7 @@ import { Check, RefreshCw, ScanLine, Truck } from 'lucide-vue-next'
 
 import PageHeader from '@/components/PageHeader.vue'
 import StateBlock from '@/components/StateBlock.vue'
+import { SCREEN_ROLES } from '@/data/access'
 import StatusChip from '@/components/StatusChip.vue'
 import { dispatch, errorMessage } from '@/data/api'
 

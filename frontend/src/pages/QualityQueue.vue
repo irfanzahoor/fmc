@@ -55,6 +55,7 @@
 		</div>
 
 		<StateBlock
+			:required-roles="SCREEN_ROLES.quality"
 			:loading="loading && !rows.length"
 			:error="error"
 			:empty="!loading && !rows.length"
@@ -135,7 +136,7 @@
 						</div>
 					</div>
 
-					<StateBlock v-else :loading="contextLoading" :error="contextError" loading-text="Loading batch…">
+					<StateBlock v-else :loading="contextLoading" :error="contextError" loading-text="Loading batch…" :required-roles="SCREEN_ROLES.quality">
 						<div v-if="context" class="fm-card p-5">
 							<div class="flex items-start gap-3">
 								<span class="grid h-10 w-10 shrink-0 place-items-center rounded-xl" :style="{ background: 'var(--fm-soft)', color: 'var(--fm-primary)' }" aria-hidden="true">
@@ -263,6 +264,7 @@ import {
 import KpiCard from '@/components/KpiCard.vue'
 import PageHeader from '@/components/PageHeader.vue'
 import StateBlock from '@/components/StateBlock.vue'
+import { SCREEN_ROLES } from '@/data/access'
 import StatusChip from '@/components/StatusChip.vue'
 import { dashboard, errorMessage, quality } from '@/data/api'
 

@@ -178,3 +178,47 @@ with that feedback:
 **Still not verified:** the live screens against a Frappe session. Scanner focus, QC
 pagination, UOM conversion and safe-retry were preserved and are visible in the harness,
 but have not been exercised end to end against the server.
+
+### Third pass (2026-10-23) — first live verification
+
+The console had never been opened against a real Frappe session. Doing so found four
+defects that no amount of harness work would have shown.
+
+**The first request failed.** `session.js` opened by asking `frappe.client.get_list` for
+`Company`. No FM role can read Company, so an operator holding only FM roles got
+`Insufficient Permission for Company` before anything rendered. `api/session.py::get_bootstrap`
+now derives the company list from `FM Manufacturing Policy` — readable by every FM role —
+and treats Company as a fallback. Catching the `PermissionError` was not enough on its own:
+`frappe.throw` queues its message *before* raising, so the swallowed error still shipped a
+red popup on a request that had succeeded; the message log is trimmed back for that reason.
+
+**Refusals were unreadable.** Server messages are HTML, rendered as text, so a permission
+error read `Insufficient Permission for <strong>Company</strong>`. Tags are now stripped, and
+`.fm-app .fm-card` is more specific than `.bg-red-50`, so the error card had been rendering
+plain white in every theme — it now uses the theme's own `--fm-bad` tokens.
+
+**A refusal said nothing useful.** The screens read standard ERPNext documents and the FM
+roles deliberately do not widen access to them, so a missing role is expected, not a bug.
+`StateBlock` now names the roles the screen needs (`frontend/src/data/access.js`, computed
+from the `has_permission` gates and this site's DocPerm, not guessed) once the server has
+refused. The role table in `docs/workflows.md` was corrected against that same reading —
+in particular Quality needs ERPNext's **Quality Manager**, without which a batch's matching
+inspection does not load.
+
+**A blend read "500 Nos".** `Work Order.stock_uom` is only fetched by the Desk form, so an
+order created through the API or an import keeps the `Nos` default. The production endpoints
+now resolve the unit from the Item, in one query per page. Pinned by
+`test_queue_reports_the_items_unit_not_the_work_order_default`.
+
+A mistyped path under `/fm` also rendered the shell with an empty pane; there is now a
+`NotFound` route, and the breadcrumb falls back to the route title.
+
+**Verified live** over HTTP against `steps_erp.local` with a temporary FM-roles user (created,
+used, deleted): the exact `Insufficient Permission for Company` reproduced on the old call and
+cleared on the new one, then Overview, Production, Quality, Receiving, Dispatch and Recall
+each opened with real server data — 95.2% average yield, a flagged run at 91%, one quarantined
+lot awaiting a decision, two open work orders in kilograms, four purchase orders, and a FEFO
+allocation that blocks an aged batch in words. 241 tests pass.
+
+**Still not verified:** posting a receipt, a run completion or a delivery note through the live
+UI; those paths are covered by tests but have not been clicked end to end.

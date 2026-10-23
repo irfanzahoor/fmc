@@ -50,6 +50,14 @@ export const routes = [
 		component: () => import('@/pages/QualityInsights.vue'),
 		meta: { title: 'Quality overview' },
 	},
+	// Without this, a mistyped or stale link under /fm renders the shell with
+	// an empty pane and no explanation.
+	{
+		path: '/:pathMatch(.*)*',
+		name: 'NotFound',
+		component: () => import('@/pages/NotFound.vue'),
+		meta: { title: 'Page not found' },
+	},
 ]
 
 const router = createRouter({
