@@ -303,4 +303,65 @@ an inspection whose stage matches the batch's position in the process.
 
 ## Phase 4 — Batch traceability
 
+Status: **implemented**. 10 new tests. Full suite **301 passing**
+(287 integration + 14 unit), no regressions.
+
+### What was already there
+
+The trace engine predates this phase and already does most of what the brief
+asks. `production/genealogy.py` and `api/recall.py` walk forward and backward
+from a lot through consumed ingredients, blends, pack batches and deliveries,
+and they already:
+
+- read **both** v16 batch allocation structures — the `Serial and Batch Bundle`
+  *and* the legacy `batch_no` on the ledger entry;
+- filter `is_cancelled = 0` and `docstatus = 1`, so a cancelled movement never
+  appears and the evidence is submitted transactions, never BOM theory;
+- keep returns **negative** rather than netting them away, so recovered stock is
+  distinguishable from shipped stock;
+- bound the walk and report `truncated` rather than quietly stopping;
+- re-check permission on every batch, item and delivery, refusing the whole
+  trace rather than silently returning a partial one.
+
+### What this phase added
+
+| Gap | Now |
+|---|---|
+| The trace named the batches but not **where they are** | `recall._on_hand`, per batch and warehouse |
+| No investigation artifact | `FM Recall Investigation`, a Script Report |
+
+**Where the stock is** is read from the ledger via `get_batch_balances`, not
+from `Batch.batch_qty`, so a split or part-consumed lot reports what is actually
+in each warehouse. A warehouse holding none of it is dropped — an empty
+warehouse is not a place to go and look.
+
+**The report is a Desk artifact**, because an investigation gets filtered,
+printed, exported and attached to a file an auditor reads months later. It is
+built from the same permission-scoped trace the console uses, so it cannot show
+a batch, delivery or company the reader could not open directly. It can be
+narrowed to affected batches, stock on hand, or deliveries.
+
+**Nothing is notified.** The report's own message says so: telling customers is
+a decision with legal and commercial weight, and this says who to contact.
+
+### Not covered
+
+- **NOT RUN:** HTTP round-trip; **NOT RUN:** `ruff`.
+- The report is not yet surfaced in the `/fm` console — it is a Desk report.
+- Mixed-lot and split coverage is split across this file and
+  `test_operator_guards_unit.py`; it is not consolidated.
+
+### Handoff for review
+
+- `food_manufacturing/api/recall.py` — `_on_hand`
+- `food_manufacturing/food_manufacturing_quality/report/fm_recall_investigation/`
+- `food_manufacturing/tests/test_recall_investigation.py` — 10 tests
+
+Worth a second look at: whether the depth limit of 6 is right for a plant that
+blends a blend, and whether `on_hand` should include stock in transit.
+
+---
+
+## Phase 5 — Role-based dashboards
+
 Status: **not started.**

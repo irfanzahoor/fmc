@@ -4,6 +4,8 @@ import frappe
 from frappe import _
 from frappe.utils import flt
 
+from food_manufacturing.stock_levels import get_batch_balances
+
 
 @frappe.whitelist()
 def get_recall(batch: str, company: str) -> dict:
@@ -64,7 +66,52 @@ def get_recall(batch: str, company: str) -> dict:
 		)
 		# Returns remain negative, so the operator can distinguish shipped and recovered stock.
 		entry["stock_qty"] -= flt(row["qty"])
-	return {"batches": visible, "deliveries": list(deliveries.values()), "truncated": truncated}
+	return {
+		"batches": visible,
+		"deliveries": list(deliveries.values()),
+		# Where the affected stock still is. An investigation that names the
+		# batches but not their warehouses cannot act: you cannot quarantine
+		# what you cannot locate.
+		"on_hand": _on_hand(batches, company, uoms),
+		"truncated": truncated,
+	}
+
+
+def _on_hand(batches: set, company: str, uoms: dict) -> list:
+	"""Remaining stock of every affected batch, by warehouse.
+
+	Read from the ledger rather than from Batch.batch_qty, so split lots and
+	part-consumed batches report what is actually there. Zero and negative
+	balances are dropped: a warehouse holding none of the batch is not a place
+	to go and look.
+	"""
+	warehouses = frappe.get_all(
+		"Warehouse", filters={"company": company, "is_group": 0}, pluck="name"
+	)
+	if not warehouses or not batches:
+		return []
+
+	balances = get_batch_balances(sorted(batches), warehouses)
+	items = {
+		row.name: row.item
+		for row in frappe.get_all(
+			"Batch", filters={"name": ("in", sorted(batches))}, fields=["name", "item"]
+		)
+	}
+
+	rows = [
+		{
+			"batch_no": batch_no,
+			"warehouse": warehouse,
+			"item_code": items.get(batch_no),
+			"stock_uom": uoms.get(items.get(batch_no)),
+			"qty": flt(qty),
+		}
+		for (batch_no, warehouse), qty in balances.items()
+		if flt(qty) > 0
+	]
+
+	return sorted(rows, key=lambda row: (row["batch_no"], row["warehouse"]))
 
 
 def _walk(frontier, company, seen, depth):
