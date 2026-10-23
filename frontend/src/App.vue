@@ -117,6 +117,24 @@
 					{{ errorMessage(session.error) }}
 				</p>
 
+				<!-- A company with no FM policy has nothing for this app to show.
+				     Saying so beats a page of zeroes that reads as a broken app. -->
+				<p
+					v-if="session.company && session.configuredCompanies.length && !session.isConfigured(session.company)"
+					class="fm-card mb-4 flex items-start gap-3 p-4 text-sm"
+					:style="{ borderColor: 'var(--fm-warn)' }"
+				>
+					<AlertTriangle class="mt-0.5 h-4 w-4 shrink-0" :style="{ color: 'var(--fm-warn)' }" aria-hidden="true" />
+					<span>
+						<strong>{{ session.company }}</strong> has no Food Manufacturing policy, so there is nothing
+						to show here.
+						<button type="button" class="underline" :style="{ color: 'var(--fm-primary)' }" @click="session.setCompany(session.configuredCompanies[0])">
+							Switch to {{ session.configuredCompanies[0] }}
+						</button>
+						or create a policy for this company.
+					</span>
+				</p>
+
 				<RouterView
 					v-if="session.company"
 					:company="session.company"
@@ -166,6 +184,7 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import {
+	AlertTriangle,
 	Building2,
 	ChevronRight,
 	ClipboardCheck,
