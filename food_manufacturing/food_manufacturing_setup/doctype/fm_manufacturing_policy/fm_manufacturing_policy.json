@@ -29,7 +29,8 @@
   "block_expired_dispatch",
   "enforce_fefo",
   "yield_section",
-  "yield_variance_tolerance_percent"
+  "yield_variance_tolerance_percent",
+  "packing_loss_percent"
  ],
  "fields": [
   {
@@ -174,6 +175,13 @@
    "fieldname": "yield_variance_tolerance_percent",
    "fieldtype": "Percent",
    "label": "Yield Variance Tolerance (%)"
+  },
+  {
+   "fieldname": "packing_loss_percent",
+   "fieldtype": "Percent",
+   "label": "Packing Loss Allowance (%)",
+   "default": "0",
+   "description": "Extra packaging material to plan for, over and above the exact requirement - damaged pouches, misprinted labels, setup waste. Left at zero until the plant measures its own figure."
   }
  ],
  "index_web_pages_for_search": 1,

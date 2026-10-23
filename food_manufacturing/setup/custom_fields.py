@@ -293,6 +293,22 @@ def get_custom_fields() -> dict:
 		],
 	}
 
+	# Material Request carries the key only - a planning proposal is a draft, so
+	# there is no submitted result to replay, just a request not to make a
+	# second one.
+	fields.setdefault("Material Request", []).append(
+		{
+			"fieldname": "fm_operation_key",
+			"fieldtype": "Data",
+			"label": "FM Operation Key",
+			"unique": 1,
+			"hidden": 1,
+			"read_only": 1,
+			"no_copy": 1,
+			"module": SETUP_MODULE,
+		}
+	)
+
 	for doctype in ("Stock Entry", "Purchase Receipt", "Delivery Note"):
 		fields.setdefault(doctype, []).extend(
 			[

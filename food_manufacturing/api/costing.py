@@ -46,3 +46,35 @@ def get_costable_boms(company: str, item: str | None = None, limit: int = 50) ->
 		order_by="modified desc",
 		limit=limit,
 	)
+
+
+@frappe.whitelist()
+def plan_packaging(company: str, packs: list | str, loss_percent: float | None = None) -> dict:
+	"""Requirements, stock position and shortages for a planned packing run."""
+	from food_manufacturing.packaging.planning import plan
+
+	packs = frappe.parse_json(packs) if isinstance(packs, str) else (packs or [])
+	return plan(company, packs, loss_percent)
+
+
+@frappe.whitelist(methods=["POST"])
+def request_packaging_shortfall(
+	company: str,
+	packs: list | str,
+	warehouse: str,
+	loss_percent: float | None = None,
+	schedule_date: str | None = None,
+	request_id: str | None = None,
+) -> dict:
+	"""Propose a draft Material Request for the shortfall. Never submits it."""
+	from food_manufacturing.packaging.requests import create_material_request
+
+	packs = frappe.parse_json(packs) if isinstance(packs, str) else (packs or [])
+	return create_material_request(
+		company,
+		packs,
+		warehouse,
+		loss_percent=loss_percent,
+		schedule_date=schedule_date,
+		request_id=request_id,
+	)

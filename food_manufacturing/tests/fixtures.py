@@ -242,6 +242,23 @@ def ensure_uom_conversion(from_uom: str, to_uom: str, value: float) -> None:
 	).insert(ignore_permissions=True)
 
 
+def cleanup_requests():
+	"""Remove Material Requests this app's tests proposed.
+
+	A draft can be deleted outright; a submitted one has to be cancelled first,
+	or its reservations would outlive the test and skew the next plan.
+	"""
+	names = frappe.get_all(
+		"Material Request",
+		filters={"fm_operation_key": ("is", "set")},
+		fields=["name", "docstatus"],
+	)
+	for row in names:
+		if row.docstatus == 1:
+			frappe.get_doc("Material Request", row.name).cancel()
+		frappe.delete_doc("Material Request", row.name, force=True, ignore_permissions=True)
+
+
 def cleanup_recipes():
 	recipes = frappe.get_all("FM Recipe", filters={"item": ("like", f"{PREFIX}%")}, pluck="name")
 	boms = frappe.get_all("BOM", filters={"item": ("like", f"{PREFIX}%")}, pluck="name")

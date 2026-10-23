@@ -139,4 +139,93 @@ BOM alone or also from a per-company overhead rate on `FM Manufacturing Policy`.
 
 ## Phase 2 — Packaging material planning
 
+Status: **implemented**. 17 tests, all passing. Full suite **275 passing**
+(261 integration + 14 unit), no regressions.
+
+### What it does
+
+| Requirement | Where |
+|---|---|
+| Blend, pouches, labels, cartons for planned packs | `packaging/planning._requirements` |
+| Explicit UOM conversions | `packaging/conversion.to_stock_qty` |
+| Configurable packing-loss allowance | `FM Manufacturing Policy.packing_loss_percent`, overridable per request |
+| Availability, commitments, expected receipts, net shortage | `packaging/planning._stock_position` |
+| Reviewable Material Requests, no duplicates | `packaging/requests.create_material_request` |
+
+### Design decisions
+
+**The stock position is four numbers, not one.** "Do we have enough" collapses
+an answer the planner needs to see:
+
+| | Bin field | Meaning |
+|---|---|---|
+| On hand | `actual_qty` | physically there |
+| Committed | `reserved_qty` + `reserved_qty_for_production` | promised to a sales order or an open run |
+| Already requested | `indented_qty` | a Material Request is open |
+| Expected | `ordered_qty` | a purchase order is due |
+
+Shortage nets all four.
+
+**Duplicates are prevented twice, because one way is not enough.** By
+*arithmetic*: `indented_qty` is netted off, so a shortage already requested is
+no longer a shortage and re-planning the same run produces nothing — the
+behaviour a planner expects without knowing about keys. By *key*: arithmetic
+loses a race between two people clicking at once, so the plan carries an
+idempotency fingerprint and a repeat returns the first request.
+
+**The request is a draft, and stays one.** A planner proposes; a buyer decides.
+Submitting on the operator's behalf would put purchasing authority behind a
+shop-floor button.
+
+**ERPNext's `get_conversion_factor` is deliberately not used.** It returns
+**1.0** when it finds nothing, which is indistinguishable from a genuine 1:1
+conversion — and planning 50 g of blend as 50 kg is exactly the failure this
+module exists to prevent. `packaging/conversion.py` reads the item's UOM table
+and the global table directly, so "unknown" comes back as zero and is reported
+as a note rather than guessed. A test asserts the blend line is *dropped* and a
+note raised when the conversion is missing.
+
+**The blend is counted once.** It is implied by the pack's fill quantity *and*
+listed in the packaging BOM; the BOM row for the declared bulk item is skipped.
+
+**The loss allowance defaults to zero.** A packing-loss figure is a plant's own
+measurement, not something this app should invent.
+
+### Worked example (the brief's acceptance case)
+
+1,000 packs of 50 g, one pouch and one label each:
+
+| | |
+|---|---|
+| Blend | 1,000 × 50 g = **50 kg** (factor 0.001, reported) |
+| Pouches / labels | **1,000** each |
+| With 2% allowance | 51 kg, 1,020 each |
+| 400 pouches on hand | shortage **600** |
+| After the request is submitted | `requested_qty` 1,000, shortage **0** |
+
+### Not covered
+
+- **NOT RUN:** HTTP round-trip. Permissions are exercised in-process via
+  `frappe.set_user`, the same `has_permission` path.
+- **NOT RUN:** `ruff` — absent from this bench.
+- Concurrency is guarded by a `for_update` row lock on the key lookup, but
+  **two-process contention is NOT TESTED** — the suite is single-process.
+- No console UI yet.
+
+### Handoff for review
+
+- `food_manufacturing/packaging/planning.py` — requirements and stock position
+- `food_manufacturing/packaging/conversion.py` — UOM factors, stated not assumed
+- `food_manufacturing/packaging/requests.py` — the draft Material Request
+- `food_manufacturing/tests/test_packaging_planning.py` — 17 acceptance tests
+
+Worth a second look at: whether a shortage should be requested into the
+*quarantine* warehouse rather than stores when the policy requires incoming
+inspection (currently the caller names the warehouse), and whether the plan
+should also consider stock in transit.
+
+---
+
+## Phase 3 — Quality hold and release
+
 Status: **not started.**
