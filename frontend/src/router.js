@@ -1,7 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 
 const routes = [
-	{ path: '/recall', name: 'Recall', component: () => import('@/pages/Recall.vue'), meta: { title: 'Recall' } },
 	{ path: '/', redirect: { name: 'Dashboard' } },
 	{
 		path: '/dashboard',
@@ -32,6 +31,24 @@ const routes = [
 		name: 'Dispatch',
 		component: () => import('@/pages/Dispatch.vue'),
 		meta: { title: 'Dispatch' },
+	},
+	{
+		path: '/recall',
+		name: 'Recall',
+		component: () => import('@/pages/Recall.vue'),
+		meta: { title: 'Recall' },
+	},
+	{
+		path: '/insights/production',
+		name: 'ProductionInsights',
+		component: () => import('@/pages/ProductionInsights.vue'),
+		meta: { title: 'Production insights' },
+	},
+	{
+		path: '/insights/quality',
+		name: 'QualityInsights',
+		component: () => import('@/pages/QualityInsights.vue'),
+		meta: { title: 'Quality overview' },
 	},
 ]
 

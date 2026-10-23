@@ -8,12 +8,16 @@ export {}
 /* prettier-ignore */
 declare module 'vue' {
   export interface GlobalComponents {
+    AppearanceMenu: typeof import('./src/components/AppearanceMenu.vue')['default']
     BarRanking: typeof import('./src/components/viz/BarRanking.vue')['default']
+    KpiCard: typeof import('./src/components/KpiCard.vue')['default']
     LineTrend: typeof import('./src/components/viz/LineTrend.vue')['default']
+    PageHeader: typeof import('./src/components/PageHeader.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
     StateBlock: typeof import('./src/components/StateBlock.vue')['default']
     StatTile: typeof import('./src/components/viz/StatTile.vue')['default']
+    StatusChip: typeof import('./src/components/StatusChip.vue')['default']
     StatusStack: typeof import('./src/components/viz/StatusStack.vue')['default']
   }
 }

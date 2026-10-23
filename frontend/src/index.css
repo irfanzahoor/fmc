@@ -1,8 +1,137 @@
+@import './assets/fonts/fonts.css';
 @import 'frappe-ui/style.css';
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/*
+ * Theme tokens, from docs/ui-design/premium/DESIGN.md.
+ *
+ * These are *chrome* tokens - sidebar, canvas, surfaces, primary action. They
+ * are deliberately separate from the --viz-* chart tokens below, which are the
+ * validated data-visualisation palette and must not be re-themed: the repo
+ * requires re-running the data-viz validator before any chart colour changes,
+ * and quality status must keep one stable meaning across every theme.
+ */
+.fm-app {
+	color-scheme: light;
+
+	--fm-primary: #4263eb;
+	--fm-primary-dark: #2947c2;
+	--fm-on-primary: #ffffff;
+	--fm-soft: #edf1ff;
+	--fm-canvas: #f4f6fb;
+	--fm-surface: #ffffff;
+	--fm-ink: #18243a;
+	--fm-muted: #68748a;
+	--fm-border: #e5e9f1;
+	--fm-sidebar: #111d33;
+	--fm-side-ink: #c1cce0;
+	--fm-hero: #162641;
+	--fm-hero-soft: #233958;
+	--fm-line: #c1d2ff;
+
+	--fm-radius: 16px;
+	--fm-shadow: 0 3px 14px #1a294508;
+
+	--fm-heading: 'Plus Jakarta Sans', system-ui, sans-serif;
+	--fm-body: 'Inter', system-ui, sans-serif;
+}
+
+.fm-app[data-theme='forest'] {
+	--fm-primary: #247861;
+	--fm-primary-dark: #195a49;
+	--fm-soft: #eaf4ee;
+	--fm-canvas: #f4f7f3;
+	--fm-ink: #1c302a;
+	--fm-muted: #62766b;
+	--fm-border: #e0e9e1;
+	--fm-sidebar: #142f29;
+	--fm-side-ink: #c0d5cb;
+	--fm-hero: #193d33;
+	--fm-hero-soft: #285348;
+	--fm-line: #b8e1cd;
+}
+
+.fm-app[data-theme='amethyst'] {
+	--fm-primary: #7552b5;
+	--fm-primary-dark: #5c3c99;
+	--fm-soft: #f1ecfa;
+	--fm-canvas: #f7f5fa;
+	--fm-ink: #2a233b;
+	--fm-muted: #756b85;
+	--fm-border: #e9e3f0;
+	--fm-sidebar: #251d39;
+	--fm-side-ink: #d0c4e1;
+	--fm-hero: #35264d;
+	--fm-hero-soft: #4e3c68;
+	--fm-line: #dac8f6;
+}
+
+.fm-app[data-theme='graphite'] {
+	--fm-primary: #445366;
+	--fm-primary-dark: #29384a;
+	--fm-soft: #edf0f3;
+	--fm-canvas: #f4f5f6;
+	--fm-ink: #202b38;
+	--fm-muted: #68737e;
+	--fm-border: #e2e6e9;
+	--fm-sidebar: #202831;
+	--fm-side-ink: #c9d0d8;
+	--fm-hero: #293441;
+	--fm-hero-soft: #3d4b5c;
+	--fm-line: #cbd4df;
+}
+
+.fm-app[data-theme='copper'] {
+	--fm-primary: #9c5b35;
+	--fm-primary-dark: #7e4323;
+	--fm-soft: #faf0e8;
+	--fm-canvas: #f8f5f0;
+	--fm-ink: #372b24;
+	--fm-muted: #7d6d61;
+	--fm-border: #eae2d8;
+	--fm-sidebar: #342a23;
+	--fm-side-ink: #d8cbbd;
+	--fm-hero: #493529;
+	--fm-hero-soft: #644b3b;
+	--fm-line: #edcdb1;
+}
+
+/* Alternate pairing: the roles swap, the families do not. */
+.fm-app[data-font='humanist'] {
+	--fm-heading: 'Inter', system-ui, sans-serif;
+	--fm-body: 'Plus Jakarta Sans', system-ui, sans-serif;
+}
+
+/*
+ * Quality meaning is fixed across every theme. A released batch must never
+ * change colour because somebody picked Copper, and the word and icon always
+ * travel with the colour.
+ */
+.fm-app {
+	/*
+	 * Chart tokens for the dark hero panel. These are NOT the prototype's
+	 * --line value: #c1d2ff failed the validator on every hero surface
+	 * (lightness 0.866, chroma 0.065 - it reads gray). #3987e5 is the
+	 * reference palette's dark slot 1 and #d03b3b the reserved critical
+	 * status; the pair passes all checks on all five theme hero surfaces.
+	 */
+	--viz-hero-series: #3987e5;
+	--viz-hero-flag: #d03b3b;
+	--viz-hero-ink: #ffffff;
+	--viz-hero-ink-secondary: var(--fm-side-ink);
+	--viz-hero-grid: rgba(255, 255, 255, 0.16);
+	--viz-hero-axis: rgba(255, 255, 255, 0.28);
+
+	--fm-good: #247757;
+	--fm-good-bg: #eaf5ef;
+	--fm-warn: #93621c;
+	--fm-warn-bg: #fbf2df;
+	--fm-bad: #ad3e4b;
+	--fm-bad-bg: #fbedef;
+}
 
 /*
  * Everything here is scoped under .fm-app, which wraps the whole SPA. The app is
@@ -82,25 +211,160 @@
 
 @layer components {
 	.fm-app {
-		@apply min-h-screen bg-gray-50 text-base text-gray-900 antialiased;
+		min-height: 100vh;
+		background: var(--fm-canvas);
+		color: var(--fm-ink);
+		font-family: var(--fm-body);
+		-webkit-font-smoothing: antialiased;
 	}
 
-	/* Tap targets sized for a gloved hand on a shop-floor tablet. */
+	.fm-app h1,
+	.fm-app h2,
+	.fm-app h3,
+	.fm-app .fm-figure {
+		font-family: var(--fm-heading);
+		letter-spacing: -0.015em;
+	}
+
+	/* Quantities line up only when the figures are tabular. */
+	.fm-app .fm-num {
+		font-variant-numeric: tabular-nums;
+	}
+
+	/* Sized for a gloved hand on a shop-floor tablet. */
 	.fm-app .fm-tap {
-		@apply min-h-11 min-w-11;
+		min-height: 2.75rem;
 	}
 
 	.fm-app .fm-card {
-		@apply rounded-lg border border-gray-200 bg-white shadow-sm;
+		background: var(--fm-surface);
+		border: 1px solid var(--fm-border);
+		border-radius: var(--fm-radius);
+		box-shadow: var(--fm-shadow);
 	}
 
 	.fm-app .fm-label {
-		@apply text-xs font-medium uppercase tracking-wide text-gray-600;
+		font-size: 0.6875rem;
+		font-weight: 600;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+		color: var(--fm-muted);
 	}
 
-	/* Visible focus for keyboard users; never removed. */
+	.fm-app .fm-eyebrow {
+		font-size: 0.6875rem;
+		font-weight: 700;
+		letter-spacing: 0.12em;
+		text-transform: uppercase;
+		color: var(--fm-primary);
+	}
+
+	.fm-app .fm-muted {
+		color: var(--fm-muted);
+	}
+
+	/* Primary action. Contrast is carried by the token pair, not by a tint. */
+	.fm-app .fm-btn-primary {
+		background: var(--fm-primary);
+		color: var(--fm-on-primary);
+		border-radius: 10px;
+		font-weight: 600;
+		transition: background-color 150ms ease;
+	}
+
+	.fm-app .fm-btn-primary:hover:not(:disabled) {
+		background: var(--fm-primary-dark);
+	}
+
+	.fm-app .fm-btn-primary:disabled {
+		opacity: 0.55;
+		cursor: not-allowed;
+	}
+
+	.fm-app .fm-btn-ghost {
+		background: var(--fm-surface);
+		border: 1px solid var(--fm-border);
+		color: var(--fm-ink);
+		border-radius: 10px;
+		font-weight: 500;
+		transition: border-color 150ms ease;
+	}
+
+	.fm-app .fm-btn-ghost:hover:not(:disabled) {
+		border-color: var(--fm-primary);
+	}
+
+	.fm-app .fm-input {
+		width: 100%;
+		background: var(--fm-surface);
+		border: 1px solid var(--fm-border);
+		border-radius: 10px;
+		padding: 0.625rem 0.75rem;
+		color: var(--fm-ink);
+		font-variant-numeric: tabular-nums;
+	}
+
+	.fm-app .fm-input:focus {
+		outline: none;
+		border-color: var(--fm-primary);
+		box-shadow: 0 0 0 3px var(--fm-soft);
+	}
+
+	/* Status chips always carry a word; colour alone never states the meaning. */
+	.fm-app .fm-chip {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.3rem;
+		padding: 0.15rem 0.5rem;
+		border-radius: 999px;
+		font-size: 0.75rem;
+		font-weight: 600;
+		white-space: nowrap;
+	}
+
+	.fm-app .fm-chip-good { background: var(--fm-good-bg); color: var(--fm-good); }
+	.fm-app .fm-chip-warn { background: var(--fm-warn-bg); color: var(--fm-warn); }
+	.fm-app .fm-chip-bad { background: var(--fm-bad-bg); color: var(--fm-bad); }
+	.fm-app .fm-chip-soft { background: var(--fm-soft); color: var(--fm-primary); }
+
+	.fm-app .fm-table {
+		width: 100%;
+		border-collapse: collapse;
+		font-size: 0.875rem;
+	}
+
+	.fm-app .fm-table th {
+		text-align: left;
+		font-weight: 600;
+		font-size: 0.75rem;
+		letter-spacing: 0.02em;
+		color: var(--fm-muted);
+		background: var(--fm-canvas);
+		padding: 0.625rem 0.875rem;
+		white-space: nowrap;
+	}
+
+	.fm-app .fm-table td {
+		padding: 0.75rem 0.875rem;
+		border-top: 1px solid var(--fm-border);
+	}
+
+	/* Focus is always visible; it is never removed to tidy a layout. */
 	.fm-app :focus-visible {
-		@apply outline-none ring-2 ring-blue-500 ring-offset-1;
+		outline: 2px solid var(--fm-primary);
+		outline-offset: 2px;
+		border-radius: 6px;
+	}
+
+	.fm-app .fm-skip:focus {
+		position: fixed;
+		left: 1rem;
+		top: 1rem;
+		z-index: 60;
+		background: var(--fm-surface);
+		padding: 0.5rem 0.75rem;
+		border-radius: 8px;
+		box-shadow: var(--fm-shadow);
 	}
 }
 

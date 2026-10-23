@@ -123,3 +123,41 @@ commands and explain any checks that could not be run locally.
 All sixteen workspace/dashboard desktop/phone entries and screenshots are local.
 The presentation hub and its fonts/icons work offline; no Stitch reconnection is
 required for implementation. No API credentials belong in these files.
+
+
+---
+
+## Implementation status (2026-10-23)
+
+**Done:** app shell (240px dark sidebar, topbar, six-item phone navigation), the five
+themes and two font pairings as a stored preference with a safe-storage fallback,
+self-hosted fonts with their OFL licences, shared tokens and components
+(`PageHeader`, `KpiCard`, `StatusChip`, `StateBlock`), the Plant overview rebuilt to the
+reference, both Insights dashboards, and all six operational pages restyled onto the
+token system. `yarn build` is clean and each page is a lazy chunk.
+
+**Corrections made against the drafts, as the handoff asked:**
+
+- The prototype's `--line` (`#c1d2ff`) was **rejected for chart use**: the data-viz
+  validator fails it on every theme hero surface (lightness 0.866, chroma 0.065 — it reads
+  gray). The hero chart uses `#3987e5` with `#d03b3b` for flagged runs, which passes every
+  check on all five hero surfaces. It is kept as a chrome token only.
+- Chart colours do **not** re-tint with the theme. Quality status keeps one fixed meaning
+  across all five palettes and always ships an icon and a word.
+- Insights are built from `api.dashboard.get_dashboard` only. No endpoint, schema or field
+  was added for visual parity, and no trend comparison or target was invented.
+- Missing measurements render as an em dash, never zero.
+- Output bars stay grouped by UOM; kg and packs are never put on one scale.
+- On a phone the overview yield plot is replaced by its run table rather than squeezed.
+
+**Not done / limitations:**
+
+- Only the Overview has been rendered and reviewed as a screenshot (desktop 1440, phone
+  390, and the Copper + Humanist variant). Production, Quality, Receiving, Dispatch and
+  Recall **compile and keep their existing bindings and behaviour, but have not been
+  visually verified** — the design harness renders the Overview only, and no Frappe
+  session is available here to drive the live screens.
+- Scanner focus/Enter behaviour, QC pagination, UOM conversion and safe-retry posting were
+  preserved as written; they have **not** been re-exercised through the UI.
+- The phone references for the six pages were not reproduced one-for-one; the shared
+  responsive rules were applied instead.

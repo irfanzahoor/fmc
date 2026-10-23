@@ -1,174 +1,241 @@
 <template>
-	<section aria-labelledby="fm-prod-heading">
-		<div class="mb-4 flex flex-wrap items-baseline gap-2">
-			<h2 id="fm-prod-heading" class="text-lg font-semibold">Production queue</h2>
-			<p class="text-sm text-gray-600">Blending and packaging runs awaiting completion.</p>
-			<Button class="ml-auto fm-tap" :loading="loading" @click="load">Refresh</Button>
-		</div>
+	<section>
+		<PageHeader
+			eyebrow="Production workspace"
+			title="Production"
+			subtitle="Released ingredients. Clear work orders. Confident completions."
+			:tabs="tabs"
+		>
+			<template #actions>
+				<button type="button" class="fm-btn-ghost fm-tap flex items-center gap-2 px-3 text-sm" @click="load">
+					<RefreshCw class="h-4 w-4" :class="loading ? 'animate-spin motion-reduce:animate-none' : ''" aria-hidden="true" />
+					Refresh
+				</button>
+			</template>
+		</PageHeader>
 
 		<StateBlock
-			:loading="loading"
+			:loading="loading && !rows.length"
 			:error="error"
-			:empty="!rows.length"
+			:empty="!loading && !rows.length"
 			loading-text="Loading production queue…"
 			empty-title="No open production runs"
-			empty-hint="Submitted Work Orders for this company will appear here."
+			empty-hint="Submitted Work Orders for this company appear here."
 			:icon="Factory"
 			:on-retry="load"
 		>
-			<ul class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-				<li v-for="row in rows" :key="row.name" class="fm-card p-4">
-					<div class="flex items-start justify-between gap-2">
-						<div>
-							<p class="font-medium">{{ row.item_name || row.production_item }}</p>
-							<p class="text-xs text-gray-600">{{ row.name }}</p>
-						</div>
-						<Badge :theme="row.status === 'In Process' ? 'blue' : 'gray'">{{ row.status }}</Badge>
+			<div class="grid gap-4 lg:grid-cols-[20rem_1fr] xl:grid-cols-[22rem_1fr]">
+				<!-- Master: horizontally scrollable on a phone, a column on desktop. -->
+				<div>
+					<div class="mb-2 flex items-baseline justify-between">
+						<h2 class="text-sm font-bold">Open work orders</h2>
+						<span class="fm-chip fm-chip-soft">{{ rows.length }} shown</span>
 					</div>
 
-					<dl class="mt-3 grid grid-cols-3 gap-2 text-sm">
-						<div>
-							<dt class="fm-label">Planned</dt>
-							<dd>{{ fmt(row.qty) }} {{ row.stock_uom }}</dd>
-						</div>
-						<div>
-							<dt class="fm-label">Done</dt>
-							<dd>{{ fmt(row.produced_qty) }}</dd>
-						</div>
-						<div>
-							<dt class="fm-label">Left</dt>
-							<dd class="font-medium">{{ fmt(row.pending_qty) }}</dd>
-						</div>
-					</dl>
+					<ul class="flex gap-3 overflow-x-auto pb-2 lg:flex-col lg:overflow-visible lg:pb-0">
+						<li v-for="row in rows" :key="row.name" class="w-[17rem] shrink-0 lg:w-auto">
+							<button
+								type="button"
+								class="fm-card w-full p-4 text-left transition-colors motion-reduce:transition-none"
+								:style="selected === row.name
+									? { borderColor: 'var(--fm-primary)', boxShadow: '0 0 0 1px var(--fm-primary)' }
+									: {}"
+								:aria-current="selected === row.name ? 'true' : undefined"
+								@click="open(row)"
+							>
+								<div class="flex items-start justify-between gap-2">
+									<span class="fm-num text-xs fm-muted">{{ row.name }}</span>
+									<span class="fm-chip fm-chip-soft">{{ row.status }}</span>
+								</div>
+								<p class="mt-1.5 font-bold">{{ row.item_name || row.production_item }}</p>
+								<p class="mt-0.5 text-xs fm-muted">
+									<span class="fm-num">{{ fmt(row.qty) }}</span> {{ row.stock_uom }} planned
+								</p>
 
-					<p v-if="row.fm_yield_flagged" class="mt-3 rounded bg-red-50 px-2 py-1 text-xs text-red-800">
-						Yield variance {{ fmt(row.fm_yield_variance_percent) }}% — outside tolerance
-					</p>
+								<div class="mt-3 border-t pt-2" :style="{ borderColor: 'var(--fm-border)' }">
+									<div class="flex items-center justify-between text-xs">
+										<span class="fm-muted">Remaining</span>
+										<span class="fm-num font-semibold">{{ fmt(row.pending_qty) }} {{ row.stock_uom }}</span>
+									</div>
+									<div class="mt-1.5 h-1.5 w-full overflow-hidden rounded-full" :style="{ background: 'var(--fm-border)' }">
+										<div class="h-full rounded-full" :style="{ width: `${progress(row)}%`, background: 'var(--fm-primary)' }" />
+									</div>
+								</div>
+							</button>
+						</li>
+					</ul>
+				</div>
 
-					<Button class="fm-tap mt-3 w-full" variant="solid" @click="open(row)">
-						Open run
-					</Button>
-				</li>
-			</ul>
+				<!-- Detail -->
+				<div v-if="selected" class="space-y-4">
+					<StateBlock :loading="detailLoading" :error="detailError" loading-text="Loading run…">
+						<div v-if="detail" class="space-y-4">
+							<div class="fm-card p-5">
+								<div class="flex flex-wrap items-start justify-between gap-3">
+									<div>
+										<p class="fm-num text-xs fm-muted">{{ detail.work_order.name }}</p>
+										<h2 class="mt-0.5 text-xl font-extrabold">
+											{{ detail.work_order.item_name || detail.work_order.production_item }}
+										</h2>
+										<p class="mt-0.5 text-xs fm-muted">
+											{{ detail.work_order.status }} · BOM {{ detail.work_order.bom_no }}
+										</p>
+									</div>
+									<span v-if="detail.work_order.yield_basis" class="fm-chip" :class="detail.work_order.yield_flagged ? 'fm-chip-bad' : 'fm-chip-good'">
+										<component :is="detail.work_order.yield_flagged ? AlertTriangle : CheckCircle" class="h-3.5 w-3.5" aria-hidden="true" />
+										{{ detail.work_order.yield_percent ? `${fmt(detail.work_order.yield_percent)}% yield` : 'Yield pending' }}
+									</span>
+								</div>
+
+								<dl class="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-3">
+									<div>
+										<dt class="fm-label">Planned</dt>
+										<dd class="fm-num mt-0.5 text-xl font-bold">{{ fmt(detail.work_order.qty) }} <span class="text-xs font-normal fm-muted">{{ unit }}</span></dd>
+									</div>
+									<div>
+										<dt class="fm-label">Produced</dt>
+										<dd class="fm-num mt-0.5 text-xl font-bold">{{ fmt(detail.work_order.produced_qty) }} <span class="text-xs font-normal fm-muted">{{ unit }}</span></dd>
+									</div>
+									<div>
+										<dt class="fm-label">Remaining</dt>
+										<dd class="fm-num mt-0.5 text-xl font-bold" :style="{ color: 'var(--fm-primary)' }">
+											{{ fmt(remaining) }} <span class="text-xs font-normal fm-muted">{{ unit }}</span>
+										</dd>
+									</div>
+								</dl>
+							</div>
+
+							<div class="fm-card overflow-hidden">
+								<div class="flex flex-wrap items-start justify-between gap-2 p-5 pb-3">
+									<div>
+										<h3 class="font-bold">Ingredients &amp; released lots</h3>
+										<p class="mt-0.5 text-sm fm-muted">Available stock, earliest expiry first.</p>
+									</div>
+									<span class="fm-chip fm-chip-good">
+										<ShieldCheck class="h-3.5 w-3.5" aria-hidden="true" />
+										Released stock only
+									</span>
+								</div>
+
+								<div class="overflow-x-auto">
+									<table class="fm-table">
+										<caption class="sr-only">Required ingredients with released lots</caption>
+										<thead>
+											<tr>
+												<th scope="col">Ingredient</th>
+												<th scope="col">Required</th>
+												<th scope="col">Consumed</th>
+												<th scope="col">Released lot</th>
+												<th scope="col">Available</th>
+												<th scope="col">Expiry</th>
+											</tr>
+										</thead>
+										<tbody>
+											<template v-for="line in detail.ingredients" :key="line.item_code">
+												<tr>
+													<td class="font-medium">{{ line.item_name || line.item_code }}</td>
+													<td class="fm-num">{{ fmt(line.required_qty) }} {{ line.stock_uom }}</td>
+													<td class="fm-num fm-muted">{{ fmt(line.consumed_qty) }} {{ line.stock_uom }}</td>
+													<td colspan="3">
+														<ul v-if="line.available_lots.length" class="space-y-1">
+															<li v-for="lot in line.available_lots.slice(0, 3)" :key="lot.batch_no" class="flex flex-wrap items-center gap-x-3 gap-y-0.5">
+																<span class="fm-num text-xs font-semibold">{{ lot.batch_no }}</span>
+																<span class="fm-num text-xs fm-muted">{{ fmt(lot.available_qty) }} {{ line.stock_uom }}</span>
+																<span class="text-xs fm-muted">{{ lot.expiry_date ? `exp ${lot.expiry_date}` : 'no expiry' }}</span>
+															</li>
+														</ul>
+														<span v-else class="fm-chip fm-chip-warn">
+															<AlertTriangle class="h-3.5 w-3.5" aria-hidden="true" />
+															No released stock — needs a quality release
+														</span>
+													</td>
+												</tr>
+											</template>
+										</tbody>
+									</table>
+								</div>
+
+								<p class="flex items-center gap-2 border-t px-5 py-3 text-xs fm-muted" :style="{ borderColor: 'var(--fm-border)' }">
+									<ShieldCheck class="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+									Only eligible released lots can be consumed. The server enforces this on submit.
+								</p>
+							</div>
+
+							<form class="fm-card p-5" @submit.prevent="finish">
+								<h3 class="font-bold">Finish this run</h3>
+								<p class="mt-0.5 text-sm fm-muted">Record actual output and non-recoverable process loss.</p>
+
+								<div class="mt-4 grid gap-4 sm:grid-cols-2">
+									<label class="block">
+										<span class="fm-label">Good output</span>
+										<span class="mt-1 flex items-center gap-2">
+											<input v-model="form.qty" type="number" step="any" min="0" required class="fm-input fm-tap" />
+											<span class="text-sm fm-muted">{{ unit }}</span>
+										</span>
+									</label>
+									<label class="block">
+										<span class="fm-label">Process loss</span>
+										<span class="mt-1 flex items-center gap-2">
+											<input v-model="form.processLoss" type="number" step="any" min="0" class="fm-input fm-tap" />
+											<span class="text-sm fm-muted">{{ unit }}</span>
+										</span>
+									</label>
+								</div>
+
+								<label class="mt-4 block">
+									<span class="fm-label">Output batch reference (optional)</span>
+									<input v-model="form.finishedBatch" type="text" class="fm-input fm-tap mt-1" placeholder="Automatic batch naming" />
+									<span class="mt-1 block text-xs fm-muted">Leave blank to let ERPNext name the output batch.</span>
+								</label>
+
+								<p v-if="finishError" role="alert" class="mt-4 rounded-xl p-3 text-sm" :style="{ background: 'var(--fm-bad-bg)', color: 'var(--fm-bad)' }">
+									{{ errorMessage(finishError) }}
+								</p>
+
+								<p v-if="finishResult" role="status" class="mt-4 rounded-xl p-3 text-sm" :style="{ background: 'var(--fm-good-bg)', color: 'var(--fm-good)' }">
+									Posted {{ finishResult.stock_entry }} — yield {{ fmt(finishResult.yield_percent) }}%<template v-if="finishResult.yield_flagged">, flagged as outside tolerance</template>.
+								</p>
+
+								<div class="mt-4 flex flex-wrap items-center justify-between gap-3 border-t pt-4" :style="{ borderColor: 'var(--fm-border)' }">
+									<p class="text-xs fm-muted">Review the quantities before completing this Work Order.</p>
+									<button type="submit" class="fm-btn-primary fm-tap flex items-center gap-2 px-4 text-sm" :disabled="finishing || Boolean(finishResult)">
+										<Check class="h-4 w-4" aria-hidden="true" />
+										{{ finishing ? 'Posting…' : finishResult ? 'Completed' : 'Complete run' }}
+									</button>
+								</div>
+							</form>
+						</div>
+					</StateBlock>
+				</div>
+
+				<div v-else class="fm-card grid place-items-center p-10 text-center">
+					<div>
+						<Factory class="mx-auto h-7 w-7 fm-muted" aria-hidden="true" />
+						<p class="mt-2 text-sm font-semibold">Select a work order</p>
+						<p class="mt-1 text-sm fm-muted">Its ingredients and completion form appear here.</p>
+					</div>
+				</div>
+			</div>
 		</StateBlock>
-
-		<Dialog v-model="showRun" :options="{ title: detail?.work_order?.name || 'Run', size: '2xl' }">
-			<template #body-content>
-				<StateBlock :loading="detailLoading" :error="detailError" loading-text="Loading run…">
-					<div v-if="detail" class="space-y-5">
-						<div class="grid gap-3 sm:grid-cols-3">
-							<div>
-								<p class="fm-label">Item</p>
-								<p class="text-sm">{{ detail.work_order.item_name || detail.work_order.production_item }}</p>
-							</div>
-							<div>
-								<p class="fm-label">Planned</p>
-								<p class="text-sm">{{ fmt(detail.work_order.qty) }} {{ detail.work_order.stock_uom }}</p>
-							</div>
-							<div>
-								<p class="fm-label">Already produced</p>
-								<p class="text-sm">{{ fmt(detail.work_order.produced_qty) }}</p>
-							</div>
-						</div>
-
-						<div>
-							<h3 class="mb-2 text-sm font-semibold">Ingredients and available lots</h3>
-							<div class="overflow-x-auto">
-								<table class="w-full min-w-[32rem] text-left text-sm">
-									<caption class="sr-only">Required ingredients with released lots in FEFO order</caption>
-									<thead>
-										<tr class="border-b border-gray-200">
-											<th scope="col" class="py-2 pr-3 font-medium">Ingredient</th>
-											<th scope="col" class="py-2 pr-3 font-medium">Required</th>
-											<th scope="col" class="py-2 pr-3 font-medium">Consumed</th>
-											<th scope="col" class="py-2 font-medium">Released lots (earliest expiry first)</th>
-										</tr>
-									</thead>
-									<tbody>
-										<tr v-for="line in detail.ingredients" :key="line.item_code" class="border-b border-gray-100 align-top">
-											<td class="py-2 pr-3">{{ line.item_name || line.item_code }}</td>
-											<td class="py-2 pr-3">{{ fmt(line.required_qty) }} {{ line.stock_uom }}</td>
-											<td class="py-2 pr-3">{{ fmt(line.consumed_qty) }}</td>
-											<td class="py-2">
-												<ul v-if="line.available_lots.length" class="space-y-1">
-													<li v-for="lot in line.available_lots.slice(0, 4)" :key="lot.batch_no">
-														<span class="font-mono text-xs">{{ lot.batch_no }}</span>
-														<span class="text-gray-600"> · {{ fmt(lot.available_qty) }}</span>
-														<span v-if="lot.expiry_date" class="text-gray-600"> · exp {{ lot.expiry_date }}</span>
-													</li>
-												</ul>
-												<p v-else class="text-xs text-red-700">
-													No released stock — needs a quality release first.
-												</p>
-											</td>
-										</tr>
-									</tbody>
-								</table>
-							</div>
-						</div>
-
-						<form class="grid gap-3 sm:grid-cols-3" @submit.prevent="finish">
-							<FormControl
-								v-model="form.qty"
-								type="number"
-								label="Good quantity"
-								:description="`In ${detail.work_order.stock_uom}`"
-								step="any"
-								min="0"
-								required
-							/>
-							<FormControl
-								v-model="form.processLoss"
-								type="number"
-								label="Process loss"
-								description="Non-recoverable"
-								step="any"
-								min="0"
-							/>
-							<FormControl
-								v-model="form.finishedBatch"
-								type="text"
-								label="Output batch"
-								description="Leave blank to let ERPNext name it"
-							/>
-
-							<p v-if="finishError" role="alert" class="sm:col-span-3 rounded bg-red-50 p-2 text-sm text-red-800 whitespace-pre-line">
-								{{ errorMessage(finishError) }}
-							</p>
-
-							<p v-if="finishResult" role="status" class="sm:col-span-3 rounded bg-green-50 p-2 text-sm text-green-900">
-								Posted {{ finishResult.stock_entry }} — yield
-								{{ fmt(finishResult.yield_percent) }}%
-								<template v-if="finishResult.yield_flagged"> (flagged, outside tolerance)</template>
-							</p>
-
-							<div class="sm:col-span-3">
-								<Button class="fm-tap" variant="solid" :loading="finishing" :disabled="finishing || Boolean(finishResult)" type="submit">
-									Finish run
-								</Button>
-							</div>
-						</form>
-					</div>
-				</StateBlock>
-			</template>
-		</Dialog>
 	</section>
 </template>
 
 <script setup>
-import { onMounted, reactive, ref } from 'vue'
-import { Factory } from 'lucide-vue-next'
+import { computed, onMounted, reactive, ref } from 'vue'
+import { AlertTriangle, Check, CheckCircle, Factory, LineChart, RefreshCw, ShieldCheck } from 'lucide-vue-next'
 
+import PageHeader from '@/components/PageHeader.vue'
 import StateBlock from '@/components/StateBlock.vue'
 import { errorMessage, production } from '@/data/api'
 
 const props = defineProps({ company: { type: String, required: true } })
+const emit = defineEmits(['counts-changed'])
 
 const rows = ref([])
 const loading = ref(false)
 const error = ref(null)
 
-const showRun = ref(false)
+const selected = ref(null)
 const detail = ref(null)
 const detailLoading = ref(false)
 const detailError = ref(null)
@@ -178,13 +245,34 @@ const finishError = ref(null)
 const finishResult = ref(null)
 const form = reactive({ qty: '', processLoss: '', finishedBatch: '' })
 
+const tabs = [
+	{ name: 'Production', label: 'Workspace', icon: Factory },
+	{ name: 'ProductionInsights', label: 'Insights', icon: LineChart },
+]
+
 const fmt = (value) => Number(value || 0).toLocaleString(undefined, { maximumFractionDigits: 3 })
+const unit = computed(() => detail.value?.work_order?.stock_uom || '')
+const remaining = computed(() => {
+	const wo = detail.value?.work_order
+	if (!wo) return 0
+	return Number(wo.qty || 0) - Number(wo.produced_qty || 0) - Number(wo.process_loss_qty || 0)
+})
+
+function progress(row) {
+	const planned = Number(row.qty || 0)
+	if (!planned) return 0
+	const done = Number(row.produced_qty || 0) + Number(row.process_loss_qty || 0)
+	return Math.min(100, Math.max(0, (done / planned) * 100))
+}
 
 async function load() {
 	loading.value = true
 	error.value = null
 	try {
 		rows.value = await production.queue({ company: props.company })
+		if (rows.value.length && !rows.value.some((row) => row.name === selected.value)) {
+			await open(rows.value[0])
+		}
 	} catch (err) {
 		error.value = err
 	} finally {
@@ -193,7 +281,7 @@ async function load() {
 }
 
 async function open(row) {
-	showRun.value = true
+	selected.value = row.name
 	detail.value = null
 	detailError.value = null
 	detailLoading.value = true
@@ -213,10 +301,11 @@ async function open(row) {
 }
 
 async function finish() {
+	// A confirmed success must not be posted twice by an impatient second click.
 	if (finishing.value || finishResult.value) return
+
 	finishing.value = true
 	finishError.value = null
-	finishResult.value = null
 
 	try {
 		finishResult.value = await production.finishRun({
@@ -226,6 +315,7 @@ async function finish() {
 			finished_batch: form.finishedBatch || null,
 		})
 		await load()
+		emit('counts-changed')
 	} catch (err) {
 		finishError.value = err
 	} finally {

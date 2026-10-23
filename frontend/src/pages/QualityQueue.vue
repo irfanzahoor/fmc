@@ -1,10 +1,18 @@
 <template>
 	<section aria-labelledby="fm-qc-heading">
-		<div class="mb-4 flex flex-wrap items-baseline gap-2">
-			<h2 id="fm-qc-heading" class="text-lg font-semibold">Quality release queue</h2>
-			<p class="text-sm text-gray-600">Batches awaiting a decision, longest-waiting first.</p>
-			<Button class="ml-auto fm-tap" :loading="loading" @click="load">Refresh</Button>
-		</div>
+		<PageHeader
+			eyebrow="Quality workspace"
+			title="Quality"
+			subtitle="Batches awaiting a decision, longest-waiting first."
+			:tabs="tabs"
+		>
+			<template #actions>
+				<button type="button" class="fm-btn-ghost fm-tap flex items-center gap-2 px-3 text-sm" @click="load">
+					<RefreshCw class="h-4 w-4" :class="loading ? 'animate-spin motion-reduce:animate-none' : ''" aria-hidden="true" />
+					Refresh
+				</button>
+			</template>
+		</PageHeader>
 
 		<StateBlock
 			:loading="loading"
@@ -17,38 +25,38 @@
 			:on-retry="load"
 		>
 			<div class="fm-card overflow-x-auto">
-				<table class="w-full min-w-[46rem] text-left text-sm">
+				<table class="fm-table min-w-[46rem]">
 					<caption class="sr-only">Batches awaiting a quality decision</caption>
-					<thead class="border-b border-gray-200 bg-gray-50">
+					<thead >
 						<tr>
-							<th scope="col" class="px-3 py-2 font-medium">Batch</th>
-							<th scope="col" class="px-3 py-2 font-medium">Item</th>
-							<th scope="col" class="px-3 py-2 font-medium">Status</th>
-							<th scope="col" class="px-3 py-2 font-medium">Qty</th>
-							<th scope="col" class="px-3 py-2 font-medium">Supplier lot</th>
-							<th scope="col" class="px-3 py-2 font-medium">Shelf life left</th>
-							<th scope="col" class="px-3 py-2 font-medium">Action</th>
+							<th scope="col" >Batch</th>
+							<th scope="col" >Item</th>
+							<th scope="col" >Status</th>
+							<th scope="col" >Qty</th>
+							<th scope="col" >Supplier lot</th>
+							<th scope="col" >Shelf life left</th>
+							<th scope="col" >Action</th>
 						</tr>
 					</thead>
 					<tbody>
-						<tr v-for="row in rows" :key="row.name" class="border-b border-gray-100">
+						<tr v-for="row in rows" :key="row.name" >
 							<td class="px-3 py-2 font-mono text-xs">{{ row.name }}</td>
-							<td class="px-3 py-2">{{ row.item_name || row.item }}</td>
-							<td class="px-3 py-2">
+							<td >{{ row.item_name || row.item }}</td>
+							<td >
 								<Badge :theme="row.fm_quality_status === 'Hold' ? 'orange' : 'gray'">
 									{{ row.fm_quality_status }}
 								</Badge>
 							</td>
-							<td class="px-3 py-2">{{ fmt(row.qty) }}</td>
-							<td class="px-3 py-2">{{ row.fm_supplier_lot_no || '—' }}</td>
-							<td class="px-3 py-2">
+							<td >{{ fmt(row.qty) }}</td>
+							<td >{{ row.fm_supplier_lot_no || '—' }}</td>
+							<td >
 								<span v-if="row.remaining_shelf_life_percent !== null">
 									{{ fmt(row.remaining_shelf_life_percent) }}%
 								</span>
-								<span v-else class="text-gray-500">not tracked</span>
+								<span v-else class="fm-muted">not tracked</span>
 							</td>
-							<td class="px-3 py-2">
-								<Button class="fm-tap" @click="open(row)">Decide</Button>
+							<td >
+								<button type="button" class="fm-btn-ghost fm-tap px-3 text-sm" @click="open(row)">Decide</button>
 							</td>
 						</tr>
 					</tbody>
@@ -94,7 +102,7 @@
 
 						<div v-if="context.history.length">
 							<h3 class="mb-1 text-sm font-semibold">Decision history</h3>
-							<ul class="space-y-1 text-sm text-gray-700">
+							<ul class="space-y-1 text-sm fm-muted">
 								<li v-for="item in context.history" :key="item.name">
 									<span class="font-medium">{{ item.decision }}</span>
 									by {{ item.decided_by }} on {{ item.posting_datetime }}
@@ -136,11 +144,11 @@
 								description="Required to release when the company policy says so"
 							/>
 
-							<p v-if="submitError" role="alert" class="rounded bg-red-50 p-2 text-sm text-red-800 whitespace-pre-line">
+							<p v-if="submitError" role="alert" class="rounded-xl p-3 text-sm whitespace-pre-line" :style="{ background: 'var(--fm-bad-bg)', color: 'var(--fm-bad)' }">
 								{{ errorMessage(submitError) }}
 							</p>
 
-							<p v-if="submitResult" role="status" class="rounded bg-green-50 p-2 text-sm text-green-900">
+							<p v-if="submitResult" role="status" class="rounded-xl p-3 text-sm" :style="{ background: 'var(--fm-good-bg)', color: 'var(--fm-good)' }">
 								Recorded {{ submitResult.name }} — batch is now {{ submitResult.quality_status }}.
 							</p>
 
@@ -157,14 +165,20 @@
 
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue'
-import { ClipboardCheck } from 'lucide-vue-next'
+import { ClipboardCheck, RefreshCw, ShieldCheck } from 'lucide-vue-next'
 
+import PageHeader from '@/components/PageHeader.vue'
 import StateBlock from '@/components/StateBlock.vue'
 import { errorMessage, quality } from '@/data/api'
 
 const props = defineProps({ company: { type: String, required: true } })
 
 const decisions = ['Release', 'Hold', 'Reject']
+
+const tabs = [
+	{ name: 'Quality', label: 'Workspace', icon: ShieldCheck },
+	{ name: 'QualityInsights', label: 'Insights', icon: ClipboardCheck },
+]
 
 const rows = ref([])
 const pageStart = ref(0)

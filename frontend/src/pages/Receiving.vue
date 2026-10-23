@@ -1,10 +1,17 @@
 <template>
 	<section aria-labelledby="fm-recv-heading">
-		<div class="mb-4 flex flex-wrap items-baseline gap-2">
-			<h2 id="fm-recv-heading" class="text-lg font-semibold">Goods in</h2>
-			<p class="text-sm text-gray-600">Receive against a purchase order and record the supplier lot.</p>
-			<Button class="ml-auto fm-tap" :loading="loading" @click="load">Refresh</Button>
-		</div>
+		<PageHeader
+			eyebrow="Receiving"
+			title="Goods in"
+			subtitle="Receive against a purchase order and record the supplier lot."
+		>
+			<template #actions>
+				<button type="button" class="fm-btn-ghost fm-tap flex items-center gap-2 px-3 text-sm" @click="load">
+					<RefreshCw class="h-4 w-4" :class="loading ? 'animate-spin motion-reduce:animate-none' : ''" aria-hidden="true" />
+					Refresh
+				</button>
+			</template>
+		</PageHeader>
 
 		<StateBlock
 			:loading="loading"
@@ -19,9 +26,9 @@
 			<ul class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
 				<li v-for="order in orders" :key="order.name" class="fm-card p-4">
 					<p class="font-medium">{{ order.supplier_name || order.supplier }}</p>
-					<p class="text-xs text-gray-600">{{ order.name }} · {{ order.transaction_date }}</p>
+					<p class="text-xs fm-muted">{{ order.name }} · {{ order.transaction_date }}</p>
 					<p class="mt-2 text-sm">{{ fmt(order.per_received) }}% received</p>
-					<Button class="fm-tap mt-3 w-full" variant="solid" @click="open(order)">Receive</Button>
+					<button type="button" class="fm-btn-primary fm-tap mt-3 w-full px-4 text-sm" @click="open(order)">Receive</button>
 				</li>
 			</ul>
 		</StateBlock>
@@ -30,7 +37,7 @@
 			<template #body-content>
 				<StateBlock :loading="linesLoading" :error="linesError" loading-text="Loading lines…">
 					<div v-if="lines" class="space-y-4">
-						<p v-if="lines.requires_inspection" class="rounded bg-amber-50 p-2 text-sm text-amber-900">
+						<p v-if="lines.requires_inspection" class="rounded-xl p-3 text-sm" :style="{ background: 'var(--fm-warn-bg)', color: 'var(--fm-warn)' }">
 							Inspected material will be routed to
 							<span class="font-medium">{{ lines.quarantine_warehouse }}</span>
 							and held until quality releases it.
@@ -38,19 +45,19 @@
 
 						<form class="space-y-4" @submit.prevent="submit">
 							<div class="overflow-x-auto">
-								<table class="w-full min-w-[44rem] text-left text-sm">
+								<table class="fm-table min-w-[44rem]">
 									<caption class="sr-only">Purchase order lines outstanding</caption>
-									<thead class="border-b border-gray-200">
+									<thead >
 										<tr>
-											<th scope="col" class="py-2 pr-3 font-medium">Item</th>
-											<th scope="col" class="py-2 pr-3 font-medium">Outstanding</th>
-											<th scope="col" class="py-2 pr-3 font-medium">Receive qty</th>
-											<th scope="col" class="py-2 pr-3 font-medium">Supplier lot</th>
+											<th scope="col" >Item</th>
+											<th scope="col" >Outstanding</th>
+											<th scope="col" >Receive qty</th>
+											<th scope="col" >Supplier lot</th>
 											<th scope="col" class="py-2 font-medium">Mfg date</th>
 										</tr>
 									</thead>
 									<tbody>
-										<tr v-for="line in lines.lines" :key="line.name" class="border-b border-gray-100">
+										<tr v-for="line in lines.lines" :key="line.name" >
 											<td class="py-2 pr-3">
 												<p>{{ line.item_name || line.item_code }}</p>
 												<p v-if="line.needs_inspection" class="text-xs text-amber-800">
@@ -65,7 +72,7 @@
 													step="any"
 													min="0"
 													:max="line.pending_qty"
-													class="fm-tap w-24 rounded border border-gray-300 px-2 py-1"
+													class="fm-input fm-tap w-24"
 													:aria-label="`Receive quantity for ${line.item_code}`"
 												/>
 											</td>
@@ -75,7 +82,7 @@
 													@keydown.enter.prevent
 													placeholder="Scan supplier lot"
 													type="text"
-													class="fm-tap w-36 rounded border border-gray-300 px-2 py-1"
+													class="fm-input fm-tap w-36"
 													:aria-label="`Supplier lot for ${line.item_code}`"
 												/>
 											</td>
@@ -83,7 +90,7 @@
 												<input
 													v-model="entries[line.name].supplier_mfg_date"
 													type="date"
-													class="fm-tap rounded border border-gray-300 px-2 py-1"
+													class="fm-input fm-tap"
 													:aria-label="`Manufacturing date for ${line.item_code}`"
 												/>
 											</td>
@@ -92,11 +99,11 @@
 								</table>
 							</div>
 
-							<p v-if="submitError" role="alert" class="rounded bg-red-50 p-2 text-sm text-red-800 whitespace-pre-line">
+							<p v-if="submitError" role="alert" class="rounded-xl p-3 text-sm whitespace-pre-line" :style="{ background: 'var(--fm-bad-bg)', color: 'var(--fm-bad)' }">
 								{{ errorMessage(submitError) }}
 							</p>
 
-							<div v-if="submitResult" role="status" class="rounded bg-green-50 p-3 text-sm text-green-900">
+							<div v-if="submitResult" role="status" class="rounded-xl p-3 text-sm" :style="{ background: 'var(--fm-good-bg)', color: 'var(--fm-good)' }">
 								<p>Received as {{ submitResult.purchase_receipt }}.</p>
 								<p v-if="submitResult.warehouses.length" class="mt-1">
 									Stored in {{ submitResult.warehouses.join(', ') }}.
@@ -121,8 +128,9 @@
 
 <script setup>
 import { onMounted, reactive, ref } from 'vue'
-import { PackageCheck } from 'lucide-vue-next'
+import { PackageCheck, RefreshCw } from 'lucide-vue-next'
 
+import PageHeader from '@/components/PageHeader.vue'
 import StateBlock from '@/components/StateBlock.vue'
 import { errorMessage, receiving } from '@/data/api'
 

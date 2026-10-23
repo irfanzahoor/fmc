@@ -1,11 +1,11 @@
 <template>
-	<figure class="fm-card p-4">
-		<figcaption class="mb-1">
-			<h3 class="text-sm font-semibold" :style="{ color: 'var(--viz-ink)' }">{{ title }}</h3>
-			<p v-if="subtitle" class="text-xs" :style="{ color: 'var(--viz-ink-secondary)' }">{{ subtitle }}</p>
+	<figure :class="bare ? '' : 'fm-card p-4'">
+		<figcaption v-if="!bare" class="mb-1">
+			<h3 class="text-sm font-semibold" :style="{ color: ink }">{{ title }}</h3>
+			<p v-if="subtitle" class="text-xs" :style="{ color: inkSecondary }">{{ subtitle }}</p>
 		</figcaption>
 
-		<p v-if="!points.length" class="py-10 text-center text-sm text-gray-500">
+		<p v-if="!points.length" class="py-10 text-center text-sm" :style="{ color: inkSecondary }">
 			No completed runs yet.
 		</p>
 
@@ -33,7 +33,7 @@
 							:x2="W - PAD.r"
 							:y1="tick.y"
 							:y2="tick.y"
-							stroke="var(--viz-grid)"
+							:stroke="grid"
 							stroke-width="1"
 						/>
 						<text
@@ -43,7 +43,7 @@
 							:y="tick.y + 3"
 							text-anchor="end"
 							font-size="10"
-							fill="var(--viz-muted)"
+							:fill="inkSecondary"
 							style="font-variant-numeric: tabular-nums"
 						>
 							{{ tick.value }}%
@@ -57,7 +57,7 @@
 							:x2="W - PAD.r"
 							:y1="targetY"
 							:y2="targetY"
-							stroke="var(--viz-axis)"
+							:stroke="axis"
 							stroke-width="1"
 							stroke-dasharray="4 3"
 						/>
@@ -66,7 +66,7 @@
 							:y="targetY - 4"
 							text-anchor="end"
 							font-size="10"
-							fill="var(--viz-ink-secondary)"
+							:fill="inkSecondary"
 						>
 							Planned {{ target }}%
 						</text>
@@ -78,7 +78,7 @@
 						:x2="W - PAD.r"
 						:y1="H - PAD.b"
 						:y2="H - PAD.b"
-						stroke="var(--viz-axis)"
+						:stroke="axis"
 						stroke-width="1"
 					/>
 
@@ -86,7 +86,7 @@
 					<polyline
 						:points="polyline"
 						fill="none"
-						stroke="var(--viz-series-1)"
+						:stroke="seriesColor"
 						stroke-width="2"
 						stroke-linejoin="round"
 						stroke-linecap="round"
@@ -98,8 +98,8 @@
 							:cx="point.x"
 							:cy="point.y"
 							r="4.5"
-							:fill="point.flagged ? 'var(--viz-critical)' : 'var(--viz-series-1)'"
-							stroke="var(--viz-surface)"
+							:fill="point.flagged ? flagColor : seriesColor"
+							:stroke="ringColor"
 							stroke-width="2"
 						/>
 						<!-- Selective direct labels: first, last and any flagged run. -->
@@ -109,7 +109,7 @@
 							:y="point.y - 10"
 							text-anchor="middle"
 							font-size="10"
-							:fill="point.flagged ? 'var(--viz-critical)' : 'var(--viz-ink-secondary)'"
+							:fill="point.flagged ? flagColor : inkSecondary"
 						>
 							{{ point.actual }}%
 						</text>
@@ -122,7 +122,7 @@
 						:x2="active.x"
 						:y1="PAD.t"
 						:y2="H - PAD.b"
-						stroke="var(--viz-axis)"
+						:stroke="axis"
 						stroke-width="1"
 					/>
 				</svg>
@@ -148,24 +148,24 @@
 			<!-- On a phone the plot is hidden and this table IS the chart: a
 			     12-point series squeezed into 330px is not a readable chart,
 			     and shrinking it would only pretend otherwise. -->
-			<div class="sm:hidden">
+			<div class="sm:hidden" :style="{ color: ink }">
 				<table class="w-full text-left text-xs">
 					<caption class="sr-only">{{ title }}</caption>
 					<thead>
-						<tr class="border-b border-gray-200">
-							<th scope="col" class="py-1 pr-2 font-medium">Run</th>
-							<th scope="col" class="py-1 pr-2 font-medium">Actual %</th>
-							<th scope="col" class="py-1 font-medium">Planned %</th>
+						<tr :style="{ borderBottom: `1px solid ${rule}` }">
+							<th scope="col" class="py-1 pr-2 font-medium" :style="{ color: inkSecondary }">Run</th>
+							<th scope="col" class="py-1 pr-2 font-medium" :style="{ color: inkSecondary }">Actual %</th>
+							<th scope="col" class="py-1 font-medium" :style="{ color: inkSecondary }">Planned %</th>
 						</tr>
 					</thead>
 					<tbody style="font-variant-numeric: tabular-nums">
-						<tr v-for="row in series" :key="`m${row.label}`" class="border-b border-gray-100">
+						<tr v-for="row in series" :key="`m${row.label}`" :style="{ borderBottom: `1px solid ${rule}` }">
 							<td class="py-1 pr-2">
 								<span class="block">{{ row.item }}</span>
-								<span class="text-[11px] text-gray-500">{{ row.label }}</span>
+								<span class="text-[11px]" :style="{ color: inkSecondary }">{{ row.label }}</span>
 							</td>
 							<td class="py-1 pr-2 font-semibold"
-								:style="{ color: row.flagged ? 'var(--viz-critical)' : 'var(--viz-ink)' }">
+								:style="{ color: row.flagged ? flagColor : ink }">
 								{{ row.actual }}
 								<span v-if="row.flagged" class="block text-[11px] font-normal">flagged</span>
 							</td>
@@ -178,21 +178,21 @@
 			<!-- Table view on wider screens: the documented relief for a
 			     contrast WARN, and the accessible equivalent of the plot. -->
 			<details class="mt-2 hidden sm:block">
-				<summary class="cursor-pointer text-xs" :style="{ color: 'var(--viz-ink-secondary)' }">
+				<summary class="cursor-pointer text-xs" :style="{ color: inkSecondary }">
 					View as table
 				</summary>
 				<table class="mt-2 w-full text-left text-xs">
 					<caption class="sr-only">{{ title }}</caption>
 					<thead>
-						<tr class="border-b border-gray-200">
-							<th scope="col" class="py-1 pr-3 font-medium">Run</th>
+						<tr :style="{ borderBottom: `1px solid ${rule}` }">
+							<th scope="col" class="py-1 pr-3 font-medium" :style="{ color: inkSecondary }">Run</th>
 							<th scope="col" class="py-1 pr-3 font-medium">Item</th>
 							<th scope="col" class="py-1 pr-3 font-medium">Actual %</th>
 							<th scope="col" class="py-1 font-medium">Planned %</th>
 						</tr>
 					</thead>
 					<tbody style="font-variant-numeric: tabular-nums">
-						<tr v-for="row in series" :key="row.label" class="border-b border-gray-100">
+						<tr v-for="row in series" :key="row.label" :style="{ borderBottom: `1px solid ${rule}` }">
 							<td class="py-1 pr-3">{{ row.label }}</td>
 							<td class="py-1 pr-3">{{ row.item }}</td>
 							<td class="py-1 pr-3">{{ row.actual }}</td>
@@ -212,13 +212,33 @@ const props = defineProps({
 	title: { type: String, default: 'Yield trend' },
 	subtitle: { type: String, default: '' },
 	series: { type: Array, default: () => [] },
+	// 'surface' renders on a white card; 'hero' on the dark performance panel.
+	// Both colour sets are validated against their own surface.
+	variant: { type: String, default: 'surface' },
+	bare: Boolean,
 })
 
-// A wide, flat viewBox: the SVG stretches to the card, so a narrow box would
-// magnify every label. 960x260 keeps axis text near its intended size.
-const W = 960
-const H = 260
-const PAD = { t: 22, r: 20, b: 28, l: 46 }
+const onHero = computed(() => props.variant === 'hero')
+const ink = computed(() => (onHero.value ? 'var(--viz-hero-ink)' : 'var(--viz-ink)'))
+const inkSecondary = computed(() =>
+	onHero.value ? 'var(--viz-hero-ink-secondary)' : 'var(--viz-ink-secondary)'
+)
+const grid = computed(() => (onHero.value ? 'var(--viz-hero-grid)' : 'var(--viz-grid)'))
+const axis = computed(() => (onHero.value ? 'var(--viz-hero-axis)' : 'var(--viz-axis)'))
+const seriesColor = computed(() => (onHero.value ? 'var(--viz-hero-series)' : 'var(--viz-series-1)'))
+const flagColor = computed(() => (onHero.value ? 'var(--viz-hero-flag)' : 'var(--viz-critical)'))
+const ringColor = computed(() => (onHero.value ? 'var(--fm-hero)' : 'var(--viz-surface)'))
+const rule = computed(() => (onHero.value ? 'rgba(255,255,255,0.16)' : 'var(--viz-grid)'))
+
+// The SVG stretches to its container, so the viewBox sets the effective text
+// size: too narrow a box magnifies every label, too wide a box shrinks it.
+// The hero panel is a narrower column than a full-width card, so it gets its
+// own box rather than inheriting one tuned for a different width.
+const W = computed(() => (onHero.value ? 620 : 960))
+const H = computed(() => (onHero.value ? 240 : 260))
+const PAD = computed(() =>
+	onHero.value ? { t: 20, r: 16, b: 26, l: 40 } : { t: 22, r: 20, b: 28, l: 46 }
+)
 
 const active = ref(null)
 
@@ -245,15 +265,15 @@ const domain = computed(() => {
 const yFor = (value) => {
 	const { min, max } = domain.value
 	const ratio = (Number(value) - min) / (max - min)
-	return H - PAD.b - ratio * (H - PAD.t - PAD.b)
+	return H.value - PAD.value.b - ratio * (H.value - PAD.value.t - PAD.value.b)
 }
 
 const points = computed(() => {
 	const count = props.series.length
-	const span = W - PAD.l - PAD.r
+	const span = W.value - PAD.value.l - PAD.value.r
 	return props.series.map((row, index) => ({
 		...row,
-		x: count === 1 ? PAD.l + span / 2 : PAD.l + (index / (count - 1)) * span,
+		x: count === 1 ? PAD.value.l + span / 2 : PAD.value.l + (index / (count - 1)) * span,
 		y: yFor(row.actual),
 	}))
 })
@@ -279,7 +299,7 @@ const ariaLabel = computed(() => {
 
 const tooltipStyle = computed(() => {
 	if (!active.value) return {}
-	const left = (active.value.x / W) * 100
+	const left = (active.value.x / W.value) * 100
 	return {
 		left: `${Math.min(Math.max(left, 4), 72)}%`,
 		top: '4px',
@@ -289,7 +309,7 @@ const tooltipStyle = computed(() => {
 function onMove(event) {
 	if (!points.value.length) return
 	const rect = event.currentTarget.getBoundingClientRect()
-	const x = ((event.clientX - rect.left) / rect.width) * W
+	const x = ((event.clientX - rect.left) / rect.width) * W.value
 	// Hit target is the nearest point, not the mark itself, so it stays
 	// comfortable on a touch screen.
 	let nearest = points.value[0]

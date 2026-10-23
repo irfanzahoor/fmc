@@ -55,6 +55,12 @@ Charts are hand-rolled inline SVG rather than a chart library: the mark specs (2
 are easier to meet directly than to configure, and it avoids a dependency. Before changing
 any chart colour, re-run the data-viz validator against the white card surface.
 
+The UI follows `docs/ui-design/` — read `IMPLEMENTATION.md` first. Theme and typography
+are a stored browser preference (`data/appearance.js`); chrome re-tints, **charts do not**.
+Before changing any chart colour, re-run the data-viz validator against the surface it
+actually renders on: the prototype's `--line` fails it on every hero surface, which is why
+the hero chart uses its own validated pair.
+
 Client code is UX only. Every rule is enforced in `food_manufacturing/api/` (permission
 checks, POST-only mutations) and in the `doc_events` handlers beneath it.
 
