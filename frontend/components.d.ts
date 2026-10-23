@@ -13,6 +13,7 @@ declare module 'vue' {
     ColumnBuckets: typeof import('./src/components/viz/ColumnBuckets.vue')['default']
     KpiCard: typeof import('./src/components/KpiCard.vue')['default']
     LineTrend: typeof import('./src/components/viz/LineTrend.vue')['default']
+    MetricCard: typeof import('./src/components/MetricCard.vue')['default']
     PageHeader: typeof import('./src/components/PageHeader.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']

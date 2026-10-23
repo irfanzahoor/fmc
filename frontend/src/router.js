@@ -50,6 +50,12 @@ export const routes = [
 		component: () => import('@/pages/QualityInsights.vue'),
 		meta: { title: 'Quality overview' },
 	},
+	{
+		path: '/workspace',
+		name: 'Workspace',
+		component: () => import('@/pages/RoleDashboard.vue'),
+		meta: { title: 'My workspace' },
+	},
 	// Without this, a mistyped or stale link under /fm renders the shell with
 	// an empty pane and no explanation.
 	{

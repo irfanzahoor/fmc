@@ -30,6 +30,125 @@ const delay = (value) =>
 const KG = 'Kg'
 const NOS = 'Nos'
 
+// Mirrors api/dashboards.py: panels of metrics, each linking to its source.
+export const roleDashboard = {
+	views: () => delay(['owner', 'production', 'quality', 'stores']),
+	get: ({ view = 'owner' } = {}) =>
+		delay({
+			company: 'FM Demo Foods',
+			currency: 'PKR',
+			view,
+			period_days: 30,
+			since: '2026-09-23',
+			available: ['owner', 'production', 'quality', 'stores'],
+			panels: {
+				owner: [
+					{
+						title: 'Production',
+						note: null,
+						rows: [],
+						metrics: [
+							{ label: 'Completed runs', value: 18, unit: '', decimals: 0, tone: 'neutral', link: { doctype: 'Work Order', filters: { status: 'Completed' } } },
+							{ label: 'Open runs', value: 4, unit: '', decimals: 0, tone: 'neutral', link: { doctype: 'Work Order', filters: { status: 'In Process' } } },
+							{ label: 'Average actual yield', value: 96.4, unit: '%', decimals: 1, tone: 'neutral', link: null },
+							{ label: 'Runs outside tolerance', value: 2, unit: '', decimals: 0, tone: 'warn', link: { doctype: 'Work Order', filters: { fm_yield_flagged: 1 } } },
+						],
+					},
+					{
+						title: 'Cost variance',
+						note: '14 of 18 runs could be costed. A run whose BOM carries no cost has no estimate to compare against.',
+						rows: [],
+						metrics: [
+							{ label: 'Estimated cost', value: 142000, unit: '', decimals: 0, tone: 'neutral', currency: true, link: null },
+							{ label: 'Actual cost', value: 148600, unit: '', decimals: 0, tone: 'neutral', currency: true, link: { doctype: 'Stock Entry', filters: { purpose: 'Manufacture' } } },
+							{ label: 'Variance', value: 6600, unit: '', decimals: 0, tone: 'warn', currency: true, link: null },
+							{ label: 'Runs over plan', value: 5, unit: '', decimals: 0, tone: 'warn', link: null },
+						],
+					},
+					{
+						title: 'Stock and quality',
+						note: null,
+						rows: [],
+						metrics: [
+							{ label: 'Batches awaiting a decision', value: 5, unit: '', decimals: 0, tone: 'warn', link: { doctype: 'Batch', filters: { fm_quality_status: 'Quarantine' } } },
+							{ label: 'Near expiry', value: 11, unit: '', decimals: 0, tone: 'warn', link: { doctype: 'Batch', filters: {} } },
+							{ label: 'Released in period', value: 23, unit: '', decimals: 0, tone: 'good', link: { doctype: 'FM Batch Release', filters: { decision: 'Release' } } },
+						],
+					},
+				],
+				production: [
+					{
+						title: 'Work queue',
+						note: null,
+						rows: [],
+						metrics: [
+							{ label: 'Open runs', value: 4, unit: '', decimals: 0, tone: 'neutral', link: { doctype: 'Work Order', filters: {} } },
+							{ label: 'Ready to start', value: 3, unit: '', decimals: 0, tone: 'neutral', link: null },
+							{ label: 'Completed in period', value: 18, unit: '', decimals: 0, tone: 'good', link: null },
+						],
+					},
+					{
+						title: 'Output',
+						note: null,
+						rows: [],
+						metrics: [
+							{ label: 'Average actual yield', value: 96.4, unit: '%', decimals: 1, tone: 'neutral', link: null },
+							{ label: 'Runs outside tolerance', value: 2, unit: '', decimals: 0, tone: 'warn', link: { doctype: 'Work Order', filters: {} } },
+						],
+					},
+				],
+				quality: [
+					{
+						title: 'Decisions waiting',
+						note: null,
+						rows: [],
+						metrics: [
+							{ label: 'In quarantine', value: 8, unit: '', decimals: 0, tone: 'warn', link: { doctype: 'Batch', filters: {} } },
+							{ label: 'On hold', value: 4, unit: '', decimals: 0, tone: 'warn', link: { doctype: 'Batch', filters: {} } },
+							{ label: 'Total awaiting', value: 12, unit: '', decimals: 0, tone: 'warn', link: null },
+						],
+					},
+					{
+						title: 'Inspections',
+						note: null,
+						rows: [],
+						metrics: [
+							{ label: 'Draft inspections', value: 3, unit: '', decimals: 0, tone: 'neutral', link: { doctype: 'Quality Inspection', filters: { docstatus: 0 } } },
+							{ label: 'Decisions recorded in period', value: 23, unit: '', decimals: 0, tone: 'good', link: { doctype: 'FM Batch Release', filters: {} } },
+						],
+					},
+				],
+				stores: [
+					{
+						title: 'Goods in',
+						note: null,
+						rows: [],
+						metrics: [
+							{ label: 'Open purchase orders', value: 6, unit: '', decimals: 0, tone: 'neutral', link: { doctype: 'Purchase Order', filters: {} } },
+							{ label: 'Received in period', value: 14, unit: '', decimals: 0, tone: 'good', link: { doctype: 'Purchase Receipt', filters: {} } },
+						],
+					},
+					{
+						title: 'Shortages',
+						note: 'Plan a packing run to see what it is short of.',
+						rows: [],
+						metrics: [
+							{ label: 'Open material requests', value: 2, unit: '', decimals: 0, tone: 'warn', link: { doctype: 'Material Request', filters: {} } },
+						],
+					},
+					{
+						title: 'Near expiry',
+						note: null,
+						rows: [],
+						metrics: [
+							{ label: 'Batches within 90 days', value: 11, unit: '', decimals: 0, tone: 'warn', link: { doctype: 'Batch', filters: {} } },
+						],
+					},
+				],
+			}[view],
+		}),
+}
+
 export const dashboard = {
 	get: () =>
 		delay({

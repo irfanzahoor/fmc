@@ -189,6 +189,7 @@ import {
 	ChevronRight,
 	ClipboardCheck,
 	Factory,
+	Gauge,
 	LayoutDashboard,
 	LineChart,
 	PackageCheck,
@@ -225,6 +226,9 @@ const navigation = computed(() => [
 	{
 		label: 'Insights',
 		items: [
+			// Role-scoped: the same link lands four jobs on four different sets
+			// of panels, picked from the roles the account holds.
+			{ name: 'Workspace', label: 'My workspace', icon: Gauge },
 			{ name: 'ProductionInsights', label: 'Production insights', icon: LineChart },
 			{ name: 'QualityInsights', label: 'Quality overview', icon: ClipboardCheck },
 		],

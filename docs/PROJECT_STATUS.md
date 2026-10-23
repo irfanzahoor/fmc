@@ -364,4 +364,89 @@ blends a blend, and whether `on_hand` should include stock in transit.
 
 ## Phase 5 — Role-based dashboards
 
-Status: **not started.**
+Status: **implemented**. 15 tests. Full suite **316 passing**
+(302 integration + 14 unit), no regressions.
+
+### What it does
+
+| Role | Panels |
+|---|---|
+| Owner | Production · **Cost variance** · Stock and quality |
+| Production | Work queue · Output |
+| Quality | Decisions waiting · Inspections |
+| Stores | Goods in · Shortages · Near expiry |
+
+`/fm/workspace` in the console, plus `api/dashboards.get_dashboard` and
+`available_views`.
+
+### Design decisions
+
+**Every metric links to its source records.** A number nobody can open is a
+number nobody can act on — and, worse, one nobody can check. Each metric
+carries `{doctype, filters}` naming exactly the rows behind it, and the console
+renders that as a filtered Desk list. The dashboard is an index into the ledger
+rather than a claim about it.
+
+**A link this account cannot follow is dropped, not shown.** `_link` returns
+`None` when the reader has no read permission on the DocType, so there is no
+affordance that refuses on click.
+
+**The production dashboard does not borrow the plant one.** It first reused
+`api/dashboard.get_dashboard`, which also counts pending QC and near-expiry
+batches — so a line operator's own dashboard refused on documents their job
+does not involve. It now computes only production figures. That also made it
+**13× faster** (36.7s → 2.8s for the suite).
+
+**Cost variance is the two halves meeting.** `costing/simulator.py` said what a
+batch should cost and the ledger said what it did; they never met.
+`costing/variance.py` compares the BOM's cost scaled to what was produced
+against the Manufacture entry's outgoing value. A run whose BOM carries no cost
+has **no estimate** — it reports `None` and is excluded from the totals, and the
+panel says how many of the runs could actually be costed. A run with no estimate
+is unmeasured, not on plan.
+
+**An unmeasured figure is an em dash, never a zero.** Carried through from the
+existing dashboards.
+
+**`available_views` is a landing hint, not a boundary.** It picks the dashboard
+that fits the account's roles; the endpoints re-check permission regardless.
+
+### Not covered
+
+- **NOT RUN:** HTTP round-trip; **NOT RUN:** `ruff`.
+- Panels carry a `rows` payload the console does not render yet — the metric
+  row is built, the supporting tables are not.
+- "Material readiness" on the production dashboard counts runs without a
+  shortfall flag; it does not yet re-run the packaging planner per work order.
+- Verified by rendering the harness at 1440 and 390 with mocked data; **not yet
+  rendered against a live session.**
+
+### Handoff for review
+
+- `food_manufacturing/api/dashboards.py` — four dashboards, linked metrics
+- `food_manufacturing/costing/variance.py` — estimated vs actual
+- `frontend/src/pages/RoleDashboard.vue`, `components/MetricCard.vue`
+- `food_manufacturing/tests/test_role_dashboards.py` — 15 tests
+
+Worth a second look at: whether "Ready to start" should call the packaging
+planner per run rather than reading a flag, and whether the Owner dashboard
+should scope to companies the reader has a User Permission for rather than one
+at a time.
+
+---
+
+## All five phases complete
+
+| Phase | Tests | Status |
+|---|---|---|
+| 1 Recipe cost simulator | 17 | done |
+| 2 Packaging material planning | 17 | done |
+| 3 Quality hold and release | 16 | done |
+| 4 Batch traceability | 10 | done |
+| 5 Role-based dashboards | 15 | done |
+
+**316 tests passing** on Frappe 16.52.0 / ERPNext 16.27.0.
+
+Carried forward across all phases: fresh-install verification **NOT RUN** (no DB
+root), two-process concurrency **NOT TESTED**, `ruff` **NOT RUN** (absent from
+this bench), and no HTTP round-trip test for the new endpoints.

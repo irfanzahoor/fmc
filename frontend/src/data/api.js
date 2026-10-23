@@ -45,6 +45,11 @@ export const dashboard = {
 	get: method('dashboard.get_dashboard'),
 }
 
+export const roleDashboard = {
+	get: method('dashboards.get_dashboard'),
+	views: method('dashboards.available_views'),
+}
+
 export const recall = {
 	get: method('recall.get_recall'),
 }
