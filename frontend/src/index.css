@@ -231,6 +231,13 @@
 		font-variant-numeric: tabular-nums;
 	}
 
+	/* Identifiers are read as one token; breaking "CHI-014" across lines makes
+	   a batch harder to match against a physical label. */
+	.fm-app .fm-id {
+		font-variant-numeric: tabular-nums;
+		white-space: nowrap;
+	}
+
 	/* Sized for a gloved hand on a shop-floor tablet. */
 	.fm-app .fm-tap {
 		min-height: 2.75rem;
@@ -302,6 +309,12 @@
 		padding: 0.625rem 0.75rem;
 		color: var(--fm-ink);
 		font-variant-numeric: tabular-nums;
+	}
+
+	/* Leading-icon variant: .fm-input sets its own padding, so a pl-* utility
+	   would lose to it and the icon would sit on top of the text. */
+	.fm-app .fm-input-icon {
+		padding-left: 2.25rem;
 	}
 
 	.fm-app .fm-input:focus {

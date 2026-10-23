@@ -60,11 +60,11 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
 import { AlertTriangle, CheckCircle, Factory, LineChart, RefreshCw, TrendingUp } from 'lucide-vue-next'
-import { call } from 'frappe-ui'
 
 import KpiCard from '@/components/KpiCard.vue'
 import PageHeader from '@/components/PageHeader.vue'
 import StateBlock from '@/components/StateBlock.vue'
+import { dashboard } from '@/data/api'
 import BarRanking from '@/components/viz/BarRanking.vue'
 import LineTrend from '@/components/viz/LineTrend.vue'
 
@@ -110,10 +110,7 @@ async function load() {
 	loading.value = true
 	error.value = null
 	try {
-		data.value = await call('food_manufacturing.api.dashboard.get_dashboard', {
-			company: props.company,
-			days: days.value,
-		})
+		data.value = await dashboard.get({ company: props.company, days: days.value })
 	} catch (err) {
 		error.value = err
 	} finally {

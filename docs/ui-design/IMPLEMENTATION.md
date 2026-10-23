@@ -150,14 +150,31 @@ token system. `yarn build` is clean and each page is a lazy chunk.
 - Output bars stay grouped by UOM; kg and packs are never put on one scale.
 - On a phone the overview yield plot is replaced by its run table rather than squeezed.
 
-**Not done / limitations:**
+### Second pass (2026-10-23)
 
-- Only the Overview has been rendered and reviewed as a screenshot (desktop 1440, phone
-  390, and the Copper + Humanist variant). Production, Quality, Receiving, Dispatch and
-  Recall **compile and keep their existing bindings and behaviour, but have not been
-  visually verified** — the design harness renders the Overview only, and no Frappe
-  session is available here to drive the live screens.
-- Scanner focus/Enter behaviour, QC pagination, UOM conversion and safe-retry posting were
-  preserved as written; they have **not** been re-exercised through the UI.
-- The phone references for the six pages were not reproduced one-for-one; the shared
-  responsive rules were applied instead.
+The first pass restyled the operational pages without ever rendering them, and the result
+was worse than the prototype: Quality was a plain table with a modal, Dispatch was two
+cards and a modal, Recall was a search box on an empty page.
+
+`preview/pages.html` now mounts the **real** shell, router and pages, with only
+`@/data/api` and `@/data/session` aliased to mocks. Every page can therefore be opened and
+screenshotted without a Frappe session, and all of them were rebuilt against the prototype
+with that feedback:
+
+- **Quality** — KPI row, status filter chips, a page filter, inline master/detail with the
+  selected row marked, batch facts, a shelf-life meter, matching inspection, decision
+  history and the decision form. The modal is gone.
+- **Dispatch** — context bar, sales-to-stock UOM conversion cards, the scan card (Enter
+  focuses a quantity field and never posts), and a FEFO allocation table per line with
+  shelf-life meters, blocked rows named in words, and a running allocated-of-required total.
+- **Receiving** — context bar with the quarantine destination, a lines table with
+  quantity, supplier lot and manufacturing date, and a result panel listing the batches
+  created with their quality status.
+- **Recall** — a pre-search panel explaining what a trace returns, then affected batches as
+  cards and deliveries as a table with returns named, not just signed.
+- **Production** — a pending yield no longer shows a green tick, and the Available/Expiry
+  columns carry the earliest eligible lot with a "+N more" count instead of being empty.
+
+**Still not verified:** the live screens against a Frappe session. Scanner focus, QC
+pagination, UOM conversion and safe-retry were preserved and are visible in the harness,
+but have not been exercised end to end against the server.

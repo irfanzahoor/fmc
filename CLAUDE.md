@@ -61,6 +61,15 @@ Before changing any chart colour, re-run the data-viz validator against the surf
 actually renders on: the prototype's `--line` fails it on every hero surface, which is why
 the hero chart uses its own validated pair.
 
+Render before you judge: `preview/pages.html` mounts the real shell, router and pages with
+only `@/data/api` and `@/data/session` mocked, so any page can be screenshotted without a
+Frappe session:
+
+```bash
+cd apps/food_manufacturing/frontend
+FM_PREVIEW_OUT=/tmp/fm-preview npx vite build --config vite.preview.config.js
+```
+
 Client code is UX only. Every rule is enforced in `food_manufacturing/api/` (permission
 checks, POST-only mutations) and in the `doc_events` handlers beneath it.
 

@@ -1,0 +1,239 @@
+/**
+ * Mock of @/data/api for the design harness.
+ *
+ * Aliased in place of the real module by vite.preview.config.js, so the harness
+ * mounts the *real* pages, router and shell and only the network layer is
+ * replaced. Shapes mirror food_manufacturing/api/ exactly; if a page renders
+ * here it renders against the real endpoint.
+ */
+const delay = (value) => new Promise((resolve) => setTimeout(() => resolve(value), 0))
+
+const KG = 'Kg'
+const NOS = 'Nos'
+
+export const dashboard = {
+	get: () =>
+		delay({
+			company: 'FM Demo Foods',
+			period_days: 30,
+			kpis: {
+				average_yield_percent: 96.4,
+				completed_runs: 18,
+				open_runs: 4,
+				yield_flagged: 2,
+				pending_qc: 5,
+				near_expiry: 11,
+				batches_released: 23,
+			},
+			yield_trend: [
+				{ label: 'WO-0031', item: 'Garam Masala Bulk', actual: 97.0, planned: 100, flagged: 0, on: '2026-09-24' },
+				{ label: 'WO-0032', item: 'Chaat Masala Bulk', actual: 96.2, planned: 100, flagged: 0, on: '2026-09-26' },
+				{ label: 'WO-0033', item: 'Garam Masala Bulk', actual: 97.4, planned: 100, flagged: 0, on: '2026-09-29' },
+				{ label: 'WO-0034', item: 'Tandoori Masala Bulk', actual: 92.1, planned: 100, flagged: 1, on: '2026-10-02' },
+				{ label: 'WO-0035', item: 'Garam Masala Bulk', actual: 96.8, planned: 100, flagged: 0, on: '2026-10-05' },
+				{ label: 'WO-0036', item: 'Chilli Powder Bulk', actual: 98.1, planned: 100, flagged: 0, on: '2026-10-08' },
+				{ label: 'WO-0037', item: 'Chaat Masala Bulk', actual: 95.9, planned: 100, flagged: 0, on: '2026-10-11' },
+				{ label: 'WO-0038', item: 'Garam Masala Bulk', actual: 97.2, planned: 100, flagged: 0, on: '2026-10-14' },
+				{ label: 'WO-0039', item: 'Turmeric Bulk', actual: 93.4, planned: 100, flagged: 1, on: '2026-10-17' },
+				{ label: 'WO-0040', item: 'Garam Masala Bulk', actual: 97.6, planned: 100, flagged: 0, on: '2026-10-19' },
+				{ label: 'WO-0041', item: 'Chilli Powder Bulk', actual: 98.4, planned: 100, flagged: 0, on: '2026-10-21' },
+				{ label: 'WO-0042', item: 'Garam Masala Bulk', actual: 97.1, planned: 100, flagged: 0, on: '2026-10-22' },
+			],
+			production_by_item: [
+				{ item_code: 'GM-BULK', label: 'Garam Masala Bulk', uom: KG, value: 1842.5, loss: 56.2, runs: 6 },
+				{ item_code: 'CM-BULK', label: 'Chaat Masala Bulk', uom: KG, value: 1120, loss: 44.8, runs: 4 },
+				{ item_code: 'CP-BULK', label: 'Chilli Powder Bulk', uom: KG, value: 960, loss: 18, runs: 3 },
+				{ item_code: 'GM-50G', label: 'Garam Masala 50 g', uom: NOS, value: 24000, loss: 0, runs: 3 },
+				{ item_code: 'TM-BULK', label: 'Tandoori Masala Bulk', uom: KG, value: 420, loss: 34, runs: 1 },
+			],
+			quality_mix: [
+				{ label: 'Released', role: 'good', value: 48 },
+				{ label: 'Quarantine', role: 'warning', value: 8 },
+				{ label: 'Rejected', role: 'critical', value: 3 },
+				{ label: 'Hold', role: 'serious', value: 4 },
+			],
+			expiry_buckets: [
+				{ label: 'Expired', value: 1 },
+				{ label: 'Within 7 days', value: 3 },
+				{ label: '8-30 days', value: 5 },
+				{ label: '31-90 days', value: 14 },
+			],
+		}),
+}
+
+const WORK_ORDERS = [
+	{
+		name: 'WO-FM-0028', production_item: 'GM-BULK', item_name: 'Garam Masala Bulk', bom_no: 'BOM-GM-004',
+		qty: 500, produced_qty: 0, process_loss_qty: 0, status: 'In Process', stock_uom: KG,
+		fg_warehouse: 'Bulk Blend', wip_warehouse: 'Stores', planned_start_date: '2026-10-23',
+		fm_actual_yield_percent: 0, fm_yield_variance_percent: 0, fm_yield_flagged: 0, fm_yield_basis: KG,
+		pending_qty: 500,
+	},
+	{
+		name: 'WO-FM-0029', production_item: 'GM-50G', item_name: 'Garam Masala 50 g', bom_no: 'BOM-GM50-002',
+		qty: 2400, produced_qty: 0, process_loss_qty: 0, status: 'Not Started', stock_uom: NOS,
+		fg_warehouse: 'Finished Goods', wip_warehouse: 'Stores', planned_start_date: '2026-10-23',
+		fm_actual_yield_percent: 0, fm_yield_variance_percent: 0, fm_yield_flagged: 0, fm_yield_basis: '',
+		pending_qty: 2400,
+	},
+	{
+		name: 'WO-FM-0030', production_item: 'TU-BULK', item_name: 'Turmeric Powder Bulk', bom_no: 'BOM-TU-001',
+		qty: 400, produced_qty: 100, process_loss_qty: 6, status: 'In Process', stock_uom: KG,
+		fg_warehouse: 'Bulk Blend', wip_warehouse: 'Stores', planned_start_date: '2026-10-22',
+		fm_actual_yield_percent: 93.4, fm_yield_variance_percent: -6.6, fm_yield_flagged: 1, fm_yield_basis: KG,
+		pending_qty: 294,
+	},
+]
+
+export const production = {
+	queue: () => delay(WORK_ORDERS),
+	detail: ({ work_order }) => {
+		const wo = WORK_ORDERS.find((row) => row.name === work_order) || WORK_ORDERS[0]
+		return delay({
+			work_order: {
+				name: wo.name, production_item: wo.production_item, item_name: wo.item_name,
+				bom_no: wo.bom_no, qty: wo.qty, produced_qty: wo.produced_qty,
+				process_loss_qty: wo.process_loss_qty, status: wo.status, stock_uom: wo.stock_uom,
+				company: 'FM Demo Foods', fg_warehouse: wo.fg_warehouse, wip_warehouse: wo.wip_warehouse,
+				skip_transfer: 1, yield_percent: wo.fm_actual_yield_percent,
+				yield_variance_percent: wo.fm_yield_variance_percent,
+				yield_flagged: wo.fm_yield_flagged, yield_basis: wo.fm_yield_basis,
+			},
+			ingredients: [
+				{
+					item_code: 'CHI', item_name: 'Chilli Powder', required_qty: 300, transferred_qty: 0,
+					consumed_qty: 0, stock_uom: KG, source_warehouse: 'Stores',
+					available_lots: [
+						{ batch_no: 'CHI-014', available_qty: 450, expiry_date: '2027-01-12', manufacturing_date: '2026-01-12', quality_status: 'Released' },
+						{ batch_no: 'CHI-018', available_qty: 120, expiry_date: '2027-03-02', manufacturing_date: '2026-03-02', quality_status: 'Released' },
+					],
+				},
+				{
+					item_code: 'CUM', item_name: 'Cumin Whole', required_qty: 125, transferred_qty: 0,
+					consumed_qty: 0, stock_uom: KG, source_warehouse: 'Stores',
+					available_lots: [
+						{ batch_no: 'CUM-009', available_qty: 180, expiry_date: '2027-02-20', manufacturing_date: '2026-02-20', quality_status: 'Released' },
+					],
+				},
+				{
+					item_code: 'COR', item_name: 'Coriander', required_qty: 50, transferred_qty: 0,
+					consumed_qty: 0, stock_uom: KG, source_warehouse: 'Stores', available_lots: [],
+				},
+				{
+					item_code: 'PEP', item_name: 'Black Pepper', required_qty: 25, transferred_qty: 0,
+					consumed_qty: 0, stock_uom: KG, source_warehouse: 'Stores',
+					available_lots: [
+						{ batch_no: 'PEP-006', available_qty: 40, expiry_date: '2027-04-15', manufacturing_date: '2026-04-15', quality_status: 'Released' },
+					],
+				},
+			],
+			consumed_lots: [],
+		})
+	},
+	finishRun: () => delay({ stock_entry: 'MAT-STE-2026-00142', produced_qty: 487, process_loss_qty: 13, yield_percent: 97.4, yield_flagged: 0, yield_basis: KG }),
+}
+
+const QUEUE = [
+	{ name: 'CHI-014', item: 'CHI', item_name: 'Chilli Powder', fm_quality_status: 'Quarantine', fm_supplier_lot_no: 'SV-261001', supplier: 'Spice Valley', expiry_date: '2027-01-12', manufacturing_date: '2026-01-12', creation: '2026-10-18 09:15:00', qty: 450, remaining_shelf_life_percent: 62 },
+	{ name: 'CUM-009', item: 'CUM', item_name: 'Cumin Whole', fm_quality_status: 'Quarantine', fm_supplier_lot_no: 'RJ-99420', supplier: 'Rajasthan Spice Co', expiry_date: '2027-02-20', manufacturing_date: '2026-02-20', creation: '2026-10-19 11:02:00', qty: 180, remaining_shelf_life_percent: 71 },
+	{ name: 'COR-021', item: 'COR', item_name: 'Coriander', fm_quality_status: 'Hold', fm_supplier_lot_no: 'GUJ-1102', supplier: 'Gujarat Agro', expiry_date: '2027-03-11', manufacturing_date: '2026-03-11', creation: '2026-10-20 08:40:00', qty: 90, remaining_shelf_life_percent: 58 },
+	{ name: 'PEP-006', item: 'PEP', item_name: 'Black Pepper', fm_quality_status: 'Quarantine', fm_supplier_lot_no: 'KL-8831', supplier: 'Kerala Estates', expiry_date: '2027-04-15', manufacturing_date: '2026-04-15', creation: '2026-10-21 14:25:00', qty: 40, remaining_shelf_life_percent: 80 },
+	{ name: 'TUR-015', item: 'TUR', item_name: 'Turmeric Whole', fm_quality_status: 'Quarantine', fm_supplier_lot_no: 'TN-4029', supplier: 'Tamil Nadu Farms', expiry_date: '2026-12-02', manufacturing_date: '2026-02-02', creation: '2026-10-22 07:10:00', qty: 320, remaining_shelf_life_percent: 18 },
+]
+
+export const quality = {
+	queue: () => delay(QUEUE),
+	counts: () => delay({ quarantine: 4, hold: 1, total: 5 }),
+	batchContext: ({ batch }) => {
+		const row = QUEUE.find((b) => b.name === batch) || QUEUE[0]
+		return delay({
+			batch: {
+				name: row.name, item: row.item, item_name: row.item_name,
+				quality_status: row.fm_quality_status, supplier_lot_no: row.fm_supplier_lot_no,
+				supplier: row.supplier, expiry_date: row.expiry_date,
+				manufacturing_date: row.manufacturing_date,
+				remaining_shelf_life_percent: row.remaining_shelf_life_percent,
+				qty: row.qty, stock_uom: KG,
+			},
+			inspections: [
+				{ name: 'QI-0021', status: 'Accepted', inspection_type: 'Incoming', report_date: '2026-10-22' },
+				{ name: 'QI-0019', status: 'Accepted', inspection_type: 'Incoming', report_date: '2026-10-18' },
+			],
+			history: [
+				{ name: 'FM-REL-0004', decision: 'Hold', reason: 'Awaiting lab moisture result', decided_by: 'quality@demo', posting_datetime: '2026-10-22 11:30:00', previous_status: 'Quarantine' },
+			],
+			genealogy: { item_code: row.item, batch_no: row.name, work_orders: [], inputs: [], truncated: false },
+		})
+	},
+	recordDecision: ({ batch, decision }) => delay({ name: 'FM-REL-0012', batch, previous_status: 'Quarantine', quality_status: decision === 'Release' ? 'Released' : decision === 'Hold' ? 'Hold' : 'Rejected' }),
+}
+
+export const receiving = {
+	openOrders: () => delay([
+		{ name: 'PO-FM-0044', supplier: 'SPICE-VALLEY', supplier_name: 'Spice Valley', transaction_date: '2026-10-20', per_received: 0, currency: 'INR' },
+		{ name: 'PO-FM-0045', supplier: 'KERALA-EST', supplier_name: 'Kerala Estates', transaction_date: '2026-10-21', per_received: 40, currency: 'INR' },
+	]),
+	orderLines: ({ purchase_order }) => delay({
+		purchase_order, supplier: 'SPICE-VALLEY', supplier_name: 'Spice Valley', company: 'FM Demo Foods',
+		quarantine_warehouse: 'FM Quarantine', requires_inspection: true,
+		lines: [
+			{ idx: 1, name: 'poi-1', item_code: 'CHI', item_name: 'Chilli Powder', uom: KG, stock_uom: KG, rate: 300, ordered_qty: 500, received_qty: 0, pending_qty: 500, material_nature: 'Raw Material', has_batch_no: 1, needs_inspection: true, warehouse: 'Stores' },
+			{ idx: 2, name: 'poi-2', item_code: 'CUM', item_name: 'Cumin Whole', uom: KG, stock_uom: KG, rate: 420, ordered_qty: 250, received_qty: 0, pending_qty: 250, material_nature: 'Raw Material', has_batch_no: 1, needs_inspection: true, warehouse: 'Stores' },
+			{ idx: 3, name: 'poi-3', item_code: 'POUCH50', item_name: 'Pouch 50 g', uom: NOS, stock_uom: NOS, rate: 2, ordered_qty: 5000, received_qty: 0, pending_qty: 5000, material_nature: 'Packaging Material', has_batch_no: 0, needs_inspection: true, warehouse: 'Stores' },
+		],
+	}),
+	receive: () => delay({ purchase_receipt: 'MAT-PRE-2026-00031', warehouses: ['FM Quarantine'], batches: [{ name: 'CHI-021', item: 'CHI', fm_quality_status: 'Quarantine', fm_supplier_lot_no: 'SV-261044', expiry_date: '2028-02-01' }] }),
+}
+
+export const dispatch = {
+	openOrders: () => delay([
+		{ name: 'SO-FM-0036', customer: 'APEX', customer_name: 'Apex Retailers', transaction_date: '2026-10-18', delivery_date: '2026-10-25', per_delivered: 0 },
+		{ name: 'SO-FM-0037', customer: 'METRO', customer_name: 'Metro Wholesale', transaction_date: '2026-10-19', delivery_date: '2026-10-28', per_delivered: 25 },
+	]),
+	picklist: ({ sales_order }) => delay({
+		sales_order, customer: 'APEX', customer_name: 'Apex Retailers', company: 'FM Demo Foods',
+		fefo_mode: 'Block', min_remaining_shelf_life_percent: 30,
+		lines: [
+			{
+				name: 'soi-1', idx: 1, item_code: 'GM-50G', item_name: 'Garam Masala 50 g', uom: 'Carton', stock_uom: NOS,
+				rate: 1440, ordered_qty: 2, delivered_qty: 0, pending_qty: 48, warehouse: 'Finished Goods',
+				suggestion: [{ batch_no: 'GM50-021', qty: 48 }], shortfall: 0,
+				candidates: [
+					{ batch_no: 'GM50-021', available_qty: 72, expiry_date: '2027-02-14', manufacturing_date: '2026-02-14', quality_status: 'Released', remaining_shelf_life_percent: 62, blocked_reason: null },
+					{ batch_no: 'GM50-008', available_qty: 50, expiry_date: '2027-01-18', manufacturing_date: '2026-01-18', quality_status: 'Hold', remaining_shelf_life_percent: 58, blocked_reason: 'Held stock cannot be dispatched.' },
+				],
+			},
+			{
+				name: 'soi-2', idx: 2, item_code: 'GM-100G', item_name: 'Garam Masala 100 g', uom: 'Carton', stock_uom: NOS,
+				rate: 2640, ordered_qty: 1, delivered_qty: 0, pending_qty: 24, warehouse: 'Finished Goods',
+				suggestion: [{ batch_no: 'GM100-009', qty: 24 }], shortfall: 0,
+				candidates: [
+					{ batch_no: 'GM100-009', available_qty: 36, expiry_date: '2027-02-20', manufacturing_date: '2026-02-20', quality_status: 'Released', remaining_shelf_life_percent: 65, blocked_reason: null },
+				],
+			},
+		],
+	}),
+	createDeliveryNote: () => delay({ delivery_note: 'MAT-DN-2026-00048' }),
+}
+
+export const recall = {
+	get: () => delay({
+		truncated: false,
+		batches: [
+			{ name: 'CHI-014', item: 'Chilli Powder', fm_supplier_lot_no: 'SV-261001', fm_quality_status: 'Released' },
+			{ name: 'GM-BULK-031', item: 'Garam Masala Bulk', fm_supplier_lot_no: null, fm_quality_status: 'Released' },
+			{ name: 'GM50-021', item: 'Garam Masala 50 g', fm_supplier_lot_no: null, fm_quality_status: 'Released' },
+			{ name: 'GM100-009', item: 'Garam Masala 100 g', fm_supplier_lot_no: null, fm_quality_status: 'Hold' },
+		],
+		deliveries: [
+			{ delivery_note: 'MAT-DN-2026-00041', customer: 'Apex Retailers', batch_no: 'GM50-021', item_code: 'GM-50G', posting_date: '2026-10-14', stock_qty: 480, stock_uom: NOS, is_return: 0 },
+			{ delivery_note: 'MAT-DN-2026-00044', customer: 'Metro Wholesale', batch_no: 'GM100-009', item_code: 'GM-100G', posting_date: '2026-10-17', stock_qty: 240, stock_uom: NOS, is_return: 0 },
+			{ delivery_note: 'MAT-DN-2026-00046', customer: 'Apex Retailers', batch_no: 'GM50-021', item_code: 'GM-50G', posting_date: '2026-10-20', stock_qty: -24, stock_uom: NOS, is_return: 1 },
+		],
+	}),
+}
+
+export function errorMessage(error) {
+	if (!error) return null
+	return error.message || String(error)
+}

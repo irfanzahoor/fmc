@@ -27,6 +27,27 @@
 			</p>
 		</form>
 
+		<!-- Before a search the page explains what a trace returns, rather than
+		     showing an empty canvas or inventing a result. -->
+		<div v-if="!result && !loading && !error" class="fm-card p-6">
+			<h2 class="font-bold">What a trace returns</h2>
+			<p class="mt-0.5 text-sm fm-muted">Derived from submitted stock transactions, never from a stored graph.</p>
+
+			<ol class="mt-4 grid gap-3 sm:grid-cols-3">
+				<li v-for="(step, index) in steps" :key="step.title" class="rounded-xl p-4" :style="{ background: 'var(--fm-canvas)' }">
+					<span class="fm-num flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold"
+						:style="{ background: 'var(--fm-soft)', color: 'var(--fm-primary)' }">{{ index + 1 }}</span>
+					<p class="mt-2 font-semibold">{{ step.title }}</p>
+					<p class="mt-0.5 text-sm fm-muted">{{ step.hint }}</p>
+				</li>
+			</ol>
+
+			<p class="mt-4 flex items-start gap-2 border-t pt-3 text-xs fm-muted" :style="{ borderColor: 'var(--fm-border)' }">
+				<ShieldCheck class="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+				Cancelled transactions are excluded, so a cancelled delivery never appears as a phantom shipment.
+			</p>
+		</div>
+
 		<StateBlock :loading="loading" :error="error" loading-text="Tracing batch…">
 			<div v-if="result" class="space-y-4">
 				<p
@@ -135,13 +156,19 @@
 <script setup>
 import { ref } from 'vue'
 import { AlertTriangle, Search, ShieldCheck, Truck, Undo2 } from 'lucide-vue-next'
-import { call } from 'frappe-ui'
 
 import PageHeader from '@/components/PageHeader.vue'
 import StateBlock from '@/components/StateBlock.vue'
+import { recall } from '@/data/api'
 import StatusChip from '@/components/StatusChip.vue'
 
 const props = defineProps({ company: { type: String, required: true } })
+
+const steps = [
+	{ title: 'Affected batches', hint: 'Every batch the scanned lot became, through blending and packing.' },
+	{ title: 'Customer deliveries', hint: 'Where those batches shipped, and what came back as a return.' },
+	{ title: 'An audited decision', hint: 'Hold or reject is recorded in Quality — this page changes nothing.' },
+]
 
 const batch = ref('')
 const batchInput = ref(null)
@@ -157,10 +184,7 @@ async function load() {
 	result.value = null
 
 	try {
-		result.value = await call('food_manufacturing.api.recall.get_recall', {
-			batch: batch.value,
-			company: props.company,
-		})
+		result.value = await recall.get({ batch: batch.value, company: props.company })
 	} catch (err) {
 		error.value = err
 	} finally {

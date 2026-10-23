@@ -81,8 +81,10 @@
 											{{ detail.work_order.status }} · BOM {{ detail.work_order.bom_no }}
 										</p>
 									</div>
-									<span v-if="detail.work_order.yield_basis" class="fm-chip" :class="detail.work_order.yield_flagged ? 'fm-chip-bad' : 'fm-chip-good'">
-										<component :is="detail.work_order.yield_flagged ? AlertTriangle : CheckCircle" class="h-3.5 w-3.5" aria-hidden="true" />
+									<!-- A pending yield is not a good yield: it stays neutral until
+									     there is a figure to report. -->
+									<span class="fm-chip" :class="yieldChipClass">
+										<component :is="yieldChipIcon" class="h-3.5 w-3.5" aria-hidden="true" />
 										{{ detail.work_order.yield_percent ? `${fmt(detail.work_order.yield_percent)}% yield` : 'Yield pending' }}
 									</span>
 								</div>
@@ -131,26 +133,27 @@
 											</tr>
 										</thead>
 										<tbody>
-											<template v-for="line in detail.ingredients" :key="line.item_code">
-												<tr>
-													<td class="font-medium">{{ line.item_name || line.item_code }}</td>
-													<td class="fm-num">{{ fmt(line.required_qty) }} {{ line.stock_uom }}</td>
-													<td class="fm-num fm-muted">{{ fmt(line.consumed_qty) }} {{ line.stock_uom }}</td>
-													<td colspan="3">
-														<ul v-if="line.available_lots.length" class="space-y-1">
-															<li v-for="lot in line.available_lots.slice(0, 3)" :key="lot.batch_no" class="flex flex-wrap items-center gap-x-3 gap-y-0.5">
-																<span class="fm-num text-xs font-semibold">{{ lot.batch_no }}</span>
-																<span class="fm-num text-xs fm-muted">{{ fmt(lot.available_qty) }} {{ line.stock_uom }}</span>
-																<span class="text-xs fm-muted">{{ lot.expiry_date ? `exp ${lot.expiry_date}` : 'no expiry' }}</span>
-															</li>
-														</ul>
-														<span v-else class="fm-chip fm-chip-warn">
-															<AlertTriangle class="h-3.5 w-3.5" aria-hidden="true" />
-															No released stock — needs a quality release
-														</span>
-													</td>
-												</tr>
-											</template>
+											<tr v-for="line in detail.ingredients" :key="line.item_code">
+												<td class="font-medium align-top">{{ line.item_name || line.item_code }}</td>
+												<td class="fm-num align-top">{{ fmt(line.required_qty) }} {{ line.stock_uom }}</td>
+												<td class="fm-num fm-muted align-top">{{ fmt(line.consumed_qty) }} {{ line.stock_uom }}</td>
+												<td class="align-top">
+													<span v-if="earliest(line)" class="fm-num font-semibold">{{ earliest(line).batch_no }}</span>
+													<span v-else class="fm-chip fm-chip-warn">
+														<AlertTriangle class="h-3.5 w-3.5" aria-hidden="true" />
+														No released stock
+													</span>
+													<span v-if="line.available_lots.length > 1" class="mt-0.5 block text-xs fm-muted">
+														+{{ line.available_lots.length - 1 }} more released lot(s)
+													</span>
+												</td>
+												<td class="fm-num align-top">
+													{{ earliest(line) ? `${fmt(earliest(line).available_qty)} ${line.stock_uom}` : '—' }}
+												</td>
+												<td class="fm-num align-top">
+													{{ earliest(line)?.expiry_date || '—' }}
+												</td>
+											</tr>
 										</tbody>
 									</table>
 								</div>
@@ -222,7 +225,7 @@
 
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue'
-import { AlertTriangle, Check, CheckCircle, Factory, LineChart, RefreshCw, ShieldCheck } from 'lucide-vue-next'
+import { AlertTriangle, Check, CheckCircle, Clock, Factory, LineChart, RefreshCw, ShieldCheck } from 'lucide-vue-next'
 
 import PageHeader from '@/components/PageHeader.vue'
 import StateBlock from '@/components/StateBlock.vue'
@@ -252,6 +255,24 @@ const tabs = [
 
 const fmt = (value) => Number(value || 0).toLocaleString(undefined, { maximumFractionDigits: 3 })
 const unit = computed(() => detail.value?.work_order?.stock_uom || '')
+/* The earliest-expiring released lot fills the columns; the rest are counted,
+   so Available and Expiry always carry a real value or an em dash. */
+function earliest(line) {
+	return line.available_lots?.[0] || null
+}
+
+const yieldChipClass = computed(() => {
+	const wo = detail.value?.work_order
+	if (!wo?.yield_percent) return 'fm-chip-soft'
+	return wo.yield_flagged ? 'fm-chip-bad' : 'fm-chip-good'
+})
+
+const yieldChipIcon = computed(() => {
+	const wo = detail.value?.work_order
+	if (!wo?.yield_percent) return Clock
+	return wo.yield_flagged ? AlertTriangle : CheckCircle
+})
+
 const remaining = computed(() => {
 	const wo = detail.value?.work_order
 	if (!wo) return 0

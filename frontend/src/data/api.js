@@ -37,6 +37,14 @@ export const receiving = {
 	receive: method('receiving.receive_purchase_order'),
 }
 
+export const dashboard = {
+	get: method('dashboard.get_dashboard'),
+}
+
+export const recall = {
+	get: method('recall.get_recall'),
+}
+
 export const dispatch = {
 	openOrders: method('dispatch.get_open_sales_orders'),
 	picklist: method('dispatch.get_picklist'),
