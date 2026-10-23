@@ -23,9 +23,12 @@ def discover_site():
 	if len(companies) < 2:
 		return None
 
+	# A disabled warehouse cannot take a transaction, so it must never be
+	# chosen as a fixture - the site may hold retired warehouses alongside
+	# live ones.
 	rows = frappe.get_all(
 		"Warehouse",
-		filters={"company": ("in", companies), "is_group": 0},
+		filters={"company": ("in", companies), "is_group": 0, "disabled": 0},
 		fields=["name", "company"],
 		order_by="company asc, name asc",
 	)

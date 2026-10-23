@@ -36,6 +36,12 @@ def create_demo_data(company: str | None = None, verbose: bool = True) -> dict:
 	log = _logger(verbose)
 	log(f"Seeding demo data for {company}")
 
+	# Items, suppliers and customers are global in ERPNext and are shared, but
+	# batches, stock movements, BOMs and orders belong to a company. Without a
+	# per-company tag a second company silently matched the first company's
+	# records, skipped every step and reported success with no data.
+	tag = frappe.get_cached_value("Company", company, "abbr") or company
+
 	_enable_batch_setting(log)
 
 	warehouses = _ensure_warehouses(company, log)
@@ -44,15 +50,16 @@ def create_demo_data(company: str | None = None, verbose: bool = True) -> dict:
 	parties = _ensure_parties(log)
 	items = _ensure_items(company, log)
 
-	lots = _receive_raw_materials(company, warehouses, items, log)
+	lots = _receive_raw_materials(company, warehouses, items, tag, log)
 	_release_lots(company, lots, log)
-	_move_decided_stock(company, warehouses, items, lots, log)
+	_move_decided_stock(company, warehouses, items, lots, tag, log)
 
 	recipe = _approve_recipe(company, items, uoms, log)
-	blends = _run_blending(company, warehouses, items, recipe, log)
-	packs = _run_packaging(company, warehouses, items, uoms, blends, log)
+	blends = _run_blending(company, warehouses, items, recipe, tag, log)
+	packs = _run_packaging(company, warehouses, items, uoms, blends, tag, log)
 	_dispatch(company, warehouses, items, parties, packs, log)
-	_add_ageing_stock(company, warehouses, items, lots, log)
+	_add_ageing_stock(company, warehouses, items, lots, tag, log)
+	_open_work(company, warehouses, items, parties, recipe, tag, log)
 
 	summary = _summarise(company, items, blends, packs)
 	log("Done. " + ", ".join(f"{k}: {v}" for k, v in summary.items()))
@@ -60,39 +67,64 @@ def create_demo_data(company: str | None = None, verbose: bool = True) -> dict:
 
 
 def remove_demo_data(company: str | None = None, verbose: bool = True) -> None:
-	"""Delete everything :func:`create_demo_data` created."""
+	"""Delete what :func:`create_demo_data` created.
+
+	With ``company`` the removal is scoped to that company, so a demo in one
+	company can be cleared without touching another's. Without it, every
+	company's demo data is removed.
+	"""
 	log = _logger(verbose)
-	log("Removing demo data")
+	log(f"Removing demo data{f' for {company}' if company else ''}")
+
+	scope = {"company": company} if company else {}
 
 	# A BOM and the FM Recipe that generated it point at each other, so neither
 	# can be deleted while the other holds the link. Break it first.
-	_unlink_recipes_and_boms(log)
+	_unlink_recipes_and_boms(company, log)
 
 	# Submitted documents must be cancelled before they can be deleted, and the
 	# order matters: a later document references an earlier one.
 	for doctype, filters in (
-		("Delivery Note", {"customer": ("like", f"{PREFIX}%")}),
-		("Stock Entry", {"remarks": ("like", f"{PREFIX}%")}),
-		("FM Batch Release", {"batch": ("like", f"{PREFIX}%")}),
-		("Work Order", {"production_item": ("like", f"{PREFIX}%")}),
+		("Sales Order", {"title": ("like", f"{PREFIX}%"), **scope}),
+		("Purchase Order", {"title": ("like", f"{PREFIX}%"), **scope}),
+		("Delivery Note", {"customer": ("like", f"{PREFIX}%"), **scope}),
+		("Stock Entry", {"remarks": ("like", f"{PREFIX}%"), **scope}),
+		("FM Batch Release", {"batch": ("like", f"{PREFIX}%"), **scope}),
+		("Work Order", {"production_item": ("like", f"{PREFIX}%"), **scope}),
+		("Work Order", {"description": ("like", f"{PREFIX}%"), **scope}),
 		# BOM before FM Recipe: BOM.fm_recipe links back to the recipe, so the
 		# recipe cannot be deleted while its BOM still exists.
-		("BOM", {"item": ("like", f"{PREFIX}%")}),
-		("FM Recipe", {"item": ("like", f"{PREFIX}%")}),
+		("BOM", {"item": ("like", f"{PREFIX}%"), **scope}),
+		("FM Recipe", {"item": ("like", f"{PREFIX}%"), **scope}),
 	):
 		for name in frappe.get_all(doctype, filters=filters, pluck="name", order_by="creation desc"):
 			_force_delete(doctype, name, log)
 
-	for doctype, filters in (
-		("Batch", {"name": ("like", f"{PREFIX}%")}),
-		("Item", {"item_code": ("like", f"{PREFIX}%")}),
-		("Supplier", {"supplier_name": ("like", f"{PREFIX}%")}),
-		("Customer", {"customer_name": ("like", f"{PREFIX}%")}),
-	):
+	batch_prefix = f"{PREFIX}-{frappe.get_cached_value('Company', company, 'abbr')}%" if company else f"{PREFIX}%"
+	targets = [("Batch", {"name": ("like", batch_prefix)})]
+
+	if not company:
+		# Items, suppliers and customers are global; only a full teardown
+		# removes them, or clearing one company would break another's demo.
+		targets += [
+			("Item", {"item_code": ("like", f"{PREFIX}%")}),
+			("Supplier", {"supplier_name": ("like", f"{PREFIX}%")}),
+			("Customer", {"customer_name": ("like", f"{PREFIX}%")}),
+		]
+
+	for doctype, filters in targets:
 		for name in frappe.get_all(doctype, filters=filters, pluck="name", order_by="creation desc"):
 			_force_delete(doctype, name, log)
 
-	_retire_warehouses(log)
+	for name in frappe.get_all(
+		"FM Manufacturing Policy",
+		filters=scope or {},
+		pluck="name",
+		order_by="name asc",
+	):
+		_force_delete("FM Manufacturing Policy", name, log)
+
+	_retire_warehouses(company, log)
 
 	if frappe.db.get_default(BATCH_SETTING_FLAG):
 		frappe.db.set_single_value("Stock Settings", BATCH_SETTING, 0)
@@ -102,16 +134,17 @@ def remove_demo_data(company: str | None = None, verbose: bool = True) -> None:
 	log("Removed.")
 
 
-def _unlink_recipes_and_boms(log) -> None:
+def _unlink_recipes_and_boms(company, log) -> None:
 	"""Clear the mutual link between a demo recipe and its generated BOM."""
+	scope = {"company": company} if company else {}
 	recipes = frappe.get_all(
-		"FM Recipe", filters={"item": ("like", f"{PREFIX}%")}, pluck="name", order_by="name asc"
+		"FM Recipe", filters={"item": ("like", f"{PREFIX}%"), **scope}, pluck="name", order_by="name asc"
 	)
 	for name in recipes:
 		frappe.db.set_value("FM Recipe", name, "bom", None, update_modified=False)
 
 	boms = frappe.get_all(
-		"BOM", filters={"item": ("like", f"{PREFIX}%")}, pluck="name", order_by="name asc"
+		"BOM", filters={"item": ("like", f"{PREFIX}%"), **scope}, pluck="name", order_by="name asc"
 	)
 	for name in boms:
 		frappe.db.set_value("BOM", name, "fm_recipe", None, update_modified=False)
@@ -120,7 +153,7 @@ def _unlink_recipes_and_boms(log) -> None:
 		log(f"  unlinked {len(recipes)} recipe(s) and {len(boms)} BOM(s)")
 
 
-def _retire_warehouses(log) -> None:
+def _retire_warehouses(company, log) -> None:
 	"""Delete demo warehouses, or disable the ones that hold ledger history.
 
 	A warehouse with Stock Ledger Entries cannot be deleted, and should not be:
@@ -130,7 +163,7 @@ def _retire_warehouses(log) -> None:
 	"""
 	names = frappe.get_all(
 		"Warehouse",
-		filters={"warehouse_name": ("like", f"{PREFIX}%")},
+		filters={"warehouse_name": ("like", f"{PREFIX}%"), **({"company": company} if company else {})},
 		pluck="name",
 		order_by="creation desc",
 	)
@@ -350,7 +383,7 @@ def _ensure_items(company: str, log) -> dict:
 # -- the story ---------------------------------------------------------------
 
 
-def _receive_raw_materials(company: str, warehouses: dict, items: dict, log) -> dict:
+def _receive_raw_materials(company: str, warehouses: dict, items: dict, tag: str, log) -> dict:
 	"""Supplier lots into quarantine. Two lots per spice, to show split lots."""
 	# Quantities cover all three blends with headroom: the three runs consume
 	# 126 kg chilli and 84 kg cumin in total, and only released lots are
@@ -365,14 +398,14 @@ def _receive_raw_materials(company: str, warehouses: dict, items: dict, log) -> 
 
 	lots = {}
 	for key, lot_ref, qty, rate, made_days, shelf_days in plan:
-		batch_id = f"{PREFIX}-{lot_ref}"
+		batch_id = f"{PREFIX}-{tag}-{lot_ref}"
 		item_code = items[key]
 
 		if not frappe.db.exists("Batch", batch_id):
 			frappe.get_doc({"doctype": "Batch", "batch_id": batch_id, "item": item_code}).insert()
 
 		if not frappe.db.exists(
-			"Stock Entry", {"remarks": f"{PREFIX} receipt {lot_ref}", "docstatus": 1}
+			"Stock Entry", {"remarks": f"{PREFIX} {tag} receipt {lot_ref}", "docstatus": 1}
 		):
 			entry = frappe.get_doc(
 				{
@@ -380,7 +413,7 @@ def _receive_raw_materials(company: str, warehouses: dict, items: dict, log) -> 
 					"stock_entry_type": "Material Receipt",
 					"purpose": "Material Receipt",
 					"company": company,
-					"remarks": f"{PREFIX} receipt {lot_ref}",
+					"remarks": f"{PREFIX} {tag} receipt {lot_ref}",
 					"items": [
 						{
 							"item_code": item_code,
@@ -451,7 +484,7 @@ def _release_lots(company: str, lots: dict, log) -> None:
 		log(f"  {decision.lower()}d {batch}")
 
 
-def _move_decided_stock(company: str, warehouses: dict, items: dict, lots: dict, log) -> None:
+def _move_decided_stock(company: str, warehouses: dict, items: dict, lots: dict, tag: str, log) -> None:
 	"""Move stock out of quarantine once a decision has been made.
 
 	Releasing a batch is a decision, not a movement - the stock stays where it
@@ -472,7 +505,7 @@ def _move_decided_stock(company: str, warehouses: dict, items: dict, lots: dict,
 		if not batch:
 			continue
 
-		marker = f"{PREFIX} move {lot_ref}"
+		marker = f"{PREFIX} {tag} move {lot_ref}"
 		if frappe.db.exists("Stock Entry", {"remarks": marker, "docstatus": 1}):
 			continue
 
@@ -541,7 +574,7 @@ def _approve_recipe(company: str, items: dict, uoms: dict, log) -> str:
 	return doc.name
 
 
-def _run_blending(company: str, warehouses: dict, items: dict, recipe: str, log) -> list:
+def _run_blending(company: str, warehouses: dict, items: dict, recipe: str, tag: str, log) -> list:
 	"""Three blends: two healthy, one with a yield outside tolerance."""
 	from erpnext.manufacturing.doctype.work_order.work_order import make_stock_entry
 
@@ -550,7 +583,7 @@ def _run_blending(company: str, warehouses: dict, items: dict, recipe: str, log)
 
 	blends = []
 	for batch_ref, qty, loss in runs:
-		batch_id = f"{PREFIX}-{batch_ref}"
+		batch_id = f"{PREFIX}-{tag}-{batch_ref}"
 		if frappe.db.exists("Batch", batch_id):
 			blends.append(batch_id)
 			continue
@@ -577,7 +610,7 @@ def _run_blending(company: str, warehouses: dict, items: dict, recipe: str, log)
 			frappe.get_doc({"doctype": "Batch", "batch_id": batch_id, "item": items["blend"]}).insert()
 
 		entry = frappe.get_doc(make_stock_entry(order.name, "Manufacture", qty))
-		entry.remarks = f"{PREFIX} blend {batch_ref}"
+		entry.remarks = f"{PREFIX} {tag} blend {batch_ref}"
 		for row in entry.items:
 			row.use_serial_batch_fields = 1
 			if row.item_code == items["blend"] and row.t_warehouse:
@@ -606,11 +639,11 @@ def _run_blending(company: str, warehouses: dict, items: dict, recipe: str, log)
 	return blends
 
 
-def _run_packaging(company: str, warehouses: dict, items: dict, uoms: dict, blends: list, log) -> dict:
+def _run_packaging(company: str, warehouses: dict, items: dict, uoms: dict, blends: list, tag: str, log) -> dict:
 	"""Pack the first blend into two sizes, leaving bulk on hand."""
 	from erpnext.manufacturing.doctype.work_order.work_order import make_stock_entry
 
-	_receive_packaging(company, warehouses, items, log)
+	_receive_packaging(company, warehouses, items, tag, log)
 
 	packs = {}
 	plan = [
@@ -619,7 +652,7 @@ def _run_packaging(company: str, warehouses: dict, items: dict, uoms: dict, blen
 	]
 
 	for key, batch_ref, qty, pouch, pouch_qty, cartons, bulk_kg in plan:
-		batch_id = f"{PREFIX}-{batch_ref}"
+		batch_id = f"{PREFIX}-{tag}-{batch_ref}"
 		if frappe.db.exists("Batch", batch_id):
 			packs[key] = batch_id
 			continue
@@ -650,7 +683,7 @@ def _run_packaging(company: str, warehouses: dict, items: dict, uoms: dict, blen
 			frappe.get_doc({"doctype": "Batch", "batch_id": batch_id, "item": items[key]}).insert()
 
 		entry = frappe.get_doc(make_stock_entry(order.name, "Manufacture", qty))
-		entry.remarks = f"{PREFIX} pack {batch_ref}"
+		entry.remarks = f"{PREFIX} {tag} pack {batch_ref}"
 		for row in entry.items:
 			row.use_serial_batch_fields = 1
 			if row.item_code == items[key] and row.t_warehouse:
@@ -676,11 +709,11 @@ def _run_packaging(company: str, warehouses: dict, items: dict, uoms: dict, blen
 	return packs
 
 
-def _receive_packaging(company: str, warehouses: dict, items: dict, log) -> None:
+def _receive_packaging(company: str, warehouses: dict, items: dict, tag: str, log) -> None:
 	plan = [("pouch50", 3000, 2), ("pouch100", 1200, 3), ("carton", 200, 25)]
 
 	for key, qty, rate in plan:
-		marker = f"{PREFIX} packaging {key}"
+		marker = f"{PREFIX} {tag} packaging {key}"
 		if frappe.db.exists("Stock Entry", {"remarks": marker, "docstatus": 1}):
 			continue
 
@@ -708,7 +741,11 @@ def _receive_packaging(company: str, warehouses: dict, items: dict, log) -> None
 
 def _ensure_packaging_bom(company, sku, qty, uoms, blend, bulk_kg, pouch, pouch_qty, carton, cartons):
 	existing = frappe.get_all(
-		"BOM", filters={"item": sku, "docstatus": 1}, pluck="name", order_by="creation desc", limit=1
+		"BOM",
+		filters={"item": sku, "company": company, "docstatus": 1},
+		pluck="name",
+		order_by="creation desc",
+		limit=1,
 	)
 	if existing:
 		return existing[0]
@@ -740,7 +777,7 @@ def _dispatch(company: str, warehouses: dict, items: dict, parties: dict, packs:
 	if not packs:
 		return
 
-	if frappe.db.exists("Delivery Note", {"customer": parties["customer"], "docstatus": 1}):
+	if frappe.db.exists("Delivery Note", {"customer": parties["customer"], "company": company, "docstatus": 1}):
 		return
 
 	rows = []
@@ -778,7 +815,7 @@ def _dispatch(company: str, warehouses: dict, items: dict, parties: dict, packs:
 # -- helpers -----------------------------------------------------------------
 
 
-def _add_ageing_stock(company: str, warehouses: dict, items: dict, lots: dict, log) -> None:
+def _add_ageing_stock(company: str, warehouses: dict, items: dict, lots: dict, tag: str, log) -> None:
 	"""A few batches close to expiry, so the expiry horizon is not empty.
 
 	Received first and dated afterwards: ERPNext refuses to receive stock into
@@ -792,8 +829,8 @@ def _add_ageing_stock(company: str, warehouses: dict, items: dict, lots: dict, l
 	]
 
 	for key, batch_ref, qty, days_left, rate in plan:
-		batch_id = f"{PREFIX}-{batch_ref}"
-		marker = f"{PREFIX} ageing {batch_ref}"
+		batch_id = f"{PREFIX}-{tag}-{batch_ref}"
+		marker = f"{PREFIX} {tag} ageing {batch_ref}"
 
 		if not frappe.db.exists("Batch", batch_id):
 			frappe.get_doc({"doctype": "Batch", "batch_id": batch_id, "item": items[key]}).insert()
@@ -844,6 +881,104 @@ def _add_ageing_stock(company: str, warehouses: dict, items: dict, lots: dict, l
 			{"manufacturing_date": add_days(today(), -340), "expiry_date": add_days(today(), 25)},
 		)
 		frappe.clear_document_cache("Batch", held)
+
+
+def _open_work(company, warehouses: dict, items: dict, parties: dict, recipe: str, tag: str, log) -> None:
+	"""Leave live work on every operational screen.
+
+	A demo where every run is finished and every order delivered shows four
+	empty queues, which reads as a broken app. These are deliberately left
+	open: a Work Order to complete, a Purchase Order to receive, a Sales Order
+	to dispatch.
+	"""
+	_open_work_orders(company, warehouses, items, recipe, tag, log)
+	_open_purchase_order(company, warehouses, items, parties, tag, log)
+	_open_sales_order(company, warehouses, items, parties, tag, log)
+
+
+def _open_work_orders(company, warehouses: dict, items: dict, recipe: str, tag: str, log) -> None:
+	"""Submitted Work Orders with nothing produced yet."""
+	bom = frappe.db.get_value("FM Recipe", recipe, "bom")
+	if not bom:
+		return
+
+	for qty in (500, 250):
+		marker = f"{PREFIX} {tag} open blend {qty}"
+		if frappe.db.exists("Work Order", {"description": marker, "docstatus": 1}):
+			continue
+
+		order = frappe.get_doc(
+			{
+				"doctype": "Work Order",
+				"production_item": items["blend"],
+				"bom_no": bom,
+				"qty": qty,
+				"company": company,
+				"description": marker,
+				"fg_warehouse": warehouses["bulk"],
+				"wip_warehouse": warehouses["stores"],
+				"source_warehouse": warehouses["stores"],
+				"use_multi_level_bom": 0,
+				"skip_transfer": 1,
+			}
+		)
+		order.insert()
+		order.submit()
+		log(f"  open work order {order.name}: {qty} kg to produce")
+
+
+def _open_purchase_order(company, warehouses: dict, items: dict, parties: dict, tag: str, log) -> None:
+	"""A submitted Purchase Order with nothing received yet."""
+	marker = f"{PREFIX} {tag} incoming lot"
+	if frappe.db.exists("Purchase Order", {"custom_remarks": marker, "docstatus": 1}):
+		return
+
+	if frappe.db.exists("Purchase Order", {"title": marker, "docstatus": 1}):
+		return
+
+	doc = frappe.get_doc(
+		{
+			"doctype": "Purchase Order",
+			"company": company,
+			"supplier": parties["supplier"],
+			"title": marker,
+			"schedule_date": add_days(today(), 5),
+			# Ordered into stores; the receipt reroutes inspected material to
+			# quarantine, which is the behaviour the demo is meant to show.
+			"items": [
+				{"item_code": items["chilli"], "qty": 200, "rate": 305, "warehouse": warehouses["stores"], "schedule_date": add_days(today(), 5)},
+				{"item_code": items["cumin"], "qty": 120, "rate": 425, "warehouse": warehouses["stores"], "schedule_date": add_days(today(), 5)},
+				{"item_code": items["pouch50"], "qty": 4000, "rate": 2, "warehouse": warehouses["stores"], "schedule_date": add_days(today(), 5)},
+			],
+		}
+	)
+	doc.insert()
+	doc.submit()
+	log(f"  open purchase order {doc.name}: 3 lines to receive")
+
+
+def _open_sales_order(company, warehouses: dict, items: dict, parties: dict, tag: str, log) -> None:
+	"""A submitted Sales Order with nothing delivered yet."""
+	marker = f"{PREFIX} {tag} outgoing order"
+	if frappe.db.exists("Sales Order", {"title": marker, "docstatus": 1}):
+		return
+
+	doc = frappe.get_doc(
+		{
+			"doctype": "Sales Order",
+			"company": company,
+			"customer": parties["customer"],
+			"title": marker,
+			"delivery_date": add_days(today(), 4),
+			"items": [
+				{"item_code": items["sku50"], "qty": 300, "rate": 60, "warehouse": warehouses["finished"], "delivery_date": add_days(today(), 4)},
+				{"item_code": items["sku100"], "qty": 120, "rate": 110, "warehouse": warehouses["finished"], "delivery_date": add_days(today(), 4)},
+			],
+		}
+	)
+	doc.insert()
+	doc.submit()
+	log(f"  open sales order {doc.name}: 2 lines to dispatch")
 
 
 def _summarise(company: str, items: dict, blends: list, packs: dict) -> dict:

@@ -96,7 +96,7 @@
 									:disabled="session.loading || !session.companies.length"
 								>
 									<option v-for="name in session.companies" :key="name" :value="name">
-										{{ name }}
+										{{ companyLabel(name) }}
 									</option>
 								</select>
 							</span>
@@ -244,6 +244,13 @@ const allItems = computed(() => navigation.value.flatMap((group) => group.items)
 const currentLabel = computed(
 	() => allItems.value.find((item) => item.name === route.name)?.label || 'Workspace'
 )
+
+/* Mark companies this app is not configured for, so an empty screen is
+   predicted by the switcher rather than discovered after switching. */
+function companyLabel(name) {
+	if (!session.configuredCompanies.length) return name
+	return session.isConfigured(name) ? name : `${name} · not set up`
+}
 
 function isActive(name) {
 	return route.name === name

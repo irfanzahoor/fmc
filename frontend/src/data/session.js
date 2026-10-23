@@ -56,12 +56,20 @@ export const session = reactive({
 	 * default, then the first configured company, then the first company.
 	 */
 	pickCompany(stored) {
-		if (stored && this.companies.includes(stored)) return stored
+		const configured = this.configuredCompanies
+
+		// A remembered choice wins - but not a remembered choice that has
+		// nothing to show while a configured company exists. Letting it win is
+		// how a browser gets permanently stuck on an empty company: the value
+		// was stored on a first visit and then re-chosen on every visit after.
+		if (stored && this.companies.includes(stored)) {
+			if (!configured.length || configured.includes(stored)) return stored
+		}
 
 		const userDefault = window.frappe?.boot?.sysdefaults?.company
-		if (userDefault && this.configuredCompanies.includes(userDefault)) return userDefault
+		if (userDefault && configured.includes(userDefault)) return userDefault
 
-		if (this.configuredCompanies.length) return this.configuredCompanies[0]
+		if (configured.length) return configured[0]
 		if (userDefault && this.companies.includes(userDefault)) return userDefault
 
 		return this.companies[0] || null

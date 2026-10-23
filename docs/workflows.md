@@ -209,6 +209,27 @@ tolerance and one at 91% so the variance flag has something to show. Packaging i
 customer, so a sold pack traces forward. Three ageing batches so the expiry horizon is
 populated.
 
+### Live work, not just history
+
+The seeder deliberately leaves work open on every screen: two submitted Work Orders to
+complete, a Purchase Order to receive and a Sales Order to pick. A demo where every run is
+finished and every order delivered shows four empty queues, which reads as a broken app.
+
+### One company at a time
+
+Items, suppliers and customers are global in ERPNext; batches, stock movements, BOMs and
+orders belong to a company. Every company-scoped identifier therefore carries the company
+abbreviation. Without it, seeding a second company silently matched the first company's
+records, skipped every step and reported success having created nothing.
+
+`remove_demo_data` takes the same `company` argument and scopes the removal to it, so one
+company's demo can be cleared without touching another's. Global records are removed only
+by a full teardown.
+
+**Keep the demo out of the company your tests discover.** `tests/fixtures.discover_site()`
+picks the first company with enough leaf warehouses; if that company also holds demo data,
+company-wide assertions (average yield, queue counts) see both and fail.
+
 ### Three properties that make it safe on a shared site
 
 - **Namespaced** — every record carries the `FM Demo` prefix.
