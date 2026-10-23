@@ -70,6 +70,14 @@ cd apps/food_manufacturing/frontend
 FM_PREVIEW_OUT=/tmp/fm-preview npx vite build --config vite.preview.config.js
 ```
 
+`www/fm.py` must supply `context.boot`; the template writes each key onto `window`. Drop it
+and `window.csrf_token` disappears, every POST fails `CSRFTokenError`, and the app renders
+with no data. `get_csrf_token()` needs a real HTTP session, so verify it over HTTP — it
+always fails under `bench execute`.
+
+Console users need ERPNext's own roles as well as the FM ones; **Item Manager** in
+particular, because `Batch` is readable by that role alone. See `docs/workflows.md`.
+
 Client code is UX only. Every rule is enforced in `food_manufacturing/api/` (permission
 checks, POST-only mutations) and in the `doc_events` handlers beneath it.
 

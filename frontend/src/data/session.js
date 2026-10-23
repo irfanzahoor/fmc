@@ -19,9 +19,16 @@ function readStored() {
 	}
 }
 
+/*
+ * Boot data is written onto `window` key by key by the page template, so these
+ * live at the top level - not under `window.frappe.boot`, which this SPA does
+ * not have.
+ */
+const boot = window.fm_boot || {}
+
 export const session = reactive({
-	user: window.frappe?.boot?.user?.name || null,
-	roles: window.frappe?.boot?.user?.roles || [],
+	user: boot.user || null,
+	roles: boot.roles || [],
 	companies: [],
 	// Companies that actually have an FM Manufacturing Policy. Only these have
 	// anything for this app to show.
@@ -66,7 +73,7 @@ export const session = reactive({
 			if (!configured.length || configured.includes(stored)) return stored
 		}
 
-		const userDefault = window.frappe?.boot?.sysdefaults?.company
+		const userDefault = window.sysdefaults?.company
 		if (userDefault && configured.includes(userDefault)) return userDefault
 
 		if (configured.length) return configured[0]

@@ -109,6 +109,34 @@ A Vue 3 + frappe-ui app, matching the `marley_frontend` convention in this bench
 | Goods in | `/fm/receiving` | Receive against a purchase order, capturing supplier lot and manufacturing date |
 | Dispatch | `/fm/dispatch` | Pick batches against a sales order with the FEFO suggestion pre-filled and shelf-life blocks shown |
 
+### Boot data: why the app needs it
+
+The built `www/fm.html` writes each key of the `boot` context onto `window`. `www/fm.py`
+must therefore supply it. Without `boot`, `window.csrf_token` is never set, frappe-ui sends
+every request with no `X-Frappe-CSRF-Token` header, and Frappe rejects all of them with
+`CSRFTokenError: Invalid Request` — an app that loads perfectly and shows no data.
+
+`get_csrf_token()` only works inside a real HTTP session: it needs `frappe.local.session_obj`,
+which does not exist under `bench execute`. Verify this over HTTP, not from the CLI.
+
+### Roles a console user needs
+
+The screens read standard ERPNext documents, so an operator needs ERPNext's own roles in
+addition to the FM ones. Missing any of these produces a permission error rather than an
+empty page:
+
+| Screen | Needs |
+|---|---|
+| Any screen | **Item Manager** — `Batch` is readable by that role alone on a stock site |
+| Overview, Production | Manufacturing User, Stock User |
+| Receiving | Purchase User |
+| Dispatch, Recall | Sales User |
+| Quality decisions | FM Quality Manager |
+| Completing runs | FM Production Manager |
+
+Granting these through ERPNext's own roles is deliberate: the app does not widen access to
+standard documents through its own roles.
+
 ### The security model
 
 The SPA is a **convenience over the same server rules**, never a second route around them.
