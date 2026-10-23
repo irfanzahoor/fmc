@@ -242,6 +242,18 @@ def ensure_uom_conversion(from_uom: str, to_uom: str, value: float) -> None:
 	).insert(ignore_permissions=True)
 
 
+def cleanup_inspections():
+	"""Remove Quality Inspections and templates this app's tests raised."""
+	for row in frappe.get_all(
+		"Quality Inspection",
+		filters={"batch_no": ("like", f"{PREFIX}%")},
+		fields=["name", "docstatus"],
+	):
+		if row.docstatus == 1:
+			frappe.get_doc("Quality Inspection", row.name).cancel()
+		frappe.delete_doc("Quality Inspection", row.name, force=True, ignore_permissions=True)
+
+
 def cleanup_requests():
 	"""Remove Material Requests this app's tests proposed.
 

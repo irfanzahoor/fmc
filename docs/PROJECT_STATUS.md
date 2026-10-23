@@ -228,4 +228,79 @@ should also consider stock in transit.
 
 ## Phase 3 — Quality hold and release
 
+Status: **implemented**. 16 tests, all passing. Full suite **291 passing**
+(277 integration + 14 unit), no regressions.
+
+### What was already there
+
+The hold/release/reject rules, the audited `FM Batch Release` record and the
+server-side blocks on consumption and dispatch predate this phase, and are
+enforced through `doc_events`, so they hold for the Desk form, `/api/resource`,
+`/api/method` and Data Import alike. Explicitly approved quarantine and QC
+movements were already permitted (`_is_permitted_quarantine_movement`), with
+moving stock *out* of the rejected warehouse restricted to one role.
+
+### What this phase added
+
+| Gap | Now |
+|---|---|
+| The app never *created* a Quality Inspection | `quality/inspection.create_inspection` |
+| No incoming / in-process / finished distinction | `STAGES`, mapped to ERPNext's own `inspection_type` |
+| Templates were never carried | ERPNext fills `readings` from the item's template; only values are applied here |
+| History showed accepted inspections only | `get_inspections` returns every verdict |
+
+### Design decisions
+
+**No limit is written in this app.** Parameters, minimum and maximum values and
+acceptance formulas live in a Quality Inspection Template the plant configures.
+An item without one cannot be inspected and says so; a reading for a parameter
+the template does not define is **refused**, not appended, because appending it
+would let an inspection assert a limit nobody configured. Inventing a moisture
+ceiling or a plate count would be a food safety claim this app has no standing
+to make.
+
+**ERPNext fills the readings.** `doc.insert()` triggers ERPNext's own template
+copy; this module only writes measured values onto the rows it produced.
+Reimplementing that copy is how the two drift apart.
+
+**v16 forced a better design.** `reference_type`, `reference_name` and
+`sample_size` are mandatory on a Quality Inspection. That is the right
+constraint — an inspection is always *of* something — so they are required
+arguments rather than optional ones, and `STAGE_REFERENCES` keeps a
+finished-product check from being filed against a purchase receipt.
+
+**The history is not a record of good news.** `get_batch_context` filtered
+inspections to `status = "Accepted"`, which hid the single most relevant fact
+before a decision. It now returns every inspection with its verdict and
+docstatus.
+
+**Evidence reuses the framework.** `FM Batch Release.evidence` is an `Attach`
+field and Quality Inspection carries `remarks` plus standard Frappe
+attachments. No parallel evidence table was added.
+
+### Not covered
+
+- **NOT RUN:** HTTP round-trip; permissions are exercised in-process through
+  the same `has_permission` path.
+- **NOT RUN:** `ruff` — absent from this bench.
+- The release gate still matches an accepted inspection by item and batch only;
+  it does not yet require the inspection's *stage* to suit the decision. Worth
+  deciding deliberately rather than inferring.
+- No console UI for raising an inspection yet.
+
+### Handoff for review
+
+- `food_manufacturing/quality/inspection.py` — raise, read and list
+- `food_manufacturing/api/quality.py` — `raise_inspection`,
+  `get_inspection_readings`, and the widened `get_batch_context`
+- `food_manufacturing/tests/test_quality_inspection.py` — 16 acceptance tests
+
+Worth a second look at: whether `STAGE_REFERENCES` should allow `Job Card` for
+a finished-product check on a packing line, and whether release should require
+an inspection whose stage matches the batch's position in the process.
+
+---
+
+## Phase 4 — Batch traceability
+
 Status: **not started.**

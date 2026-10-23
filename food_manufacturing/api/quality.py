@@ -11,6 +11,7 @@ from frappe import _
 from frappe.utils import cint, flt
 
 from food_manufacturing.dispatch.shelf_life import get_batch_shelf_life, remaining_shelf_life_percent
+from food_manufacturing.quality.inspection import get_inspections
 from food_manufacturing.production.genealogy import trace_backward
 from food_manufacturing.stock_levels import get_batch_quantities
 
@@ -74,6 +75,45 @@ def get_release_queue(company: str, status: str | None = None, limit: int = 100,
 	return queue[start : start + page_size]
 
 
+@frappe.whitelist(methods=["POST"])
+def raise_inspection(
+	batch: str,
+	stage: str,
+	reference_type: str,
+	reference_name: str,
+	sample_size: float,
+	readings: list | str | None = None,
+	remarks: str | None = None,
+	status: str | None = None,
+	submit: int = 0,
+) -> dict:
+	"""Raise a Quality Inspection for a batch at an incoming, in-process or
+	finished-product check. Limits come from the item's template."""
+	from food_manufacturing.quality.inspection import create_inspection
+
+	readings = frappe.parse_json(readings) if isinstance(readings, str) else readings
+
+	return create_inspection(
+		batch,
+		stage,
+		reference_type,
+		reference_name,
+		sample_size,
+		readings=readings,
+		remarks=remarks,
+		status=status,
+		submit=bool(cint(submit)),
+	)
+
+
+@frappe.whitelist()
+def get_inspection_readings(inspection: str) -> list:
+	"""Measured values of one inspection, with the limits they were read against."""
+	from food_manufacturing.quality.inspection import get_readings
+
+	return get_readings(inspection)
+
+
 @frappe.whitelist()
 def get_batch_context(batch: str) -> dict:
 	"""Everything a quality manager needs before deciding on one batch."""
@@ -82,13 +122,10 @@ def get_batch_context(batch: str) -> dict:
 	doc = frappe.get_doc("Batch", batch)
 	doc.check_permission("read")
 
-	inspections = frappe.get_list(
-		"Quality Inspection",
-		filters={"item_code": doc.item, "batch_no": batch, "docstatus": 1, "status": "Accepted"},
-		fields=["name", "status", "inspection_type", "report_date"],
-		order_by="report_date desc",
-		limit=10,
-	)
+	# Every inspection, not only the accepted ones: a rejection is the single
+	# most relevant fact before a decision, and filtering it out made the
+	# history a record of good news.
+	inspections = get_inspections(batch, limit=10)
 
 	history = frappe.get_list(
 		"FM Batch Release",
