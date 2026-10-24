@@ -10,7 +10,7 @@ import { reactive, watch } from 'vue'
  */
 export const THEMES = [
 	{ value: 'midnight', label: 'Midnight Blue', swatch: '#111d33', accent: '#4263eb' },
-	{ value: 'forest', label: 'Forest', swatch: '#142f29', accent: '#247861' },
+	{ value: 'forest', label: 'Forest (Batchwell)', swatch: '#102a21', accent: '#1f6b51' },
 	{ value: 'amethyst', label: 'Amethyst', swatch: '#251d39', accent: '#7552b5' },
 	{ value: 'graphite', label: 'Graphite', swatch: '#202831', accent: '#445366' },
 	{ value: 'copper', label: 'Copper', swatch: '#342a23', accent: '#9c5b35' },
@@ -42,7 +42,8 @@ function write(key, value) {
 }
 
 export const appearance = reactive({
-	theme: read(THEME_KEY, 'midnight', THEMES.map((t) => t.value)),
+	// Forest is Batchwell's own palette; the rest stay selectable.
+	theme: read(THEME_KEY, 'forest', THEMES.map((t) => t.value)),
 	font: read(FONT_KEY, 'studio', FONTS.map((f) => f.value)),
 
 	setTheme(value) {

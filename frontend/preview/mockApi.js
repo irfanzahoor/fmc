@@ -44,6 +44,29 @@ export const roleDashboard = {
 			panels: {
 				owner: [
 					{
+						title: 'Needs a decision',
+						note: null,
+						kind: 'material_short',
+						total: 3,
+						rows: [
+							{
+								work_order: 'MFG-WO-2026-00041', item_name: 'Garam Masala Bulk',
+								status: 'Not Started', planned_end_date: '2026-10-28',
+								items: [
+									{ item_code: 'CHI', item_name: 'Red Chilli Powder', warehouse: 'FM Demo Stores - SED',
+									  required_qty: 300, available_qty: 54, short_qty: 246, uom: 'Kg' },
+									{ item_code: 'CUM', item_name: 'Cumin Powder', warehouse: 'FM Demo Stores - SED',
+									  required_qty: 200, available_qty: 56, short_qty: 144, uom: 'Kg' },
+								],
+							},
+						],
+						metrics: [
+							{ label: 'Runs short of material', value: 3, unit: '', decimals: 0, tone: 'warn', link: { doctype: 'Work Order', filters: {} } },
+							{ label: 'Batches held or quarantined', value: 5, unit: '', decimals: 0, tone: 'warn', link: { doctype: 'Batch', filters: {} } },
+							{ label: 'Runs past their end date', value: 1, unit: '', decimals: 0, tone: 'warn', link: { doctype: 'Work Order', filters: {} } },
+						],
+					},
+					{
 						title: 'Production',
 						note: null,
 						rows: [],

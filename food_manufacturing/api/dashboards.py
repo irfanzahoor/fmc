@@ -87,13 +87,31 @@ def _owner(company: str, since, days: int) -> list:
 	"""Production, stock, shortages, yield and cost variance."""
 	from food_manufacturing.api.dashboard import get_dashboard as plant
 
+	from food_manufacturing.api.exceptions import get_exceptions
+
 	core = plant(company, days)
 	kpis = core.get("kpis") or {}
 
 	runs = get_run_variances(company, since)
 	cost = summarise(runs)
+	problems = get_exceptions(company)
 
 	return [
+		# Exceptions first: an owner's dashboard is a list of things that need a
+		# decision, not a scoreboard.
+		_panel("Needs a decision", [
+			_metric("Runs short of material", len(problems["material_short"]), tone="warn", link=_link(
+				"Work Order", {"company": company, "status": ["in", ["Not Started", "In Process"]]})),
+			_metric("Batches held or quarantined", len(problems["quality_holds"]), tone="warn", link=_link(
+				"Batch", {"fm_quality_status": ["in", ["Quarantine", "Hold"]]})),
+			_metric("Runs past their end date", len(problems["delayed_runs"]), tone="warn", link=_link(
+				"Work Order", {"company": company, "status": ["in", ["Not Started", "In Process"]]})),
+		],
+			rows=problems["material_short"][:5],
+			kind="material_short",
+			total=len(problems["material_short"]),
+			note=_exception_note(problems),
+		),
 		_panel("Production", [
 			_metric("Completed runs", kpis.get("completed_runs"), link=_link(
 				"Work Order", {"company": company, "status": "Completed"})),
@@ -112,10 +130,8 @@ def _owner(company: str, since, days: int) -> list:
 				tone="warn" if (cost["variance"] or 0) > 0 else "good",
 			),
 			_metric("Runs over plan", cost["over_plan_runs"], tone="warn"),
-		], note=_cost_note(cost), rows=runs[:10]),
-		_panel("Stock and quality", [
-			_metric("Batches awaiting a decision", kpis.get("pending_qc"), tone="warn", link=_link(
-				"Batch", {"fm_quality_status": ["in", ["Quarantine", "Hold"]]})),
+		], note=_cost_note(cost)),
+		_panel("Stock", [
 			_metric("Near expiry", kpis.get("near_expiry"), tone="warn", link=_link(
 				"Batch", {"expiry_date": ["<=", str(add_days(getdate(today()), 90))]})),
 			_metric("Released in period", kpis.get("batches_released"), tone="good", link=_link(
@@ -135,9 +151,11 @@ def _production(company: str, since, days: int) -> list:
 	from food_manufacturing.api.dashboard import _production_by_item, _completed_runs
 	from food_manufacturing.api.production import get_production_queue
 
+	from food_manufacturing.api.exceptions import get_exceptions
+
 	runs = _completed_runs(company, since)
 	queue = get_production_queue(company, limit=50)
-	ready = [row for row in queue if not row.get("shortfall")]
+	short = get_exceptions(company)["material_short"]
 
 	yielded = [flt(row.fm_actual_yield_percent) for row in runs if flt(row.fm_actual_yield_percent)]
 	average = flt(sum(yielded) / len(yielded), 2) if yielded else None
@@ -147,14 +165,15 @@ def _production(company: str, since, days: int) -> list:
 		_panel("Work queue", [
 			_metric("Open runs", len(queue), link=_link(
 				"Work Order", {"company": company, "status": ["in", ["Not Started", "In Process"]]})),
-			_metric("Ready to start", len(ready)),
+			_metric("Short of material", len(short), tone="warn", link=_link(
+				"Work Order", {"company": company, "status": ["in", ["Not Started", "In Process"]]})),
 			_metric("Completed in period", len(runs), tone="good"),
-		], rows=queue[:10]),
+		]),
 		_panel("Output", [
 			_metric("Average actual yield", average, unit="%", decimals=1),
 			_metric("Runs outside tolerance", flagged, tone="warn", link=_link(
 				"Work Order", {"company": company, "fm_yield_flagged": 1})),
-		], rows=_production_by_item(runs)),
+		]),
 	]
 
 
@@ -173,7 +192,7 @@ def _quality(company: str, since, days: int) -> list:
 			_metric("On hold", counts.get("hold"), tone="warn", link=_link(
 				"Batch", {"fm_quality_status": "Hold"})),
 			_metric("Total awaiting", counts.get("total"), tone="warn"),
-		], rows=queue),
+		]),
 		_panel("Inspections", [
 			_metric("Draft inspections", pending, link=_link(
 				"Quality Inspection", {"company": company, "docstatus": 0})),
@@ -196,7 +215,7 @@ def _stores(company: str, since, days: int) -> list:
 				"Purchase Order", {"company": company, "status": ["not in", ["Closed", "Completed"]], "docstatus": 1})),
 			_metric("Received in period", _receipts(company, since), tone="good", link=_link(
 				"Purchase Receipt", {"company": company, "docstatus": 1})),
-		], rows=orders[:10]),
+		]),
 		_panel("Shortages", [
 			_metric("Open material requests", _open_requests(company), tone="warn", link=_link(
 				"Material Request", {"company": company, "docstatus": 1, "status": ["!=", "Stopped"]})),
@@ -204,18 +223,39 @@ def _stores(company: str, since, days: int) -> list:
 		_panel("Near expiry", [
 			_metric("Batches within 90 days", len(near), tone="warn", link=_link(
 				"Batch", {"expiry_date": ["<=", str(add_days(getdate(today()), 90))]})),
-		], rows=near[:10]),
+		]),
 	]
 
 
 # --- building blocks --------------------------------------------------------
 
 
-def _panel(title: str, metrics: list, rows: list | None = None, note: str | None = None) -> dict:
+def _exception_note(problems: dict) -> str | None:
+	"""Say plainly when there is nothing to decide."""
+	total = sum(len(rows) for rows in problems.values())
+	if total:
+		return None
+
+	return "Nothing is short, held or late. The plant is running to plan."
+
+
+def _panel(
+	title: str,
+	metrics: list,
+	rows: list | None = None,
+	note: str | None = None,
+	kind: str | None = None,
+	total: int | None = None,
+) -> dict:
+	"""One panel. ``kind`` names the shape of ``rows`` so the client can pick a
+	template; ``total`` is how many rows exist behind the ones sent."""
+	sent = rows or []
 	return {
 		"title": title,
 		"metrics": [metric for metric in metrics if metric],
-		"rows": rows or [],
+		"rows": sent,
+		"kind": kind,
+		"total": total if total is not None else len(sent),
 		"note": note,
 	}
 

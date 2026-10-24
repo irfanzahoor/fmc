@@ -65,6 +65,16 @@
 							:currency="data.currency"
 						/>
 					</div>
+
+					<!-- A count tells you there is a problem; the rows tell you
+					     which one, and what to do about it. Only a panel that
+					     says its rows are shortages gets the shortage template. -->
+					<div v-if="panel.kind === 'material_short' && panel.rows.length" class="fm-card mt-3 p-4">
+						<ExceptionList
+							:rows="panel.rows"
+							:more="Math.max(0, panel.total - panel.rows.length)"
+						/>
+					</div>
 				</section>
 
 				<p class="text-xs fm-muted">
@@ -80,6 +90,7 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { LayoutDashboard, RefreshCw } from 'lucide-vue-next'
 
+import ExceptionList from '@/components/ExceptionList.vue'
 import MetricCard from '@/components/MetricCard.vue'
 import PageHeader from '@/components/PageHeader.vue'
 import StateBlock from '@/components/StateBlock.vue'

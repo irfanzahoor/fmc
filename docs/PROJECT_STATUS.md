@@ -497,3 +497,83 @@ console's own mark uses the same SVG, so the Desk and `/fm` read as one product.
 
 **NOT RUN:** `ruff`. Verified by rendering against a live session at 1440px with
 a temporary user, created and deleted.
+
+
+---
+
+# Batchwell UI programme (2026-10-24)
+
+## Audit
+
+Stack is already Vue 3 + frappe-ui 0.1.248 + Tailwind 3.4.15 + vue-router 4,
+all pinned, served at `/fm`; Desk administration untouched. Frappe 16.52.0 /
+ERPNext 16.27.0. No TypeScript, and no migration attempted — the brief allows
+TS only where practical without a broad change, and nothing here needed it.
+
+Two defects found during the audit:
+
+1. **A fabricated figure on a live screen.** The owner dashboard's "Ready to
+   start" filtered `get_production_queue` on a `shortfall` key that endpoint
+   has never returned, so *every* open run counted as ready. Removed and
+   replaced with a measured shortage count.
+2. **The default theme was Midnight Blue**, not the forest green the product
+   is branded on.
+
+## Phase 1 — shell and owner dashboard · **DONE**
+
+### Branding
+
+Forest green with a restrained gold accent. Every value measured, not picked:
+
+| Role | Hex | Contrast |
+|---|---|---|
+| Primary | `#1f6b51` | 6.40:1 on white; white on it 6.40:1 |
+| Soft | `#e8f2ed` | primary on it 5.60:1 |
+| Sidebar | `#102a21` | side ink `#c3d8cd` 10.20:1 |
+| Hero | `#163a2d` | white on it 12.52:1 |
+| Accent | `#a1711a` | 4.29:1 on white — marks and borders, never body text |
+| Accent on gold chip | `#8a6016` | 5.04:1 on `#faf3e2` |
+| Accent on hero | `#d4a24a` | 5.41:1 (`#a1711a` would be 2.92:1 there) |
+
+Gold is held constant across all five themes, the way the status colours are, so
+a Batchwell screen is recognisable in any palette. Chart colours are unchanged
+and still the validated set.
+
+### Exceptions, computed from records
+
+`api/exceptions.py` returns three lists, each row carrying what it links to:
+
+- **Material short** — required less transferred less consumed, against
+  `Bin.actual_qty` in the run's own source warehouse, scoped to the company's
+  warehouses so a shortage is never judged against someone else's stock.
+- **Quality holds** — delegated to `get_release_queue`, which already filters to
+  batches holding stock in this company; duplicating that rule is how the two
+  drift apart.
+- **Delayed runs** — open runs past `planned_end_date`, with days late.
+
+The owner dashboard leads with these, and the shortage rows name the ingredient,
+how short it is and which warehouse was checked. "This run is short" is not
+actionable; "Red Chilli Powder short 246 Kg (54 of 300 in Stores)" is.
+
+A panel now declares the `kind` of rows it carries. Without that the client
+rendered cost-variance rows through the shortage template and printed
+"and 126354.45999999999 more runs short of material" — caught by rendering it.
+
+### Checks
+
+| Check | Result |
+|---|---|
+| Full test suite (325) | **PASS** |
+| New exception tests (8) | **PASS** |
+| Owner dashboard, live session, 1440px | **PASS** — rendered and inspected |
+| Owner dashboard, 390px | **PASS** — rendered and inspected |
+| Shortage template with data (harness) | **PASS** — rendered and inspected |
+| Contrast of every brand token | **PASS** — measured |
+| `ruff` | **NOT RUN** — not installed in this bench |
+| HTTP round-trip of `get_exceptions` | **NOT RUN** — exercised in-process |
+
+### Gaps carried into later phases
+
+- The period selector is still a static pill; it does not filter.
+- `Stores` and `Quality` panels still carry no row detail, only counts.
+- No confirmation dialogs on consequential actions yet (Phase 5).

@@ -32,6 +32,18 @@
 	--fm-hero-soft: #233958;
 	--fm-line: #c1d2ff;
 
+	/*
+	 * Restrained gold. Used for marks, chips and highlights - never for body
+	 * text, which it is too light to carry. #a1711a is 4.29:1 on white (fine
+	 * for a mark or a border, borderline for text), so text on a gold chip
+	 * uses the darker step at 5.04:1, and the hero panel uses the lighter
+	 * step, which reads 5.41:1 there where #a1711a would be 2.92:1.
+	 */
+	--fm-accent: #a1711a;
+	--fm-accent-strong: #8a6016;
+	--fm-accent-soft: #faf3e2;
+	--fm-accent-on-dark: #d4a24a;
+
 	--fm-radius: 16px;
 	--fm-shadow: 0 3px 14px #1a294508;
 
@@ -39,18 +51,25 @@
 	--fm-body: 'Inter', system-ui, sans-serif;
 }
 
+/*
+ * Batchwell's own palette: forest green with a restrained gold accent.
+ *
+ * Every value below was measured, not picked. Primary carries white text at
+ * 6.40:1 and sits on the canvas at 5.93:1; the sidebar ink reads at 10.20:1 and
+ * white on the hero panel at 12.52:1 - all clear of AA.
+ */
 .fm-app[data-theme='forest'] {
-	--fm-primary: #247861;
-	--fm-primary-dark: #195a49;
-	--fm-soft: #eaf4ee;
+	--fm-primary: #1f6b51;
+	--fm-primary-dark: #17513e;
+	--fm-soft: #e8f2ed;
 	--fm-canvas: #f4f7f3;
-	--fm-ink: #1c302a;
-	--fm-muted: #62766b;
-	--fm-border: #e0e9e1;
-	--fm-sidebar: #142f29;
-	--fm-side-ink: #c0d5cb;
-	--fm-hero: #193d33;
-	--fm-hero-soft: #285348;
+	--fm-ink: #15271f;
+	--fm-muted: #5c6f66;
+	--fm-border: #dde8e1;
+	--fm-sidebar: #102a21;
+	--fm-side-ink: #c3d8cd;
+	--fm-hero: #163a2d;
+	--fm-hero-soft: #24513f;
 	--fm-line: #b8e1cd;
 }
 
