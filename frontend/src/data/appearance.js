@@ -10,7 +10,7 @@ import { reactive, watch } from 'vue'
  */
 export const THEMES = [
 	{ value: 'midnight', label: 'Midnight Blue', swatch: '#111d33', accent: '#4263eb' },
-	{ value: 'forest', label: 'Forest (Batchwell)', swatch: '#102a21', accent: '#1f6b51' },
+	{ value: 'forest', label: 'Batchwell', swatch: '#09301b', accent: '#0c4224' },
 	{ value: 'amethyst', label: 'Amethyst', swatch: '#251d39', accent: '#7552b5' },
 	{ value: 'graphite', label: 'Graphite', swatch: '#202831', accent: '#445366' },
 	{ value: 'copper', label: 'Copper', swatch: '#342a23', accent: '#9c5b35' },

@@ -1,16 +1,29 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="Batchwell">
 	<title>Batchwell</title>
-	<!-- A sealed, filled batch container: the one object every workflow in this
-	     app is about. Geometry only, so it stays legible at 24px in the Desk
-	     sidebar and on the apps screen. -->
-	<rect width="64" height="64" rx="14" fill="#1b2a4a"/>
-	<!-- Lid -->
-	<rect x="22" y="13" width="20" height="6" rx="3" fill="#ffffff"/>
-	<!-- Jar body, drawn as an outline so the fill line below reads as contents -->
+	<!--
+		Redrawn from the supplied brand artwork, which carries a band of black
+		and colour noise down its right edge - visible once scaled to icon size.
+		Same mark, same sampled colours (#0c4224 forest, #cca23c gold), as
+		geometry so it stays crisp at 24px and costs about a kilobyte.
+	-->
+	<rect width="64" height="64" rx="14" fill="#0c4224"/>
+
+	<!-- The B: one path, counters knocked out with evenodd. -->
 	<path
-		d="M19 25a5 5 0 0 1 5-5h16a5 5 0 0 1 5 5v21a5 5 0 0 1-5 5H24a5 5 0 0 1-5-5z"
-		fill="none" stroke="#ffffff" stroke-width="3.5" stroke-linejoin="round"
+		fill="#ffffff" fill-rule="evenodd"
+		d="M17 12h20.5a10.5 10.5 0 0 1 3.1 20.5A11 11 0 0 1 38.2 52H17Z
+		   M25 19.2v8.9h11.4a4.45 4.45 0 0 0 0-8.9Z
+		   M25 35.6v9.2h12.2a4.6 4.6 0 0 0 0-9.2Z"
 	/>
-	<!-- Contents, filled to the batch line -->
-	<path d="M22.5 35h19v11a2.5 2.5 0 0 1-2.5 2.5H25a2.5 2.5 0 0 1-2.5-2.5z" fill="#f0a93b"/>
+
+	<!-- Gold leaf, angled up and right through the waist of the B, as in the
+	     artwork: tail at the lower left, tip breaking past the stem. -->
+	<path
+		fill="#cca23c"
+		d="M21.8 45.4c1.2-9 7.4-15.8 17-18.6-.4 10.2-6.6 17.2-17 18.6Z"
+	/>
+	<path
+		fill="#0c4224" fill-opacity="0.28"
+		d="M22.6 44.8c3.3-7.5 8.7-13.2 15.6-16.6-5.3 5-10.1 10.7-14 16.9Z"
+	/>
 </svg>

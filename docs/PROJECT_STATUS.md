@@ -785,10 +785,7 @@ like a regression elsewhere. It restores the flag in a `finally`.
 
 ### Genuine blockers and gaps
 
-- **`ruff` cannot be run** here; it is in `.pre-commit-config.yaml` but absent
-  from this bench. Lint is unverified across the whole programme.
-- **Fresh-install verification** has never been run — no DB root on this machine.
-- **Two-process concurrency** is untested; the suite is single-process.
-- The **period selector** on the dashboards is still a static pill.
-- **Stores and Quality dashboard panels** carry counts without row detail; only
-  the owner's shortage panel renders rows.
+Every open point is tracked in **[docs/BACKLOG.md](BACKLOG.md)**, ranked, with
+what "done" means for each. The three that block a pilot: `ruff` has never run
+here, a fresh install has never been verified, and two-process concurrency is
+untested.

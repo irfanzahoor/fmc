@@ -33,16 +33,16 @@
 	--fm-line: #c1d2ff;
 
 	/*
-	 * Restrained gold. Used for marks, chips and highlights - never for body
-	 * text, which it is too light to carry. #a1711a is 4.29:1 on white (fine
-	 * for a mark or a border, borderline for text), so text on a gold chip
-	 * uses the darker step at 5.04:1, and the hero panel uses the lighter
-	 * step, which reads 5.41:1 there where #a1711a would be 2.92:1.
+	 * The gold from the logo leaf. Used for marks, chips and highlights - never
+	 * for body text: #cca23c is only 2.39:1 on white, which is fine for a mark
+	 * beside text but cannot be text itself. Text on a gold chip uses the dark
+	 * step (5.43:1 on the soft gold), and the brand gold is kept for dark
+	 * surfaces, where it reads 5.32:1 on the hero panel.
 	 */
-	--fm-accent: #a1711a;
-	--fm-accent-strong: #8a6016;
-	--fm-accent-soft: #faf3e2;
-	--fm-accent-on-dark: #d4a24a;
+	--fm-accent: #cca23c;
+	--fm-accent-strong: #7d5f14;
+	--fm-accent-soft: #faf4e4;
+	--fm-accent-on-dark: #cca23c;
 
 	--fm-radius: 16px;
 	--fm-shadow: 0 3px 14px #1a294508;
@@ -52,24 +52,25 @@
 }
 
 /*
- * Batchwell's own palette: forest green with a restrained gold accent.
+ * Batchwell's own palette, sampled from the brand artwork rather than guessed:
+ * #0c4224 forest and #cca23c gold are the two colours in the logo.
  *
- * Every value below was measured, not picked. Primary carries white text at
- * 6.40:1 and sits on the canvas at 5.93:1; the sidebar ink reads at 10.20:1 and
- * white on the hero panel at 12.52:1 - all clear of AA.
+ * Measured, not picked. White on primary is 11.54:1 and primary on the canvas
+ * 10.67:1; the sidebar ink reads 9.49:1 and white on the hero panel 12.69:1 -
+ * all well clear of AA.
  */
 .fm-app[data-theme='forest'] {
-	--fm-primary: #1f6b51;
-	--fm-primary-dark: #17513e;
-	--fm-soft: #e8f2ed;
-	--fm-canvas: #f4f7f3;
-	--fm-ink: #15271f;
-	--fm-muted: #5c6f66;
-	--fm-border: #dde8e1;
-	--fm-sidebar: #102a21;
-	--fm-side-ink: #c3d8cd;
-	--fm-hero: #163a2d;
-	--fm-hero-soft: #24513f;
+	--fm-primary: #0c4224;
+	--fm-primary-dark: #06301a;
+	--fm-soft: #e6f0ea;
+	--fm-canvas: #f3f7f4;
+	--fm-ink: #12241a;
+	--fm-muted: #5a6d62;
+	--fm-border: #dbe7e0;
+	--fm-sidebar: #09301b;
+	--fm-side-ink: #c2d6c9;
+	--fm-hero: #113a24;
+	--fm-hero-soft: #1d4d33;
 	--fm-line: #b8e1cd;
 }
 
