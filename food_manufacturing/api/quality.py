@@ -24,7 +24,13 @@ QUEUE_STATUSES = ("Quarantine", "Hold", "Released", "Rejected")
 
 
 @frappe.whitelist()
-def get_release_queue(company: str, status: str | None = None, limit: int = 100, start: int = 0) -> list:
+def get_release_queue(
+	company: str,
+	status: str | None = None,
+	search: str | None = None,
+	limit: int = 100,
+	start: int = 0,
+) -> list:
 	"""Batches awaiting a quality decision, oldest first."""
 	frappe.has_permission("Batch", "read", throw=True)
 	frappe.has_permission("Company", "read", doc=company, throw=True)
@@ -35,6 +41,18 @@ def get_release_queue(company: str, status: str | None = None, limit: int = 100,
 		filters["fm_quality_status"] = status
 	else:
 		filters["fm_quality_status"] = ("in", list(PENDING_STATUSES))
+
+	# Searched in the query rather than in the browser: a site with thousands of
+	# batches should not ship them all so the client can hide most.
+	or_filters = None
+	if search:
+		term = f"%{search.strip()[:64]}%"
+		or_filters = {
+			"name": ("like", term),
+			"item": ("like", term),
+			"item_name": ("like", term),
+			"fm_supplier_lot_no": ("like", term),
+		}
 
 	batches = frappe.get_list(
 		"Batch",
@@ -52,6 +70,7 @@ def get_release_queue(company: str, status: str | None = None, limit: int = 100,
 		],
 		# Pending reads oldest-first (longest waiting); a decided list reads
 		# newest-first, because that is a log you look back through.
+		or_filters=or_filters,
 		order_by="modified desc" if status in ("Released", "Rejected") else "creation asc, name asc",
 		limit_page_length=0,
 	)

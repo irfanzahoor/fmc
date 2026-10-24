@@ -708,3 +708,87 @@ access can still release a batch.
 | Quality screen, harness, 1440px | **PASS** — rendered and inspected |
 | `ruff` | **NOT RUN** |
 | Live-session render | **NOT RUN** — harness only this phase |
+
+
+## Phase 5 — Usability and performance · **DONE**
+
+| Requirement | Where |
+|---|---|
+| Loading / empty / error / permission-denied / success | `StateBlock` on every screen; permission refusals name the missing role |
+| Confirmations for consequential actions | `ConfirmDialog` on complete-run, post-receipt, create-delivery-note, record-decision and propose-request |
+| Server-side pagination and filtering | Production and Quality queues both search, filter and page **in the query** |
+| Debounced search | 300 ms on both queues |
+| Lazy-loaded routes | every route is a dynamic import |
+| No duplicate API requests | in-flight reads are shared by method + arguments |
+| Accessible labels, keyboard, visible focus | `role="alertdialog"`, focus trap, Esc to cancel, focus lands on **Cancel** |
+
+### Design decisions
+
+**The dialog repeats what is about to be posted** — work order, good output,
+process loss — because a confirmation that only asks "are you sure" adds a click
+without adding certainty.
+
+**Focus lands on Cancel, never Confirm.** A dialog that opens with the
+destructive action focused turns a stray Enter into a posting. A reject also
+gets the fixed status red rather than a theme colour: "this is destructive" must
+mean the same thing in every palette.
+
+**The dialog carries the theme with it.** It teleports out of the app root for
+stacking, and every token in this app is scoped under `.fm-app` — without the
+class and the theme attributes it rendered completely unstyled. Caught by
+rendering it.
+
+**Reads are shared, mutations never are.** Two components asking the same
+question at the same moment cost one request; two identical postings are two
+distinct intentions.
+
+**The client stopped filtering what the server searched.** The quality box
+filtered loaded rows, so a batch outside the current page could not be found. It
+asks the server now, and the browser no longer re-filters the answer.
+
+**A silently empty picker is a lie.** `loadPacks` swallowed its error and left
+the pack selector blank, which reads as a missing feature rather than a failed
+request. It says what went wrong now. That same swallow cost me a debugging
+detour, which is the argument.
+
+### Checks
+
+| Check | Result |
+|---|---|
+| Full suite (347) | **PASS** |
+| Confirm dialog, harness, rendered | **PASS** — inspected, including focus ring on Cancel |
+| Costing + packaging, **live session**, 1440px | **PASS** — real stock: Pouch 100 g short 200 of 1,000 |
+| Production and Quality, live session | **PASS** |
+| `get_packs_for` over HTTP | **PASS** |
+| `ruff` | **NOT RUN** — not installed in this bench |
+| Keyboard-only walkthrough of the dialog | **NOT RUN** — focus order verified by reading and by the rendered focus ring, not by driving a keyboard |
+
+### Fixed along the way
+
+A flaky test: `test_a_deactivated_bom_cannot_be_costed` left `is_active = 0`
+behind, so whichever test next picked that BOM failed and the failure looked
+like a regression elsewhere. It restores the flag in a `finally`.
+
+---
+
+## Programme summary
+
+| Phase | Tests added | Status |
+|---|---|---|
+| 1 Shell and owner dashboard | 8 | done |
+| 2 Production workspace | 10 | done |
+| 3 Recipe costing and packaging | 2 | done |
+| 4 Quality and traceability | 10 | done |
+| 5 Usability and performance | — | done |
+
+**347 tests passing** on Frappe 16.52.0 / ERPNext 16.27.0.
+
+### Genuine blockers and gaps
+
+- **`ruff` cannot be run** here; it is in `.pre-commit-config.yaml` but absent
+  from this bench. Lint is unverified across the whole programme.
+- **Fresh-install verification** has never been run — no DB root on this machine.
+- **Two-process concurrency** is untested; the suite is single-process.
+- The **period selector** on the dashboards is still a static pill.
+- **Stores and Quality dashboard panels** carry counts without row detail; only
+  the owner's shortage panel renders rows.

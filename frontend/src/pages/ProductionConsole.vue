@@ -226,7 +226,7 @@
 								</p>
 							</div>
 
-							<form class="fm-card p-5" @submit.prevent="finish">
+							<form class="fm-card p-5" @submit.prevent="askToFinish">
 								<h3 class="font-bold">Finish this run</h3>
 								<p class="mt-0.5 text-sm fm-muted">Record actual output and non-recoverable process loss.</p>
 
@@ -293,6 +293,18 @@
 				</div>
 			</div>
 		</StateBlock>
+
+		<!-- Completing a run posts a Stock Entry and consumes released lots.
+		     That is not undone by a second click. -->
+		<ConfirmDialog
+			:open="confirming"
+			title="Complete this run?"
+			body="This posts a Stock Entry, consumes the released lots above and creates the output batch. It cannot be undone from here."
+			:details="confirmDetails"
+			confirm-label="Post and complete"
+			@confirm="confirmFinish"
+			@cancel="confirming = false"
+		/>
 	</section>
 </template>
 
@@ -301,6 +313,7 @@ import { computed, onMounted, reactive, ref } from 'vue'
 import { AlertTriangle, Check, CheckCircle, Clock, Factory, LineChart, RefreshCw, Search, ShieldCheck } from 'lucide-vue-next'
 
 import PageHeader from '@/components/PageHeader.vue'
+import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import StateBlock from '@/components/StateBlock.vue'
 import { SCREEN_ROLES } from '@/data/access'
 import { debounce } from '@/utils/debounce'
@@ -341,6 +354,26 @@ function setStatus(value) {
 
 /* The stage action comes from the server: a button that disagrees with the rule
    behind it is worse than no button. */
+const confirming = ref(false)
+
+/* The dialog repeats what is about to be posted. A confirmation that only asks
+   "are you sure" adds a click without adding certainty. */
+const confirmDetails = computed(() => [
+	{ label: 'Work order', value: selected.value || '—' },
+	{ label: 'Good output', value: `${form.qty || 0} ${unit.value}` },
+	{ label: 'Process loss', value: `${form.processLoss || 0} ${unit.value}` },
+])
+
+function askToFinish() {
+	if (finishing.value || finishResult.value || blockedReason.value) return
+	confirming.value = true
+}
+
+async function confirmFinish() {
+	confirming.value = false
+	await finish()
+}
+
 const nextAction = computed(() => detail.value?.next_action || null)
 const actionLabel = computed(() => nextAction.value?.label || 'Complete run')
 const blockedReason = computed(() =>

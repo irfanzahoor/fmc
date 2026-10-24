@@ -90,14 +90,28 @@ def get_packs_for(bulk_item: str) -> list:
 	"""
 	frappe.has_permission("Item", "read", throw=True)
 
-	return frappe.get_list(
+	fields = ["name as item_code", "item_name", "fm_pack_size", "fm_pack_uom"]
+
+	packs = frappe.get_list(
 		"Item",
 		filters={
 			"fm_bulk_item": bulk_item,
 			"fm_material_nature": "Finished Good",
 			"disabled": 0,
 		},
-		fields=["name as item_code", "item_name", "fm_pack_size", "fm_pack_uom"],
+		fields=fields,
 		order_by="fm_pack_size asc",
 		limit=50,
 	)
+	if packs:
+		return packs
+
+	# A packaging BOM's own product *is* the pack, so there is nothing filled
+	# from it. Offer it directly rather than leaving the picker empty.
+	own = frappe.get_list(
+		"Item",
+		filters={"name": bulk_item, "fm_material_nature": "Finished Good", "disabled": 0},
+		fields=fields,
+		limit=1,
+	)
+	return own

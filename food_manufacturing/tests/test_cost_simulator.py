@@ -227,6 +227,17 @@ class TestCostSimulator(FMTestCase):
 		self.assertIn(mine, codes)
 		self.assertNotIn(other, codes)
 
+	def test_a_packaging_bom_offers_its_own_pack(self):
+		"""Nothing is filled *from* a pack, so the picker would be empty."""
+		from food_manufacturing.api.costing import get_packs_for
+
+		pack = fixtures.ensure_item(f"ACostSelf {self.tag}", nature="Finished Good", has_batch=False)
+		frappe.db.set_value("Item", pack, "fm_pack_size", 0.05)
+		frappe.clear_document_cache("Item", pack)
+
+		codes = {row["item_code"] for row in get_packs_for(pack)}
+		self.assertEqual(codes, {pack})
+
 	# --- permission and state -----------------------------------------------
 
 	def test_a_deactivated_bom_cannot_be_costed(self):
@@ -235,8 +246,15 @@ class TestCostSimulator(FMTestCase):
 		doc.db_set("is_active", 0)
 		frappe.clear_document_cache("BOM", self.bom)
 
-		with self.assertRaises(frappe.ValidationError):
-			simulate(self.bom)
+		try:
+			with self.assertRaises(frappe.ValidationError):
+				simulate(self.bom)
+		finally:
+			# Restored here, not in tearDown: a deactivated BOM left behind
+			# makes whichever test next picks it fail, and that failure looks
+			# like a regression somewhere else entirely.
+			doc.db_set("is_active", 1)
+			frappe.clear_document_cache("BOM", self.bom)
 
 
 	def test_a_user_without_bom_access_is_refused(self):

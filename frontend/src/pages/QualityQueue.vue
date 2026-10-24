@@ -46,10 +46,11 @@
 			</div>
 
 			<label class="ml-auto flex min-w-[14rem] flex-1 items-center gap-2 sm:max-w-xs">
-				<span class="sr-only">Filter the loaded batches</span>
+				<span class="sr-only">Search batches</span>
 				<span class="relative flex w-full items-center">
 					<Search class="pointer-events-none absolute left-3 h-4 w-4 fm-muted" aria-hidden="true" />
-					<input v-model.trim="search" type="search" class="fm-input fm-input-icon fm-tap" placeholder="Filter batch, item or lot" />
+					<input v-model.trim="search" type="search" class="fm-input fm-input-icon fm-tap" placeholder="Search batch, item or lot"
+						@input="onSearch" />
 				</span>
 			</label>
 		</div>
@@ -182,7 +183,7 @@
 								</div>
 							</dl>
 
-							<form class="mt-5 border-t pt-4" :style="{ borderColor: 'var(--fm-border)' }" @submit.prevent="submit">
+							<form class="mt-5 border-t pt-4" :style="{ borderColor: 'var(--fm-border)' }" @submit.prevent="askToRecord">
 								<label class="block">
 									<span class="fm-label">Matching inspection</span>
 									<select v-model="form.inspection" class="fm-input fm-tap mt-1">
@@ -285,6 +286,19 @@
 				</div>
 			</div>
 		</StateBlock>
+
+		<!-- A release lets stock move; a reject takes it out of use. Both are
+		     audited and neither is undone by a second click. -->
+		<ConfirmDialog
+			:open="confirming"
+			:title="`Record ${form.decision.toLowerCase()} for this batch?`"
+			:body="confirmBody"
+			:details="confirmDetails"
+			:confirm-label="`Record ${form.decision.toLowerCase()}`"
+			:destructive="form.decision === 'Reject'"
+			@confirm="confirmRecord"
+			@cancel="confirming = false"
+		/>
 	</section>
 </template>
 
@@ -296,8 +310,10 @@ import {
 
 import KpiCard from '@/components/KpiCard.vue'
 import PageHeader from '@/components/PageHeader.vue'
+import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import StateBlock from '@/components/StateBlock.vue'
 import { SCREEN_ROLES } from '@/data/access'
+import { debounce } from '@/utils/debounce'
 import StatusChip from '@/components/StatusChip.vue'
 import { dashboard, errorMessage, quality } from '@/data/api'
 
@@ -306,6 +322,39 @@ const emit = defineEmits(['counts-changed'])
 
 const PAGE_SIZE = 100
 const decisions = ['Release', 'Hold', 'Reject']
+
+/* Debounced, and asked of the server: a request per keystroke answers one
+   question five times, and the answers can arrive out of order. */
+const onSearch = debounce(() => load(), 300)
+
+const confirming = ref(false)
+
+const CONFIRM_BODY = {
+	Release: 'Released stock can be consumed in production and dispatched to customers.',
+	Hold: 'Held stock cannot be consumed or dispatched until it is released.',
+	Reject: 'Rejected stock is taken out of use. Only a warehouse manager can move it out of the rejected warehouse.',
+}
+
+const confirmBody = computed(
+	() => `${CONFIRM_BODY[form.decision] || ''} The decision is recorded against your name.`,
+)
+
+const confirmDetails = computed(() => [
+	{ label: 'Batch', value: context.value?.batch?.name || '—' },
+	{ label: 'Item', value: context.value?.batch?.item_name || '—' },
+	{ label: 'Decision', value: form.decision || '—' },
+])
+
+function askToRecord() {
+	if (submitting.value || submitResult.value || !form.decision) return
+	if (needsReason.value && !form.reason.trim()) return
+	confirming.value = true
+}
+
+async function confirmRecord() {
+	confirming.value = false
+	await submit()
+}
 
 const trail = ref(null)
 
@@ -385,15 +434,9 @@ const needsReason = computed(() => form.decision && form.decision !== 'Release')
 
 /* Search filters the loaded page only - the endpoint paginates and has no
    search parameter, and the footer says which page is on screen. */
-const visibleRows = computed(() => {
-	const term = search.value.toLowerCase()
-	if (!term) return rows.value
-	return rows.value.filter((row) =>
-		[row.name, row.item_name, row.item, row.fm_supplier_lot_no]
-			.filter(Boolean)
-			.some((value) => String(value).toLowerCase().includes(term))
-	)
-})
+/* The server searches now, so the rows it returned are the answer. Filtering
+   them again here would hide matches it deliberately included. */
+const visibleRows = computed(() => rows.value)
 
 const inspectionOptions = computed(() => [
 	{ label: 'None', value: '' },
@@ -416,6 +459,7 @@ async function load() {
 			start: pageStart.value,
 			limit: PAGE_SIZE,
 			status: status.value || undefined,
+			search: search.value || undefined,
 		})
 		if (rows.value.length && !rows.value.some((row) => row.name === selected.value)) {
 			await open(rows.value[0])

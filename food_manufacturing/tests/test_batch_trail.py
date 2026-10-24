@@ -78,6 +78,22 @@ class TestBatchTrail(FMTestCase):
 		names = {row["name"] for row in get_release_queue(self.site["company"], status="Rejected")}
 		self.assertIn(rejected, names)
 
+	def test_the_queue_searches_in_the_query(self):
+		"""A site with thousands of batches must not ship them all."""
+		wanted = fixtures.ensure_batch(self.chilli, f"TRQ-{self.tag}", status="Hold")
+		other = fixtures.ensure_batch(self.chilli, f"TRZ-{self.tag}", status="Hold")
+		self.receive(wanted)
+		self.receive(other)
+
+		names = {row["name"] for row in get_release_queue(self.site["company"], search=wanted)}
+		self.assertIn(wanted, names)
+		self.assertNotIn(other, names)
+
+	def test_a_search_matching_nothing_returns_nothing(self):
+		held = fixtures.ensure_batch(self.chilli, f"TRQ-{self.tag}", status="Hold")
+		self.receive(held)
+		self.assertEqual(get_release_queue(self.site["company"], search="zzz-no-such"), [])
+
 	# --- the trail ----------------------------------------------------------
 
 	def test_a_purchased_lot_has_no_producing_run(self):

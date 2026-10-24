@@ -8,8 +8,28 @@ const mutations = new Set([
 	'costing.request_packaging_shortfall',
 ])
 const pending = new Map()
+/*
+ * In-flight reads, keyed by method and arguments.
+ *
+ * Two components asking the same question at the same moment - a page load that
+ * fires a list and a detail, a company switch that re-triggers both - should
+ * cost one request, not two. Mutations are never shared: each one is a distinct
+ * intention even with identical arguments.
+ */
+const inFlight = new Map()
+
 const method = (name) => async (args = {}) => {
-	if (!mutations.has(name)) return call(`food_manufacturing.api.${name}`, args)
+	if (!mutations.has(name)) {
+		const key = `${name}:${JSON.stringify(args)}`
+		const running = inFlight.get(key)
+		if (running) return running
+
+		const request = call(`food_manufacturing.api.${name}`, args).finally(() => {
+			inFlight.delete(key)
+		})
+		inFlight.set(key, request)
+		return request
+	}
 	const storageKey = `fm:retry:${name}:${JSON.stringify(args)}`
 	let requestId = pending.get(storageKey)
 	try { requestId ||= sessionStorage.getItem(storageKey) } catch { /* Storage may be disabled. */ }

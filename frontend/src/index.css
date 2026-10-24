@@ -288,6 +288,21 @@
 	}
 
 	/* Primary action. Contrast is carried by the token pair, not by a tint. */
+	/* For a confirm button that posts something hard to undo. Uses the fixed
+	   status red rather than a theme colour: "this is destructive" must mean
+	   the same thing in every palette. */
+	.fm-app .fm-btn-danger {
+		background: var(--fm-bad);
+		color: #ffffff;
+		border-radius: 10px;
+		font-weight: 600;
+		transition: filter 150ms ease;
+	}
+
+	.fm-app .fm-btn-danger:hover:not(:disabled) {
+		filter: brightness(0.92);
+	}
+
 	.fm-app .fm-btn-primary {
 		background: var(--fm-primary);
 		color: var(--fm-on-primary);

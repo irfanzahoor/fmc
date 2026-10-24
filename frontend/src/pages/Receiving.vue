@@ -41,7 +41,7 @@
 			</ul>
 
 			<StateBlock v-if="selected" :loading="linesLoading" :error="linesError" loading-text="Loading lines…">
-				<form v-if="lines" class="space-y-4" @submit.prevent="submit">
+				<form v-if="lines" class="space-y-4" @submit.prevent="askToPost">
 					<div class="fm-card p-5">
 						<dl class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
 							<div>
@@ -192,6 +192,16 @@
 				</div>
 			</div>
 		</StateBlock>
+
+		<ConfirmDialog
+			:open="confirming"
+			title="Post this receipt?"
+			body="This creates a Purchase Receipt, creates a batch for each supplier lot and moves the stock into the destination warehouse."
+			:details="confirmDetails"
+			confirm-label="Post receipt"
+			@confirm="confirmPost"
+			@cancel="confirming = false"
+		/>
 	</section>
 </template>
 
@@ -200,6 +210,7 @@ import { computed, onMounted, reactive, ref } from 'vue'
 import { Check, CheckCircle, PackageCheck, RefreshCw, ShieldAlert } from 'lucide-vue-next'
 
 import PageHeader from '@/components/PageHeader.vue'
+import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import StateBlock from '@/components/StateBlock.vue'
 import { SCREEN_ROLES } from '@/data/access'
 import StatusChip from '@/components/StatusChip.vue'
@@ -263,6 +274,24 @@ async function open(order) {
 	} finally {
 		linesLoading.value = false
 	}
+}
+
+const confirming = ref(false)
+
+const confirmDetails = computed(() => [
+	{ label: 'Purchase order', value: selected.value || '—' },
+	{ label: 'Lines to receive', value: String(linesWithQty.value.length) },
+	{ label: 'Destination', value: lines.value?.target_warehouse || '—' },
+])
+
+function askToPost() {
+	if (submitting.value || submitResult.value) return
+	confirming.value = true
+}
+
+async function confirmPost() {
+	confirming.value = false
+	await submit()
 }
 
 async function submit() {

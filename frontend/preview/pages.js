@@ -43,6 +43,19 @@ if (pick) {
 }
 
 /*
+ * `?click=<selector>` clicks one element after mount, so a dialog can be
+ * screenshotted. Harness-only.
+ */
+const clickTarget = new URLSearchParams(location.search).get('click')
+if (clickTarget) {
+	setTimeout(() => {
+		const el = document.querySelector(clickTarget)
+		if (!el) return console.warn('[harness] no element for', clickTarget)
+		el.click()
+	}, 1400)
+}
+
+/*
  * `?hover=<selector>` drives one pointer interaction after mount.
  *
  * Headless Chrome takes a screenshot but never moves a mouse, so a tooltip or

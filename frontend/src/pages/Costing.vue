@@ -200,8 +200,16 @@
 						</label>
 					</div>
 
-					<p v-if="!packItem" class="mt-3 rounded-xl p-4 text-sm fm-muted" :style="{ background: 'var(--fm-canvas)' }">
-						Choose a pack size above to plan its materials.
+					<p
+						v-if="!packItem && packsError"
+						role="alert"
+						class="mt-3 rounded-xl p-4 text-sm"
+						:style="{ background: 'var(--fm-bad-bg)', color: 'var(--fm-bad)' }"
+					>
+						Could not load this recipe's pack sizes: {{ errorMessage(packsError) }}
+					</p>
+					<p v-else-if="!packItem" class="mt-3 rounded-xl p-4 text-sm fm-muted" :style="{ background: 'var(--fm-canvas)' }">
+						This recipe has no finished pack to plan for.
 					</p>
 
 					<StateBlock
@@ -256,6 +264,31 @@
 								<li v-for="(note, index) in plan.notes" :key="index">{{ note }}</li>
 							</ul>
 
+							<!-- The one action this screen offers. It proposes a draft;
+							     a buyer decides. -->
+							<div v-if="plan.has_shortage" class="mt-3 flex flex-wrap items-center justify-between gap-2">
+								<p v-if="requested" class="flex items-center gap-1.5 text-sm font-medium" :style="{ color: 'var(--fm-good)' }">
+									<CheckCircle class="h-4 w-4 shrink-0" aria-hidden="true" />
+									Draft
+									<a class="fm-id underline" :href="`/app/material-request/${requested}`" target="_blank" rel="noopener">{{ requested }}</a>
+									is ready for review.
+								</p>
+								<button
+									v-else
+									type="button"
+									class="fm-btn-primary fm-tap flex items-center gap-2 px-4 text-sm"
+									:disabled="requesting"
+									@click="confirmingRequest = true"
+								>
+									<ClipboardList class="h-4 w-4" aria-hidden="true" />
+									{{ requesting ? 'Proposing…' : 'Propose a Material Request' }}
+								</button>
+							</div>
+
+							<p v-if="requestError" role="alert" class="mt-2 text-sm" :style="{ color: 'var(--fm-bad)' }">
+								{{ errorMessage(requestError) }}
+							</p>
+
 							<p class="mt-3 text-xs fm-muted">
 								Free stock is what is on hand less what is already promised.
 								Requested and expected are open Material Requests and Purchase Orders,
@@ -267,18 +300,29 @@
 				</div>
 			</div>
 		</StateBlock>
+
+		<ConfirmDialog
+			:open="confirmingRequest"
+			title="Propose a Material Request?"
+			body="This creates a draft Material Request for the shortfall only. It is not submitted and nothing is ordered; a buyer reviews it."
+			:details="requestDetails"
+			confirm-label="Create draft"
+			@confirm="createRequest"
+			@cancel="confirmingRequest = false"
+		/>
 	</section>
 </template>
 
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue'
-import { Calculator, Info, Lock, Package, RefreshCw, Settings, Wheat } from 'lucide-vue-next'
+import { Calculator, CheckCircle, ClipboardList, Info, Lock, Package, RefreshCw, Settings, Wheat } from 'lucide-vue-next'
 
+import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import KpiCard from '@/components/KpiCard.vue'
 import PageHeader from '@/components/PageHeader.vue'
 import StateBlock from '@/components/StateBlock.vue'
 import { SCREEN_ROLES } from '@/data/access'
-import { costing } from '@/data/api'
+import { costing, errorMessage } from '@/data/api'
 
 const props = defineProps({ company: { type: String, required: true } })
 
@@ -326,6 +370,43 @@ const fmt = (value, decimals = 0) =>
 				maximumFractionDigits: decimals,
 			})
 
+const confirmingRequest = ref(false)
+const requesting = ref(false)
+const requested = ref(null)
+const requestError = ref(null)
+const packsError = ref(null)
+
+const requestDetails = computed(() => {
+	const short = (plan.value?.lines || []).filter((line) => line.shortage_qty > 0)
+	return [
+		{ label: 'Items short', value: String(short.length) },
+		{ label: 'Packs planned', value: String(packQty.value || 0) },
+		{ label: 'Loss allowance', value: `${plan.value?.loss_percent ?? 0}%` },
+	]
+})
+
+async function createRequest() {
+	confirmingRequest.value = false
+	if (requesting.value || requested.value) return
+
+	requesting.value = true
+	requestError.value = null
+	try {
+		const result = await costing.requestShortfall({
+			company: props.company,
+			packs: JSON.stringify([{ item_code: packItem.value, qty: packQty.value }]),
+			warehouse: plan.value?.lines?.[0]?.warehouse || undefined,
+		})
+		requested.value = result.material_request
+		// The plan has changed: what was short is now requested.
+		await planPackaging()
+	} catch (err) {
+		requestError.value = err
+	} finally {
+		requesting.value = false
+	}
+}
+
 async function load() {
 	loading.value = true
 	error.value = null
@@ -354,12 +435,15 @@ async function onBom() {
 
 /** Finished goods filled from this BOM's product, for the pack picker. */
 async function loadPacks() {
+	packsError.value = null
 	const item = selectedBom.value?.item
 	if (!item) return []
 	try {
 		return await costing.packsFor({ bulk_item: item })
-	} catch {
-		// Not fatal: costing still works, the picker is just empty.
+	} catch (err) {
+		// Not fatal - costing still works - but an empty picker that says
+		// nothing looks like a missing feature rather than a failed request.
+		packsError.value = err
 		return []
 	}
 }

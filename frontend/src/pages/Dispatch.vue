@@ -42,7 +42,7 @@
 			</ul>
 
 			<StateBlock v-if="selected" :loading="pickLoading" :error="pickError" loading-text="Loading picklist…" :required-roles="SCREEN_ROLES.dispatch">
-				<form v-if="picklist" class="space-y-4" @submit.prevent="submit">
+				<form v-if="picklist" class="space-y-4" @submit.prevent="askToShip">
 					<!-- Context bar -->
 					<div class="fm-card p-5">
 						<dl class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -233,6 +233,16 @@
 				</div>
 			</div>
 		</StateBlock>
+
+		<ConfirmDialog
+			:open="confirming"
+			title="Create this delivery note?"
+			body="This posts a Delivery Note against the allocated batches and reduces stock. Shelf-life, FEFO and quality rules are re-checked by the server on submit."
+			:details="confirmDetails"
+			confirm-label="Create delivery note"
+			@confirm="confirmShip"
+			@cancel="confirming = false"
+		/>
 	</section>
 </template>
 
@@ -241,6 +251,7 @@ import { computed, onMounted, reactive, ref } from 'vue'
 import { Check, RefreshCw, ScanLine, Truck } from 'lucide-vue-next'
 
 import PageHeader from '@/components/PageHeader.vue'
+import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import StateBlock from '@/components/StateBlock.vue'
 import { SCREEN_ROLES } from '@/data/access'
 import StatusChip from '@/components/StatusChip.vue'
@@ -336,6 +347,24 @@ async function open(order) {
 	} finally {
 		pickLoading.value = false
 	}
+}
+
+const confirming = ref(false)
+
+const confirmDetails = computed(() => [
+	{ label: 'Sales order', value: picklist.value?.sales_order || selected.value || '—' },
+	{ label: 'Customer', value: picklist.value?.customer || selectedOrder.value?.customer || '—' },
+	{ label: 'Item lines', value: String(picklist.value?.lines?.length ?? 0) },
+])
+
+function askToShip() {
+	if (submitting.value || submitResult.value) return
+	confirming.value = true
+}
+
+async function confirmShip() {
+	confirming.value = false
+	await submit()
 }
 
 async function submit() {

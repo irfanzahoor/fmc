@@ -11,6 +11,7 @@ declare module 'vue' {
     AppearanceMenu: typeof import('./src/components/AppearanceMenu.vue')['default']
     BarRanking: typeof import('./src/components/viz/BarRanking.vue')['default']
     ColumnBuckets: typeof import('./src/components/viz/ColumnBuckets.vue')['default']
+    ConfirmDialog: typeof import('./src/components/ConfirmDialog.vue')['default']
     ExceptionList: typeof import('./src/components/ExceptionList.vue')['default']
     KpiCard: typeof import('./src/components/KpiCard.vue')['default']
     LineTrend: typeof import('./src/components/viz/LineTrend.vue')['default']
