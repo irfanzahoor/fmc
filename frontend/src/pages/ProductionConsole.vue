@@ -14,14 +14,46 @@
 			</template>
 		</PageHeader>
 
+		<!-- One filter row above everything it scopes, and outside the state
+		     block: an empty result must still leave you the means to change it. -->
+		<div class="mb-4 flex flex-wrap items-center gap-2">
+			<div class="flex flex-wrap gap-1.5" role="group" aria-label="Status">
+				<button
+					v-for="option in STATUSES"
+					:key="option.value || 'all'"
+					type="button"
+					class="fm-tap rounded-xl px-3 text-sm font-medium transition-colors motion-reduce:transition-none"
+					:class="option.value === status ? 'fm-btn-primary' : 'fm-btn-ghost'"
+					:aria-pressed="option.value === status"
+					@click="setStatus(option.value)"
+				>
+					{{ option.label }}
+				</button>
+			</div>
+
+			<label class="ml-auto w-full sm:w-72">
+				<span class="sr-only">Search work orders</span>
+				<span class="relative flex w-full items-center">
+					<Search class="pointer-events-none absolute left-3 h-4 w-4 fm-muted" aria-hidden="true" />
+					<input
+						v-model="search"
+						type="search"
+						class="fm-input fm-input-icon fm-tap w-full"
+						placeholder="Work order or product"
+						@input="onSearch"
+					/>
+				</span>
+			</label>
+		</div>
+
 		<StateBlock
 			:required-roles="SCREEN_ROLES.production"
 			:loading="loading && !rows.length"
 			:error="error"
 			:empty="!loading && !rows.length"
 			loading-text="Loading production queue…"
-			empty-title="No open production runs"
-			empty-hint="Submitted Work Orders for this company appear here."
+			:empty-title="search ? 'Nothing matches that search' : 'No open production runs'"
+			:empty-hint="search ? 'Try a work order number or a product name.' : 'Submitted Work Orders for this company appear here.'"
 			:icon="Factory"
 			:on-retry="load"
 		>
@@ -64,6 +96,17 @@
 										<span>{{ row.status }}</span>
 										<span class="fm-num">{{ progress(row) }}% complete</span>
 									</div>
+									<!-- Readiness belongs where the run is picked, not only
+									     after opening it. -->
+									<p
+										v-if="row.short_items"
+										class="mt-1.5 flex items-center gap-1 text-[11px] font-medium"
+										:style="{ color: 'var(--fm-bad)' }"
+									>
+										<AlertTriangle class="h-3 w-3 shrink-0" aria-hidden="true" />
+										Short of {{ row.short_items }}
+										{{ row.short_items === 1 ? 'ingredient' : 'ingredients' }}
+									</p>
 									<div class="mt-1.5 h-1.5 w-full overflow-hidden rounded-full" :style="{ background: 'var(--fm-border)' }">
 										<div class="h-full rounded-full" :style="{ width: `${progress(row)}%`, background: 'var(--fm-primary)' }" />
 									</div>
@@ -133,6 +176,7 @@
 											<tr>
 												<th scope="col">Ingredient</th>
 												<th scope="col">Required</th>
+												<th scope="col">Still needed</th>
 												<th scope="col">Consumed</th>
 												<th scope="col">Released lot</th>
 												<th scope="col">Available</th>
@@ -143,6 +187,17 @@
 											<tr v-for="line in detail.ingredients" :key="line.item_code">
 												<td class="font-medium align-top">{{ line.item_name || line.item_code }}</td>
 												<td class="fm-num align-top">{{ fmt(line.required_qty) }} {{ line.stock_uom }}</td>
+												<td class="align-top">
+													<span class="fm-num">{{ fmt(line.outstanding_qty) }} {{ line.stock_uom }}</span>
+													<span
+														v-if="line.short_qty > 0"
+														class="mt-0.5 flex items-center gap-1 text-[11px] font-medium"
+														:style="{ color: 'var(--fm-bad)' }"
+													>
+														<AlertTriangle class="h-3 w-3 shrink-0" aria-hidden="true" />
+														short {{ fmt(line.short_qty) }} {{ line.stock_uom }}
+													</span>
+												</td>
 												<td class="fm-num fm-muted align-top">{{ fmt(line.consumed_qty) }} {{ line.stock_uom }}</td>
 												<td class="align-top">
 													<span v-if="earliest(line)" class="fm-num font-semibold">{{ earliest(line).batch_no }}</span>
@@ -207,10 +262,21 @@
 								</p>
 
 								<div class="mt-4 flex flex-wrap items-center justify-between gap-3 border-t pt-4" :style="{ borderColor: 'var(--fm-border)' }">
-									<p class="text-xs fm-muted">Review the quantities before completing this Work Order.</p>
-									<button type="submit" class="fm-btn-primary fm-tap flex items-center gap-2 px-4 text-sm" :disabled="finishing || Boolean(finishResult)">
+									<p v-if="blockedReason" class="flex items-center gap-1.5 text-xs font-medium" :style="{ color: 'var(--fm-bad)' }">
+										<AlertTriangle class="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+										{{ blockedReason }}
+									</p>
+									<p v-else class="text-xs fm-muted">
+										Review the quantities before completing this Work Order.
+									</p>
+									<button
+										type="submit"
+										class="fm-btn-primary fm-tap flex items-center gap-2 px-4 text-sm"
+										:disabled="finishing || Boolean(finishResult) || Boolean(blockedReason)"
+										:title="blockedReason || undefined"
+									>
 										<Check class="h-4 w-4" aria-hidden="true" />
-										{{ finishing ? 'Posting…' : finishResult ? 'Completed' : 'Complete run' }}
+										{{ finishing ? 'Posting…' : finishResult ? 'Completed' : actionLabel }}
 									</button>
 								</div>
 							</form>
@@ -232,11 +298,12 @@
 
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue'
-import { AlertTriangle, Check, CheckCircle, Clock, Factory, LineChart, RefreshCw, ShieldCheck } from 'lucide-vue-next'
+import { AlertTriangle, Check, CheckCircle, Clock, Factory, LineChart, RefreshCw, Search, ShieldCheck } from 'lucide-vue-next'
 
 import PageHeader from '@/components/PageHeader.vue'
 import StateBlock from '@/components/StateBlock.vue'
 import { SCREEN_ROLES } from '@/data/access'
+import { debounce } from '@/utils/debounce'
 import { errorMessage, production } from '@/data/api'
 
 const props = defineProps({ company: { type: String, required: true } })
@@ -254,6 +321,32 @@ const detailError = ref(null)
 const finishing = ref(false)
 const finishError = ref(null)
 const finishResult = ref(null)
+const STATUSES = [
+	{ value: '', label: 'All open' },
+	{ value: 'Not Started', label: 'Not started' },
+	{ value: 'In Process', label: 'In process' },
+]
+
+const search = ref('')
+const status = ref('')
+
+/* Debounced: a request per keystroke answers one question five times, and the
+   answers can arrive out of order. */
+const onSearch = debounce(() => load(), 300)
+
+function setStatus(value) {
+	status.value = value
+	load()
+}
+
+/* The stage action comes from the server: a button that disagrees with the rule
+   behind it is worse than no button. */
+const nextAction = computed(() => detail.value?.next_action || null)
+const actionLabel = computed(() => nextAction.value?.label || 'Complete run')
+const blockedReason = computed(() =>
+	nextAction.value && !nextAction.value.enabled ? nextAction.value.reason : null
+)
+
 const form = reactive({ qty: '', processLoss: '', finishedBatch: '' })
 
 const tabs = [
@@ -298,7 +391,11 @@ async function load() {
 	loading.value = true
 	error.value = null
 	try {
-		rows.value = await production.queue({ company: props.company })
+		rows.value = await production.queue({
+			company: props.company,
+			search: search.value || undefined,
+			status: status.value || undefined,
+		})
 		if (rows.value.length && !rows.value.some((row) => row.name === selected.value)) {
 			await open(rows.value[0])
 		}

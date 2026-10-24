@@ -233,21 +233,21 @@ export const dashboard = {
 const WORK_ORDERS = [
 	{
 		name: 'WO-FM-0028', production_item: 'GM-BULK', item_name: 'Garam Masala Bulk', bom_no: 'BOM-GM-004',
-		qty: 500, produced_qty: 0, process_loss_qty: 0, status: 'In Process', stock_uom: KG,
+		qty: 500, produced_qty: 0, process_loss_qty: 0, status: 'In Process', short_items: 0, material_ready: true, stock_uom: KG,
 		fg_warehouse: 'Bulk Blend', wip_warehouse: 'Stores', planned_start_date: '2026-10-23',
 		fm_actual_yield_percent: 0, fm_yield_variance_percent: 0, fm_yield_flagged: 0, fm_yield_basis: KG,
 		pending_qty: 500,
 	},
 	{
 		name: 'WO-FM-0029', production_item: 'GM-50G', item_name: 'Garam Masala 50 g', bom_no: 'BOM-GM50-002',
-		qty: 2400, produced_qty: 0, process_loss_qty: 0, status: 'Not Started', stock_uom: NOS,
+		qty: 2400, produced_qty: 0, process_loss_qty: 0, status: 'Not Started', short_items: 0, material_ready: true, stock_uom: NOS,
 		fg_warehouse: 'Finished Goods', wip_warehouse: 'Stores', planned_start_date: '2026-10-23',
 		fm_actual_yield_percent: 0, fm_yield_variance_percent: 0, fm_yield_flagged: 0, fm_yield_basis: '',
 		pending_qty: 2400,
 	},
 	{
 		name: 'WO-FM-0030', production_item: 'TU-BULK', item_name: 'Turmeric Powder Bulk', bom_no: 'BOM-TU-001',
-		qty: 400, produced_qty: 100, process_loss_qty: 6, status: 'In Process', stock_uom: KG,
+		qty: 400, produced_qty: 100, process_loss_qty: 6, status: 'In Process', short_items: 0, material_ready: true, stock_uom: KG,
 		fg_warehouse: 'Bulk Blend', wip_warehouse: 'Stores', planned_start_date: '2026-10-22',
 		fm_actual_yield_percent: 93.4, fm_yield_variance_percent: -6.6, fm_yield_flagged: 1, fm_yield_basis: KG,
 		pending_qty: 294,
@@ -269,6 +269,8 @@ export const production = {
 	detail: ({ work_order }) => {
 		const wo = WORK_ORDERS.find((row) => row.name === work_order) || WORK_ORDERS[0]
 		return delay({
+			material_ready: true,
+			next_action: { action: 'complete', label: 'Complete run', enabled: true, reason: null },
 			work_order: {
 				name: wo.name, production_item: wo.production_item, item_name: wo.item_name,
 				bom_no: wo.bom_no, qty: wo.qty, produced_qty: wo.produced_qty,

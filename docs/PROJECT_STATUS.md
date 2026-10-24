@@ -577,3 +577,46 @@ rendered cost-variance rows through the shortage template and printed
 - The period selector is still a static pill; it does not filter.
 - `Stores` and `Quality` panels still carry no row detail, only counts.
 - No confirmation dialogs on consequential actions yet (Phase 5).
+
+
+## Phase 2 — Production workspace · **DONE**
+
+| Requirement | Where |
+|---|---|
+| Searchable list with filters and clear statuses | `get_production_queue(search, status, limit, start)` |
+| Material availability | `short_items` / `material_ready` per row; per-ingredient `outstanding_qty`, `available_qty`, `short_qty` in the detail |
+| Progress | percent complete on each card |
+| Clear primary action for the stage | `next_action` on the detail, decided server-side |
+| kg/g and pack conversions explicit | unit shown beside every quantity; detail reads the UOM from the Item |
+
+### Design decisions
+
+**Search and paging happen in the query**, not in the browser. A plant with two
+thousand open runs should not ship two thousand rows so the client can hide most
+of them. The box is debounced at 300 ms — a request per keystroke answers one
+question five times, and the answers can arrive out of order.
+
+**Availability reuses `api/exceptions`** rather than re-deriving it. Two answers
+to "is this run short" is one too many.
+
+**The stage action is decided on the server.** A button that disagrees with the
+rule behind it is worse than no button, so `next_action` carries the label,
+whether it is enabled, and why not. A blocked action stays **visible and
+disabled with its reason** rather than hidden — hiding it leaves an operator
+hunting for a button that was there yesterday.
+
+**Readiness appears where the run is chosen**, not only after opening it: the
+queue card says "Short of 2 ingredients".
+
+**The filter row sits outside the state block**, so an empty result still leaves
+you the means to change it.
+
+### Checks
+
+| Check | Result |
+|---|---|
+| Full suite (335) | **PASS** |
+| New production-workspace tests (10) | **PASS** |
+| Production screen, harness, 1440px | **PASS** — rendered and inspected |
+| `ruff` | **NOT RUN** |
+| Live-session render of the new filters | **NOT RUN** — harness only this phase |
