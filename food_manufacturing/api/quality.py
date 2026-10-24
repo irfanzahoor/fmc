@@ -18,6 +18,10 @@ from food_manufacturing.stock_levels import get_batch_quantities
 
 PENDING_STATUSES = ("Quarantine", "Hold")
 
+#: Every status the queue can be filtered to. Pending by default, because that
+#: is what needs doing; the decided ones are for looking back.
+QUEUE_STATUSES = ("Quarantine", "Hold", "Released", "Rejected")
+
 
 @frappe.whitelist()
 def get_release_queue(company: str, status: str | None = None, limit: int = 100, start: int = 0) -> list:
@@ -27,7 +31,10 @@ def get_release_queue(company: str, status: str | None = None, limit: int = 100,
 	frappe.has_permission("FM Batch Release", "read", throw=True)
 
 	filters = {"disabled": 0}
-	filters["fm_quality_status"] = status if status in PENDING_STATUSES else ("in", list(PENDING_STATUSES))
+	if status in QUEUE_STATUSES:
+		filters["fm_quality_status"] = status
+	else:
+		filters["fm_quality_status"] = ("in", list(PENDING_STATUSES))
 
 	batches = frappe.get_list(
 		"Batch",
@@ -43,7 +50,9 @@ def get_release_queue(company: str, status: str | None = None, limit: int = 100,
 			"manufacturing_date",
 			"creation",
 		],
-		order_by="creation asc, name asc",
+		# Pending reads oldest-first (longest waiting); a decided list reads
+		# newest-first, because that is a log you look back through.
+		order_by="modified desc" if status in ("Released", "Rejected") else "creation asc, name asc",
 		limit_page_length=0,
 	)
 	if not batches:
@@ -159,6 +168,89 @@ def get_batch_context(batch: str) -> dict:
 		# Where this batch came from, so a decision is informed.
 		"genealogy": trace_backward(doc.item, doc.name, max_depth=3),
 	}
+
+
+@frappe.whitelist()
+def get_batch_trail(batch: str, company: str) -> dict:
+	"""Where this batch came from and where it went, as real documents.
+
+	Built from the existing genealogy and recall engines rather than a new
+	query, so the trail a quality manager reads is the same one a recall
+	investigation produces. Every row names a document the reader can open.
+	"""
+	frappe.has_permission("Batch", "read", doc=batch, throw=True)
+	frappe.has_permission("Company", "read", doc=company, throw=True)
+
+	item = frappe.db.get_value("Batch", batch, "item")
+	if not item:
+		frappe.throw(_("Batch {0} does not exist.").format(frappe.bold(batch)))
+
+	return {
+		"consumed": _consumed_into(item, batch),
+		"produced_by": _produced_by(item, batch),
+		"delivered": _delivered(batch, company),
+	}
+
+
+def _produced_by(item: str, batch: str) -> list:
+	"""The run that made this batch, if it was made rather than bought."""
+	from food_manufacturing.production.genealogy import get_producing_work_orders
+
+	try:
+		orders = get_producing_work_orders(item, batch)
+	except frappe.PermissionError:
+		return []
+
+	return [{"doctype": "Work Order", "name": name} for name in orders]
+
+
+def _consumed_into(item: str, batch: str) -> list:
+	"""The lots this batch was made from, one level back.
+
+	One level, not the whole tree: a quality manager asks "what went into this",
+	and `FM Recall Investigation` is where a full trace belongs.
+	"""
+	from food_manufacturing.production.genealogy import trace_backward
+
+	try:
+		tree = trace_backward(item, batch, max_depth=2)
+	except frappe.PermissionError:
+		return []
+
+	return [
+		{
+			"doctype": "Batch",
+			"name": node.get("batch_no"),
+			"item_code": node.get("item_code"),
+			"supplier_lot": node.get("supplier_lot"),
+		}
+		for node in (tree.get("inputs") or [])
+		if node.get("batch_no")
+	]
+
+
+def _delivered(batch: str, company: str) -> list:
+	"""Customer deliveries this batch reached."""
+	from food_manufacturing.api.recall import get_recall
+
+	try:
+		result = get_recall(batch, company)
+	except frappe.PermissionError:
+		return []
+
+	return [
+		{
+			"doctype": "Delivery Note",
+			"name": row["delivery_note"],
+			"customer": row.get("customer"),
+			"posting_date": str(row.get("posting_date")) if row.get("posting_date") else None,
+			"qty": flt(row.get("stock_qty")),
+			"uom": row.get("stock_uom"),
+			"is_return": bool(row.get("is_return")),
+		}
+		for row in (result.get("deliveries") or [])
+		if row.get("batch_no") == batch
+	]
 
 
 @frappe.whitelist(methods=["POST"])

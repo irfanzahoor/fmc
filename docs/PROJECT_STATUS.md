@@ -666,3 +666,45 @@ SKUs a blend fills — and the screen selects the first rather than opening on
 | `ruff` | **NOT RUN** |
 | Live-session render | **NOT RUN** — harness only this phase |
 | "Propose Material Request" button | **NOT BUILT** — the endpoint exists and is wired into `api.js`; the button is Phase 5, with its confirmation |
+
+
+## Phase 4 — Quality and traceability · **DONE**
+
+| Requirement | Where |
+|---|---|
+| Queue with pending, held, approved and rejected | `QUEUE_STATUSES`; chips read Awaiting · Quarantine · Hold · Released · Rejected |
+| Prominent hold/release information and authorised actions | Unchanged: status chip, shelf-life meter, matching inspection, decision form; permission is `FM Batch Release` create, enforced by the framework |
+| Batch detail showing linked materials, production, quality and dispatch | `get_batch_trail` — "Linked records" |
+| Actual transaction links | Every row is a document name with a Desk link |
+| Restrictions enforced server-side | Unchanged `doc_events`; this phase added only reads |
+
+### Design decisions
+
+**The queue can be looked back through.** It filtered to Quarantine and Hold
+only, so a decision log existed that nobody could read. Pending is still the
+default — that is what needs doing — but Released and Rejected are a chip away,
+and a decided list sorts newest-first because that is how a log is read, where
+a pending list sorts oldest-first because that is who has waited longest.
+
+**The trail reuses the recall engines.** `trace_backward`,
+`get_producing_work_orders` and `get_recall` already existed; building a second
+query would let the quality screen and the recall report disagree about the
+same batch.
+
+**One captioned list, not three headings.** The question is "what else touches
+this batch"; the caption answers "in what way" — *produced by this run*,
+*consumed · supplier lot SV-261001*, *returned by Apex Retailers · 24 Nos*.
+
+**A trail that cannot be read does not block the decision.** It is fetched
+beside the context and swallowed on failure, so a reader without delivery
+access can still release a batch.
+
+### Checks
+
+| Check | Result |
+|---|---|
+| Full suite (344) | **PASS** |
+| New trail/queue tests (8) | **PASS** |
+| Quality screen, harness, 1440px | **PASS** — rendered and inspected |
+| `ruff` | **NOT RUN** |
+| Live-session render | **NOT RUN** — harness only this phase |

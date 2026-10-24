@@ -209,6 +209,28 @@
 									</ul>
 								</div>
 
+								<!-- Where it came from and where it went, as documents the
+								     reader can open. Built from the same engines the recall
+								     report uses, so the two cannot disagree. -->
+								<div class="mt-4">
+									<p class="fm-label">Linked records</p>
+									<p v-if="!trailRows.length" class="mt-1.5 text-sm fm-muted">
+										Nothing else references this batch yet.
+									</p>
+									<ul v-else class="mt-1.5 space-y-1.5">
+										<li v-for="row in trailRows" :key="`${row.doctype}-${row.name}`" class="text-sm">
+											<a
+												class="fm-id font-medium"
+												:style="{ color: 'var(--fm-primary)' }"
+												:href="docUrl(row)"
+												target="_blank"
+												rel="noopener"
+											>{{ row.name }}</a>
+											<span class="ml-2 text-xs fm-muted">{{ row.caption }}</span>
+										</li>
+									</ul>
+								</div>
+
 								<fieldset class="mt-4">
 									<legend class="fm-label mb-1.5">Decision</legend>
 									<div class="flex flex-wrap gap-2">
@@ -285,10 +307,50 @@ const emit = defineEmits(['counts-changed'])
 const PAGE_SIZE = 100
 const decisions = ['Release', 'Hold', 'Reject']
 
+const trail = ref(null)
+
+/* One flat, captioned list rather than three headings: the question is "what
+   else touches this batch", and the caption answers "in what way". */
+const trailRows = computed(() => {
+	if (!trail.value) return []
+
+	const rows = []
+	for (const row of trail.value.produced_by || []) {
+		rows.push({ ...row, caption: 'produced by this run' })
+	}
+	for (const row of trail.value.consumed || []) {
+		rows.push({
+			...row,
+			caption: row.supplier_lot
+				? `consumed · supplier lot ${row.supplier_lot}`
+				: 'consumed into this batch',
+		})
+	}
+	for (const row of trail.value.delivered || []) {
+		const qty = Math.abs(Number(row.qty) || 0)
+		rows.push({
+			...row,
+			caption: row.is_return
+				? `returned by ${row.customer} · ${qty} ${row.uom || ''}`.trim()
+				: `delivered to ${row.customer} · ${qty} ${row.uom || ''}`.trim(),
+		})
+	}
+	return rows
+})
+
+/** A Desk link to the document itself. */
+function docUrl(row) {
+	return `/app/${row.doctype.toLowerCase().replaceAll(' ', '-')}/${encodeURIComponent(row.name)}`
+}
+
+/* Pending first, because that is what needs doing; the decided statuses are
+   here so the log can be looked back through. */
 const statusFilters = [
-	{ value: '', label: 'All batches' },
+	{ value: '', label: 'Awaiting' },
 	{ value: 'Quarantine', label: 'Quarantine' },
 	{ value: 'Hold', label: 'Hold' },
+	{ value: 'Released', label: 'Released' },
+	{ value: 'Rejected', label: 'Rejected' },
 ]
 
 const tabs = [
@@ -407,8 +469,15 @@ async function open(row) {
 	form.reason = ''
 	form.inspection = ''
 
+	trail.value = null
+
 	try {
 		context.value = await quality.batchContext({ batch: row.name })
+		// Fetched beside the context, not inside it: a trail that cannot be
+		// read must not stop the decision form from opening.
+		trail.value = await quality
+			.batchTrail({ batch: row.name, company: props.company })
+			.catch(() => null)
 	} catch (err) {
 		contextError.value = err
 	} finally {

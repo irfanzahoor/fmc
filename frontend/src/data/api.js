@@ -33,6 +33,7 @@ export const quality = {
 	queue: method('quality.get_release_queue'),
 	counts: method('quality.get_queue_counts'),
 	batchContext: method('quality.get_batch_context'),
+	batchTrail: method('quality.get_batch_trail'),
 	recordDecision: method('quality.record_decision'),
 }
 

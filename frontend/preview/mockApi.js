@@ -384,6 +384,19 @@ const QUEUE = [
 export const quality = {
 	queue: () => delay(QUEUE),
 	counts: () => delay({ quarantine: 4, hold: 1, total: 5 }),
+	batchTrail: () => delay({
+		produced_by: [{ doctype: 'Work Order', name: 'MFG-WO-2026-00031' }],
+		consumed: [
+			{ doctype: 'Batch', name: 'CHI-014', item_code: 'CHI', supplier_lot: 'SV-261001' },
+			{ doctype: 'Batch', name: 'CUM-009', item_code: 'CUM', supplier_lot: 'RJ-99420' },
+		],
+		delivered: [
+			{ doctype: 'Delivery Note', name: 'MAT-DN-2026-00041', customer: 'Apex Retailers',
+			  posting_date: '2026-10-14', qty: 480, uom: NOS, is_return: false },
+			{ doctype: 'Delivery Note', name: 'MAT-DN-2026-00046', customer: 'Apex Retailers',
+			  posting_date: '2026-10-20', qty: -24, uom: NOS, is_return: true },
+		],
+	}),
 	batchContext: ({ batch }) => {
 		const row = QUEUE.find((b) => b.name === batch) || QUEUE[0]
 		return delay({
