@@ -1,6 +1,6 @@
 """The capability document, served as a page and as a PDF.
 
-One source for both: the page at `/batchwell-proposal` and the PDF download are
+One source for both: the page at `/proposal` and the PDF download are
 the same template, so a vendor reading the link and a vendor reading the
 attachment cannot be sent different claims.
 
@@ -19,7 +19,8 @@ FACTS = {
 	"frappe_version": "16",
 	"erpnext_version": "16",
 	"tests": 347,
-	"screens": 9,
+	# frontend/src/router.js, excluding the catch-all NotFound route.
+	"screens": 10,
 	"roles": 6,
 }
 
@@ -67,7 +68,9 @@ def download():
 		html,
 		options={
 			"page-size": "A4",
-			# Zero, so the green cover bleeds to the top edge of page one.
+			# Measured: wkhtmltopdf holds ~15mm at the top whatever this and
+			# @page say, so the cover sits in a white band rather than
+			# bleeding. Left at zero; it is the smallest band available.
 			"margin-top": "0mm",
 			"margin-bottom": "16mm",
 			"margin-left": "0mm",

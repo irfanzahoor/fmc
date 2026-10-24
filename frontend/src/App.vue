@@ -73,10 +73,21 @@
 				</div>
 
 				<a
-					href="/proposal"
+					href="/handbook"
 					target="_blank"
 					rel="noopener"
 					class="mt-3 flex items-center gap-2 text-xs transition-colors hover:text-white motion-reduce:transition-none"
+					:style="{ color: 'var(--fm-side-ink)' }"
+				>
+					<BookOpen class="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+					Handbook
+				</a>
+
+				<a
+					href="/proposal"
+					target="_blank"
+					rel="noopener"
+					class="mt-2 flex items-center gap-2 text-xs transition-colors hover:text-white motion-reduce:transition-none"
 					:style="{ color: 'var(--fm-side-ink)' }"
 				>
 					<FileText class="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
@@ -208,6 +219,7 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import {
 	AlertTriangle,
+	BookOpen,
 	Building2,
 	ChevronRight,
 	ClipboardCheck,

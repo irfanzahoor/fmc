@@ -1,7 +1,7 @@
 {
  "app": "food_manufacturing",
  "charts": [],
- "content": "[{\"id\": \"bwJump\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Jump to</b></span>\", \"col\": 12}}, {\"id\": \"bwS0\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Operator console\", \"col\": 3}}, {\"id\": \"bwS1\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Work Order\", \"col\": 3}}, {\"id\": \"bwS2\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Pending QC\", \"col\": 3}}, {\"id\": \"bwS3\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Yield Variance\", \"col\": 3}}, {\"id\": \"bwSc4\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Capability document\", \"col\": 3}}, {\"id\": \"bwSp0\", \"type\": \"spacer\", \"data\": {\"col\": 12}}, {\"id\": \"bwHead\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Daily operations</b></span>\", \"col\": 12}}, {\"id\": \"bwC0\", \"type\": \"card\", \"data\": {\"card_name\": \"Production\", \"col\": 6}}, {\"id\": \"bwC1\", \"type\": \"card\", \"data\": {\"card_name\": \"Receiving and Dispatch\", \"col\": 6}}]",
+ "content": "[{\"id\": \"bwJump\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Jump to</b></span>\", \"col\": 12}}, {\"id\": \"bwS0\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Operator console\", \"col\": 3}}, {\"id\": \"bwS1\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Work Order\", \"col\": 3}}, {\"id\": \"bwS2\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Pending QC\", \"col\": 3}}, {\"id\": \"bwS3\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Yield Variance\", \"col\": 3}}, {\"id\": \"bwSc4\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Capability document\", \"col\": 3}}, {\"id\": \"bwSc5\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Handbook\", \"col\": 3}}, {\"id\": \"bwSp0\", \"type\": \"spacer\", \"data\": {\"col\": 12}}, {\"id\": \"bwHead\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Daily operations</b></span>\", \"col\": 12}}, {\"id\": \"bwC0\", \"type\": \"card\", \"data\": {\"card_name\": \"Production\", \"col\": 6}}, {\"id\": \"bwC1\", \"type\": \"card\", \"data\": {\"card_name\": \"Receiving and Dispatch\", \"col\": 6}}]",
  "creation": "2026-01-01 00:00:00.000000",
  "custom_blocks": [],
  "docstatus": 0,
@@ -143,7 +143,7 @@
    "type": "Link"
   }
  ],
- "modified": "2026-10-24 15:16:49.342003",
+ "modified": "2026-10-24 16:10:00.000000",
  "modified_by": "Administrator",
  "module": "Food Manufacturing Production",
  "name": "Batchwell",
@@ -187,6 +187,12 @@
    "label": "Capability document",
    "type": "URL",
    "url": "/proposal"
+  },
+  {
+   "color": "Green",
+   "label": "Handbook",
+   "type": "URL",
+   "url": "/handbook"
   }
  ],
  "title": "Batchwell",

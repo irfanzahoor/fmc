@@ -1,0 +1,296 @@
+<section id="architecture">
+	<h2>How it is put together</h2>
+	<p>
+		Batchwell is a standard Frappe app with one governing idea: <strong>every
+		rule lives in a document event</strong>, never in a screen. A rule that
+		only runs in the console is not a rule — it is a suggestion that the Desk,
+		the REST API and a Data Import all ignore.
+	</p>
+	<p>Four layers, each allowed to call only downwards:</p>
+	<div class="matrix two" role="table">
+		<div class="mhead" role="row"><span class="mk" role="columnheader">Layer</span><span class="mv" role="columnheader">Responsibility</span></div>
+		<div class="mrow" role="row"><span class="mk" role="cell">Frontend</span><span class="mv" role="cell">Vue 3 + frappe-ui at <code>/fm</code>. Presentation and nothing else; it holds no rule of its own.</span></div>
+		<div class="mrow" role="row"><span class="mk" role="cell"><code>api/</code></span><span class="mv" role="cell">Whitelisted HTTP surface. Checks permission, parses arguments, calls the domain, shapes the response.</span></div>
+		<div class="mrow" role="row"><span class="mk" role="cell">Domain</span><span class="mv" role="cell"><code>quality/</code>, <code>production/</code>, <code>dispatch/</code>, <code>costing/</code>, <code>packaging/</code> — the actual business rules, with no HTTP in them.</span></div>
+		<div class="mrow" role="row"><span class="mk" role="cell"><code>overrides/</code></span><span class="mv" role="cell">The <code>doc_events</code> hooks that attach those rules to ERPNext's own documents.</span></div>
+	</div>
+	<div class="note">
+		<p>
+			Mutating endpoints build ERPNext's own documents
+			(<code>make_stock_entry</code>, <code>make_purchase_receipt</code>,
+			<code>make_delivery_note</code>) and submit them. They never write a
+			ledger directly, so every standard validation — and every Batchwell
+			rule hung off it — runs exactly as it does in the Desk.
+		</p>
+	</div>
+</section>
+
+<section id="modules">
+	<h2>Module map</h2>
+	<div class="matrix two" role="table">
+		<div class="mhead" role="row"><span class="mk" role="columnheader">Package</span><span class="mv" role="columnheader">Holds</span></div>
+		<div class="mrow" role="row"><span class="mk" role="cell"><code>api/</code></span><span class="mv" role="cell"><code>session</code>, <code>dashboard</code>, <code>dashboards</code>, <code>production</code>, <code>quality</code>, <code>receiving</code>, <code>dispatch</code>, <code>costing</code>, <code>recall</code>, <code>exceptions</code>, <code>idempotency</code>, <code>permission</code></span></div>
+		<div class="mrow" role="row"><span class="mk" role="cell"><code>quality/</code></span><span class="mv" role="cell"><code>batch_eligibility</code> — the consumption and dispatch gate. <code>inspection</code> — reading and raising Quality Inspections.</span></div>
+		<div class="mrow" role="row"><span class="mk" role="cell"><code>production/</code></span><span class="mv" role="cell"><code>yield_tracking</code> — planned against actual, process loss, the variance flag. <code>genealogy</code> — the trace, derived from submitted transactions.</span></div>
+		<div class="mrow" role="row"><span class="mk" role="cell"><code>dispatch/</code></span><span class="mv" role="cell"><code>fefo</code> — the deterministic ordering and the Off/Warn/Block mode. <code>shelf_life</code> — the remaining-life floor and the expiry block.</span></div>
+		<div class="mrow" role="row"><span class="mk" role="cell"><code>costing/</code></span><span class="mv" role="cell"><code>simulator</code>, <code>pricing</code>, <code>batch_cost</code>, <code>variance</code> — planned cost from a recipe against actual cost from the ledger.</span></div>
+		<div class="mrow" role="row"><span class="mk" role="cell"><code>packaging/</code></span><span class="mv" role="cell"><code>planning</code>, <code>conversion</code>, <code>requests</code>, <code>validation</code> — pack requirements, unit conversion and the draft Material Request.</span></div>
+		<div class="mrow" role="row"><span class="mk" role="cell"><code>overrides/</code></span><span class="mv" role="cell"><code>purchase_receipt</code> (quarantine routing, supplier lot capture), <code>work_order</code>.</span></div>
+		<div class="mrow" role="row"><span class="mk" role="cell"><code>setup/</code></span><span class="mv" role="cell"><code>install</code>, <code>roles</code>, <code>custom_fields</code>, <code>modules</code> — all idempotent, all re-asserted on migrate.</span></div>
+		<div class="mrow" role="row"><span class="mk" role="cell"><code>compat/</code></span><span class="mv" role="cell">Where version-specific behaviour is isolated, so the rest of the code does not branch on a version number.</span></div>
+		<div class="mrow" role="row"><span class="mk" role="cell"><code>tasks/</code>, <code>demo/</code></span><span class="mv" role="cell">The daily near-expiry alert; the demo seeder and its teardown.</span></div>
+	</div>
+</section>
+
+<section id="doc-events">
+	<h2>Document events</h2>
+	<p>This table is the enforcement surface. If a rule is not here, it is not enforced.</p>
+	<div class="matrix three" role="table">
+		<div class="mhead" role="row"><span class="mk" role="columnheader">DocType</span><span class="ms" role="columnheader">Event</span><span class="mv" role="columnheader">Handler</span></div>
+		<div class="mrow" role="row"><span class="mk" role="cell" data-l="DocType">Purchase Receipt</span><span class="ms" role="cell" data-l="Event">validate, on_submit</span><span class="mv" role="cell" data-l="Handler"><code>overrides.purchase_receipt</code> — supplier lot capture, quarantine routing, batch creation.</span></div>
+		<div class="mrow" role="row"><span class="mk" role="cell" data-l="DocType">Stock Entry</span><span class="ms" role="cell" data-l="Event">validate, on_submit, on_cancel</span><span class="mv" role="cell" data-l="Handler"><code>quality.batch_eligibility</code> then <code>production.yield_tracking</code>.</span></div>
+		<div class="mrow" role="row"><span class="mk" role="cell" data-l="DocType">Delivery Note</span><span class="ms" role="cell" data-l="Event">validate, on_submit</span><span class="mv" role="cell" data-l="Handler"><code>quality.batch_eligibility</code>, <code>dispatch.shelf_life</code>, <code>dispatch.fefo</code>.</span></div>
+		<div class="mrow" role="row"><span class="mk" role="cell" data-l="DocType">Work Order</span><span class="ms" role="cell" data-l="Event">validate, on_submit</span><span class="mv" role="cell" data-l="Handler"><code>overrides.work_order</code>, <code>production.yield_tracking</code>.</span></div>
+	</div>
+	<p>
+		The quality gate and the shelf-life floor run on <strong>both</strong>
+		validate and submit. Validate gives the user the message early; submit is
+		where it actually has to hold, because a document can be built and
+		submitted without validate ever being seen by a human.
+	</p>
+</section>
+
+<section id="data-model">
+	<h2>Data model</h2>
+	<p>
+		{{ facts.doctypes }} DocTypes of its own, and {{ facts.custom_fields }}
+		custom fields on standard ones. There is no parallel stock table and no
+		second valuation anywhere.
+	</p>
+
+	<h3>Its own DocTypes</h3>
+	<div class="matrix two" role="table">
+		<div class="mhead" role="row"><span class="mk" role="columnheader">DocType</span><span class="mv" role="columnheader">Purpose</span></div>
+		<div class="mrow" role="row"><span class="mk" role="cell">FM Manufacturing Policy</span><span class="mv" role="cell">One per company. Every threshold the rules read.</span></div>
+		<div class="mrow" role="row"><span class="mk" role="cell">FM Recipe</span><span class="mv" role="cell">The formula as percentages. Submitting it generates the BOM.</span></div>
+		<div class="mrow" role="row"><span class="mk" role="cell">FM Recipe Ingredient</span><span class="mv" role="cell">Child table. Percentages sit at <code>permlevel</code> 1.</span></div>
+		<div class="mrow" role="row"><span class="mk" role="cell">FM Batch Release</span><span class="mv" role="cell">A submitted, immutable quality decision with its actor, timestamp and reason.</span></div>
+	</div>
+
+	<h3>Custom fields, by DocType</h3>
+	<div class="matrix two" role="table">
+		<div class="mhead" role="row"><span class="mk" role="columnheader">DocType</span><span class="mv" role="columnheader">Fields</span></div>
+		<div class="mrow" role="row"><span class="mk" role="cell">Item</span><span class="mv" role="cell"><code>fm_material_nature</code>, <code>fm_bulk_item</code>, <code>fm_pack_size</code>, <code>fm_pack_uom</code></span></div>
+		<div class="mrow" role="row"><span class="mk" role="cell">Batch</span><span class="mv" role="cell"><code>fm_quality_status</code>, <code>fm_supplier_lot_no</code>, <code>fm_released_by</code>, <code>fm_released_on</code>, <code>fm_last_release</code></span></div>
+		<div class="mrow" role="row"><span class="mk" role="cell">Purchase Receipt Item</span><span class="mv" role="cell"><code>fm_supplier_lot_no</code>, <code>fm_supplier_mfg_date</code></span></div>
+		<div class="mrow" role="row"><span class="mk" role="cell">Work Order</span><span class="mv" role="cell"><code>fm_planned_input_qty</code>, <code>fm_actual_input_qty</code>, <code>fm_byproduct_qty</code>, <code>fm_process_loss_qty_snapshot</code>, <code>fm_planned_yield_percent</code>, <code>fm_actual_yield_percent</code>, <code>fm_yield_variance_percent</code>, <code>fm_yield_flagged</code>, <code>fm_yield_basis</code></span></div>
+		<div class="mrow" role="row"><span class="mk" role="cell">BOM</span><span class="mv" role="cell"><code>fm_recipe</code></span></div>
+	</div>
+
+	<h3>Genealogy is derived, never stored</h3>
+	<p>
+		The trace is computed from submitted stock transactions, Serial and Batch
+		Bundle entries and <code>Batch.parent_batch</code> each time it is asked
+		for. There is deliberately no genealogy table: a maintained graph can
+		drift from the ledger, and a traceability answer that disagrees with stock
+		is worse than no answer. Split batches produce multiple parents or
+		children and are reported as such; cancelled and returned transactions are
+		marked rather than dropped.
+	</p>
+</section>
+
+<section id="api">
+	<h2>The HTTP surface</h2>
+	<p>
+		{{ facts.endpoints }} whitelisted methods under
+		<code>food_manufacturing.api</code>. Every one calls
+		<code>frappe.has_permission(..., throw=True)</code>; every mutation is
+		<code>methods=["POST"]</code>.
+	</p>
+	<div class="matrix two" role="table">
+		<div class="mhead" role="row"><span class="mk" role="columnheader">Module</span><span class="mv" role="columnheader">Methods</span></div>
+		<div class="mrow" role="row"><span class="mk" role="cell">session</span><span class="mv" role="cell"><code>get_bootstrap</code> — companies, policy, roles and the user's access, in one call.</span></div>
+		<div class="mrow" role="row"><span class="mk" role="cell">dashboard / dashboards</span><span class="mv" role="cell"><code>get_dashboard</code>, <code>available_views</code></span></div>
+		<div class="mrow" role="row"><span class="mk" role="cell">production</span><span class="mv" role="cell"><code>get_production_queue</code>, <code>get_work_order_detail</code>, <code>finish_production_run</code></span></div>
+		<div class="mrow" role="row"><span class="mk" role="cell">quality</span><span class="mv" role="cell"><code>get_release_queue</code>, <code>get_queue_counts</code>, <code>get_batch_context</code>, <code>get_batch_trail</code>, <code>get_inspection_readings</code>, <code>raise_inspection</code>, <code>record_decision</code></span></div>
+		<div class="mrow" role="row"><span class="mk" role="cell">receiving</span><span class="mv" role="cell"><code>get_open_purchase_orders</code>, <code>get_purchase_order_lines</code>, <code>receive_purchase_order</code></span></div>
+		<div class="mrow" role="row"><span class="mk" role="cell">dispatch</span><span class="mv" role="cell"><code>get_open_sales_orders</code>, <code>get_picklist</code>, <code>create_delivery_note</code></span></div>
+		<div class="mrow" role="row"><span class="mk" role="cell">costing</span><span class="mv" role="cell"><code>simulate_recipe_cost</code>, <code>get_costable_boms</code>, <code>get_packs_for</code>, <code>plan_packaging</code>, <code>request_packaging_shortfall</code></span></div>
+		<div class="mrow" role="row"><span class="mk" role="cell">recall</span><span class="mv" role="cell"><code>get_recall</code></span></div>
+	</div>
+
+	<h3>Idempotency</h3>
+	<p>
+		The three posting endpoints — <code>receive_purchase_order</code>,
+		<code>create_delivery_note</code> and <code>finish_production_run</code> —
+		take an optional <code>request_id</code>. A repeat of the same identifier
+		returns the original document instead of posting again; a repeat with a
+		<em>different</em> payload is rejected rather than silently treated as
+		new. That is what makes a double-tap on a tablet safe.
+	</p>
+</section>
+
+<section id="permissions">
+	<h2>The permission model</h2>
+	<ul>
+		<li>
+			The console is a <strong>convenience over the same server rules</strong>,
+			never a second route around them. The HTML shell carries no data; an
+			anonymous visitor is redirected to login and a Website User is refused.
+		</li>
+		<li>
+			The company selector is a browser preference, not a trust boundary.
+			Every endpoint re-checks permission, so choosing a company you cannot
+			see returns nothing.
+		</li>
+		<li>
+			Recipe percentages are protected by <code>permlevel</code> 1, which
+			Frappe applies to list views, document reads, reports, the export
+			template and the exporter alike. Field-level security is not re-invented
+			in the API layer.
+		</li>
+		<li>
+			FM roles grant nothing on standard ERPNext documents. That pairing is a
+			provisioning decision, so refusals name the role to ask for rather than
+			repeating the server's sentence about one DocType.
+		</li>
+	</ul>
+	<div class="note">
+		<p>
+			Asserted in <code>tests/test_api.py</code>: an inspector cannot release
+			through the API, and <code>finish_production_run</code> still refuses an
+			unreleased lot. If you add an endpoint, add the equivalent test — the
+			point of the suite is that the HTTP surface cannot become a way around
+			the rules.
+		</p>
+	</div>
+</section>
+
+<section id="frontend">
+	<h2>The frontend</h2>
+	<p>
+		Vue 3, frappe-ui and Tailwind, with <code>vue-router</code> owning
+		everything below <code>/fm</code>. {{ facts.screens }} routes plus a
+		catch-all, because a mistyped link rendering an empty shell with no
+		explanation is worse than a 404.
+	</p>
+<pre><code>cd apps/food_manufacturing/frontend
+yarn install
+yarn build     # writes ../food_manufacturing/public/frontend and www/fm.html
+yarn dev       # Vite dev server, proxied to bench</code></pre>
+	<p>
+		Build output and the generated <code>www/fm.html</code> are gitignored —
+		the repository holds sources only.
+	</p>
+
+	<h3>Boot data</h3>
+	<p>
+		The built shell writes each key of the <code>boot</code> context onto
+		<code>window</code>, so <code>www/fm.py</code> must supply it. Without it
+		<code>window.csrf_token</code> is never set, frappe-ui sends every request
+		with no CSRF header, and Frappe rejects all of them — an app that loads
+		perfectly and shows no data. <code>get_csrf_token()</code> only works
+		inside a real HTTP session, so verify this over HTTP, never under
+		<code>bench execute</code>.
+	</p>
+
+	<h3>The design harness</h3>
+<pre><code>cd apps/food_manufacturing/frontend
+yarn vite build --config vite.preview.config.js</code></pre>
+	<p>
+		It renders the <strong>real</strong> shell, router and pages with only
+		<code>@/data/api</code> and <code>@/data/session</code> aliased to mocks,
+		so what you see is what renders against a live site. It accepts query
+		parameters a screenshot cannot otherwise reach — <code>?theme=</code>,
+		<code>?font=</code>, <code>?deny</code> for a permission refusal, and
+		<code>?hover=&lt;selector&gt;</code> to drive one pointer event for a
+		tooltip. It is a development tool and is never served by the app.
+	</p>
+
+	<h3>Charts</h3>
+	<p>
+		Chart colours are <strong>computed, not chosen</strong>. Before changing
+		any, run the data-visualization validator against this app's own card
+		surface — not the reference surface — and keep the result in the commit
+		message. The status order in the quality mix is deliberate: warning beside
+		serious fails the normal-vision separation floor, so the series is emitted
+		Released, Quarantine, Rejected, Hold to keep that pair apart.
+	</p>
+</section>
+
+<section id="tests">
+	<h2>Running the tests</h2>
+	<p>
+		{{ facts.tests }} tests across {{ facts.test_modules }} modules under
+		<code>food_manufacturing/tests/</code>.
+	</p>
+	<div class="warn">
+		<p>
+			<code>bench run-tests --app food_manufacturing</code> discovers only
+			<strong>one module</strong> on a v{{ facts.frappe_version }} site — it
+			reports "Running 15 unspecified-category tests" and exits OK. The tests
+			are fine; the discovery is not. Run them module by module to get the
+			real total, and do not read a green <code>--app</code> run as a green
+			suite. Tracked as point 3 in <code>docs/BACKLOG.md</code>.
+		</p>
+	</div>
+<pre><code>for f in apps/food_manufacturing/food_manufacturing/tests/test_*.py; do
+  bench --site &lt;site&gt; run-tests --module \
+    "food_manufacturing.tests.$(basename "$f" .py)"
+done</code></pre>
+	<p>
+		The suite shares one long-lived site, which makes it order-dependent; a
+		test that mutates a fixture must restore it in a <code>finally</code>. One
+		known flake is recorded in the backlog rather than papered over.
+	</p>
+</section>
+
+<section id="house-rules">
+	<h2>House rules</h2>
+	<p>What this repository is held to, and why each one exists.</p>
+	<ul>
+		<li>
+			<strong>Never edit Frappe or ERPNext core</strong>, and never globally
+			restyle the Desk.
+		</li>
+		<li>
+			<strong>Business rules live on the server.</strong> Client code is for
+			user experience, never for enforcement.
+		</li>
+		<li>
+			<strong>Never write stock or accounting ledgers directly</strong>, and
+			never use a manual commit to hide a transaction problem.
+		</li>
+		<li>
+			<strong>Never invent a food-safety threshold.</strong> Every limit is
+			configured per company. The app makes no certification or compliance
+			claim anywhere, including in this handbook.
+		</li>
+		<li>
+			<strong>Never show a fabricated figure</strong> in a live screen, and
+			label any isolated demo data explicitly. An unknown renders as an em
+			dash, never as zero.
+		</li>
+		<li>
+			<strong>Hide or explain an unsupported feature</strong> rather than
+			shipping a working-looking button that does nothing.
+		</li>
+		<li>
+			<strong>Report checks as PASS, FAIL or NOT RUN.</strong> Never claim a
+			visual check without having looked at the screen, and never invent a
+			successful test result.
+		</li>
+		<li>
+			<strong>Keep the documentation and the tests aligned with the code.</strong>
+			This page is generated from the same repository; if it disagrees with
+			the source, the page is the bug.
+		</li>
+	</ul>
+	<div class="note">
+		<p>
+			Known gaps live in <code>docs/BACKLOG.md</code>, ranked, each saying what
+			"done" means. Deliberate omissions are listed there too, so nobody
+			re-litigates them by accident.
+		</p>
+	</div>
+</section>

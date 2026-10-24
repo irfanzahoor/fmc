@@ -74,6 +74,9 @@ doc_events = {
 # The Vue app is served at /fm; vue-router owns everything below that prefix.
 website_route_rules = [
 	{"from_route": "/fm/<path:app_path>", "to_route": "fm"},
+	# /handbook serves the index; /handbook/<guide> the chapter. The slug lands
+	# in form_dict, and an unknown one 404s rather than rendering an empty shell.
+	{"from_route": "/handbook/<guide>", "to_route": "handbook"},
 ]
 
 scheduler_events = {

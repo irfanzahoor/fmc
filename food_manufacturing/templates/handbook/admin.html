@@ -1,0 +1,324 @@
+<section id="requirements">
+	<h2>Before you install</h2>
+	<div class="matrix two" role="table">
+		<div class="mhead" role="row"><span class="mk" role="columnheader">Requirement</span><span class="mv" role="columnheader">Detail</span></div>
+		<div class="mrow" role="row"><span class="mk" role="cell">Frappe</span><span class="mv" role="cell">v{{ facts.frappe_version }}. Earlier majors are out of scope.</span></div>
+		<div class="mrow" role="row"><span class="mk" role="cell">ERPNext</span><span class="mv" role="cell">v{{ facts.erpnext_version }}, on the same major as Frappe.</span></div>
+		<div class="mrow" role="row"><span class="mk" role="cell">A company</span><span class="mv" role="cell">Already set up in ERPNext: chart of accounts, warehouses, and the items you buy and sell.</span></div>
+		<div class="mrow" role="row"><span class="mk" role="cell">Batch stock</span><span class="mv" role="cell">Serial and batch handling enabled in Stock Settings, or no batched stock can move at all.</span></div>
+	</div>
+	<div class="warn">
+		<p>
+			Mixing majors — Frappe 16 with ERPNext 15, or the reverse — is not
+			supported and is not tested. If you are upgrading, upgrade both.
+		</p>
+	</div>
+</section>
+
+<section id="install">
+	<h2>Install</h2>
+<pre><code>cd ~/frappe-bench
+bench get-app https://github.com/irfanzahoor/fmc --branch version-16
+bench --site &lt;your-site&gt; install-app food_manufacturing
+bench --site &lt;your-site&gt; migrate
+bench build --app food_manufacturing</code></pre>
+	<p>
+		The install is idempotent: running it again creates nothing twice and
+		overwrites nothing you have changed. <code>bench build</code> matters —
+		the console is a compiled frontend, and most of the odd first-load
+		failures in <a href="#troubleshooting">Troubleshooting</a> are a build
+		that did not run.
+	</p>
+</section>
+
+<section id="install-creates">
+	<h2>What the install creates</h2>
+	<div class="matrix two" role="table">
+		<div class="mhead" role="row"><span class="mk" role="columnheader">What</span><span class="mv" role="columnheader">Detail</span></div>
+		<div class="mrow" role="row"><span class="mk" role="cell">{{ facts.roles }} roles</span><span class="mv" role="cell">The FM roles, created before DocType sync so the DocTypes may reference them.</span></div>
+		<div class="mrow" role="row"><span class="mk" role="cell">{{ facts.custom_fields }} custom fields</span><span class="mv" role="cell">On Item, BOM, Work Order, Purchase Receipt Item and Batch.</span></div>
+		<div class="mrow" role="row"><span class="mk" role="cell">{{ facts.doctypes }} DocTypes</span><span class="mv" role="cell">FM Manufacturing Policy, FM Recipe, FM Recipe Ingredient and FM Batch Release.</span></div>
+		<div class="mrow" role="row"><span class="mk" role="cell">4 modules</span><span class="mv" role="cell">Food Manufacturing Setup, Quality, Recipe and Production.</span></div>
+		<div class="mrow" role="row"><span class="mk" role="cell">A Desk workspace</span><span class="mv" role="cell">Batchwell, at <code>/app/batchwell</code>, with an entry on the apps screen.</span></div>
+		<div class="mrow" role="row"><span class="mk" role="cell">A daily job</span><span class="mv" role="cell">The near-expiry alert, on the scheduler.</span></div>
+	</div>
+	<p>
+		It creates <strong>no</strong> company, no warehouse, no item, no policy
+		and no threshold. Everything the rules key off is yours to set, which is
+		the next three sections.
+	</p>
+</section>
+
+<section id="policy">
+	<h2>Company policy</h2>
+	<p>
+		<strong>FM Manufacturing Policy</strong> — one per company, named after
+		it. This is the single most important record in the app: every rule reads
+		its thresholds from here, and until it exists the console marks the
+		company <em>not set up</em> and no screen works.
+	</p>
+
+	<h3>Warehouses</h3>
+	<div class="matrix three" role="table">
+		<div class="mhead" role="row"><span class="mk" role="columnheader">Field</span><span class="ms" role="columnheader">Default</span><span class="mv" role="columnheader">What it controls</span></div>
+		<div class="mrow" role="row"><span class="mk" role="cell" data-l="Field"><code>quarantine_warehouse</code></span><span class="ms" role="cell" data-l="Default">required</span><span class="mv" role="cell" data-l="Controls">Where incoming stock lands before it is cleared.</span></div>
+		<div class="mrow" role="row"><span class="mk" role="cell" data-l="Field"><code>rejected_warehouse</code></span><span class="ms" role="cell" data-l="Default">required</span><span class="mv" role="cell" data-l="Controls">Where rejected batches are moved.</span></div>
+		<div class="mrow" role="row"><span class="mk" role="cell" data-l="Field"><code>bulk_warehouse</code>, <code>packaging_warehouse</code>, <code>finished_goods_warehouse</code></span><span class="ms" role="cell" data-l="Default">—</span><span class="mv" role="cell" data-l="Controls">The defaults the console offers on each screen.</span></div>
+	</div>
+
+	<h3>The quality gate</h3>
+	<div class="matrix three" role="table">
+		<div class="mhead" role="row"><span class="mk" role="columnheader">Field</span><span class="ms" role="columnheader">Default</span><span class="mv" role="columnheader">What it controls</span></div>
+		<div class="mrow" role="row"><span class="mk" role="cell" data-l="Field"><code>require_incoming_inspection</code></span><span class="ms" role="cell" data-l="Default">on</span><span class="mv" role="cell" data-l="Controls">Receipts route to quarantine instead of straight to stores.</span></div>
+		<div class="mrow" role="row"><span class="mk" role="cell" data-l="Field"><code>block_unreleased_consumption</code></span><span class="ms" role="cell" data-l="Default">on</span><span class="mv" role="cell" data-l="Controls">A run cannot consume a batch that is not Released.</span></div>
+		<div class="mrow" role="row"><span class="mk" role="cell" data-l="Field"><code>block_rejected_consumption</code></span><span class="ms" role="cell" data-l="Default">on</span><span class="mv" role="cell" data-l="Controls">A rejected batch can never be consumed.</span></div>
+	</div>
+
+	<h3>Shelf life and dispatch</h3>
+	<div class="matrix three" role="table">
+		<div class="mhead" role="row"><span class="mk" role="columnheader">Field</span><span class="ms" role="columnheader">Default</span><span class="mv" role="columnheader">What it controls</span></div>
+		<div class="mrow" role="row"><span class="mk" role="cell" data-l="Field"><code>min_remaining_shelf_life_percent</code></span><span class="ms" role="cell" data-l="Default">25</span><span class="mv" role="cell" data-l="Controls">The dispatch floor, as a share of the item's total shelf life.</span></div>
+		<div class="mrow" role="row"><span class="mk" role="cell" data-l="Field"><code>block_expired_dispatch</code></span><span class="ms" role="cell" data-l="Default">on</span><span class="mv" role="cell" data-l="Controls">Expired stock cannot leave.</span></div>
+		<div class="mrow" role="row"><span class="mk" role="cell" data-l="Field"><code>enforce_fefo</code></span><span class="ms" role="cell" data-l="Default">Warn</span><span class="mv" role="cell" data-l="Controls"><code>Off</code>, <code>Warn</code> or <code>Block</code> when picking out of expiry order.</span></div>
+		<div class="mrow" role="row"><span class="mk" role="cell" data-l="Field"><code>near_expiry_alert_days</code></span><span class="ms" role="cell" data-l="Default">30</span><span class="mv" role="cell" data-l="Controls">The horizon for the daily near-expiry email.</span></div>
+	</div>
+
+	<h3>Production</h3>
+	<div class="matrix three" role="table">
+		<div class="mhead" role="row"><span class="mk" role="columnheader">Field</span><span class="ms" role="columnheader">Default</span><span class="mv" role="columnheader">What it controls</span></div>
+		<div class="mrow" role="row"><span class="mk" role="cell" data-l="Field"><code>yield_variance_tolerance_percent</code></span><span class="ms" role="cell" data-l="Default">2</span><span class="mv" role="cell" data-l="Controls">Beyond this, a run is flagged for review. It is never blocked.</span></div>
+		<div class="mrow" role="row"><span class="mk" role="cell" data-l="Field"><code>enabled</code></span><span class="ms" role="cell" data-l="Default">on</span><span class="mv" role="cell" data-l="Controls">Turn off to retire a company without deleting its history.</span></div>
+	</div>
+
+	<div class="note">
+		<p>
+			These defaults are <strong>starting points, not recommendations</strong>.
+			The app ships no food-safety thresholds of its own: 25% remaining shelf
+			life and 2% yield tolerance are placeholders for your plant's own
+			numbers, and nobody but you can supply them.
+		</p>
+	</div>
+</section>
+
+<section id="items">
+	<h2>Set up your items</h2>
+	<p>
+		Every stock item carries a <strong>Material Nature</strong>
+		(<code>fm_material_nature</code>). This is what the rules key off — an
+		item without one is invisible to most of the app.
+	</p>
+	<div class="matrix three" role="table">
+		<div class="mhead" role="row"><span class="mk" role="columnheader">Nature</span><span class="ms" role="columnheader">Batch-tracked</span><span class="mv" role="columnheader">Used for</span></div>
+		<div class="mrow" role="row"><span class="mk" role="cell" data-l="Nature">Raw Material</span><span class="ms" role="cell" data-l="Batched">yes</span><span class="mv" role="cell" data-l="Used for">Spices, salt, oils — anything received and inspected.</span></div>
+		<div class="mrow" role="row"><span class="mk" role="cell" data-l="Nature">Packaging Material</span><span class="ms" role="cell" data-l="Batched">no</span><span class="mv" role="cell" data-l="Used for">Pouches, cartons, labels — counted, not lot-tracked.</span></div>
+		<div class="mrow" role="row"><span class="mk" role="cell" data-l="Nature">Bulk Blend</span><span class="ms" role="cell" data-l="Batched">yes</span><span class="mv" role="cell" data-l="Used for">The blended output of a recipe, before packing.</span></div>
+		<div class="mrow" role="row"><span class="mk" role="cell" data-l="Nature">Finished Good</span><span class="ms" role="cell" data-l="Batched">yes</span><span class="mv" role="cell" data-l="Used for">A pack size filled from a bulk blend.</span></div>
+	</div>
+	<p>
+		A <strong>Finished Good</strong> also names the bulk item it is filled
+		from (<code>fm_bulk_item</code>), the fill quantity
+		(<code>fm_pack_size</code>) and its unit (<code>fm_pack_uom</code>), so a
+		packaging run can be checked against the blend it came from.
+	</p>
+	<div class="warn">
+		<p>
+			Every batch-tracked item needs <strong>Has Batch No</strong>,
+			<strong>Create New Batch</strong>, a batch number series,
+			<strong>and a shelf life in days</strong>. Without the shelf life the
+			dispatch floor has nothing to measure and quietly stops protecting you.
+		</p>
+	</div>
+</section>
+
+<section id="recipes">
+	<h2>Recipes and confidentiality</h2>
+	<p>
+		<strong>FM Recipe</strong> holds the formula as percentages of the blend,
+		which must total 100%. Submit it to approve it; approval generates a
+		standard submitted BOM with explicit quantities and units, and production
+		runs against that BOM.
+	</p>
+	<p>
+		A recipe change creates a <strong>new revision and a new BOM</strong>. It
+		never mutates the old one, so historical production keeps the exact
+		formula it was made to — the Work Order pins the submitted BOM, and
+		ERPNext will not let that be edited.
+	</p>
+	<div class="note">
+		<p>
+			Ingredient percentages sit at <code>permlevel</code> 1. Only
+			<code>FM Recipe Manager</code> can read or write them, and they are
+			stripped from list views, document reads, the export template and the
+			exporter for everyone else. Granting that role is granting the formula.
+		</p>
+	</div>
+</section>
+
+<section id="roles">
+	<h2>Granting roles</h2>
+	<p>
+		Batchwell's {{ facts.roles }} roles cover <em>its</em> documents. The
+		console's screens read standard ERPNext documents, and the FM roles
+		deliberately do not widen access to those. So an operator needs a role
+		from each column.
+	</p>
+
+	<h3>The app's own roles</h3>
+	<div class="matrix two" role="table">
+		<div class="mhead" role="row"><span class="mk" role="columnheader">FM role</span><span class="mv" role="columnheader">Can</span></div>
+		<div class="mrow" role="row"><span class="mk" role="cell">FM Production Manager</span><span class="mv" role="cell">Plan and complete runs.</span></div>
+		<div class="mrow" role="row"><span class="mk" role="cell">FM Production Operator</span><span class="mv" role="cell">Execute runs and record consumption.</span></div>
+		<div class="mrow" role="row"><span class="mk" role="cell">FM Quality Inspector</span><span class="mv" role="cell">Record inspections — <strong>not</strong> release.</span></div>
+		<div class="mrow" role="row"><span class="mk" role="cell">FM Quality Manager</span><span class="mv" role="cell">Release, hold and reject batches.</span></div>
+		<div class="mrow" role="row"><span class="mk" role="cell">FM Warehouse Operator</span><span class="mv" role="cell">Receive, move and dispatch.</span></div>
+		<div class="mrow" role="row"><span class="mk" role="cell">FM Recipe Manager</span><span class="mv" role="cell">Read and approve confidential formulas.</span></div>
+	</div>
+
+	<h3>The ERPNext role each screen also needs</h3>
+	<p>Each row is the narrowest standard role granting read on what that screen gates on.</p>
+	<div class="matrix three" role="table">
+		<div class="mhead" role="row"><span class="mk" role="columnheader">Screen</span><span class="ms" role="columnheader">Gates on</span><span class="mv" role="columnheader">Also needs</span></div>
+		<div class="mrow" role="row"><span class="mk" role="cell" data-l="Screen">Overview, Insights</span><span class="ms" role="cell" data-l="Gates on">Work Order, Batch</span><span class="mv" role="cell" data-l="Needs">Item Manager, Manufacturing User</span></div>
+		<div class="mrow" role="row"><span class="mk" role="cell" data-l="Screen">Production</span><span class="ms" role="cell" data-l="Gates on">Work Order</span><span class="mv" role="cell" data-l="Needs">Manufacturing User</span></div>
+		<div class="mrow" role="row"><span class="mk" role="cell" data-l="Screen">Quality</span><span class="ms" role="cell" data-l="Gates on">Batch, Company, FM Batch Release, Quality Inspection</span><span class="mv" role="cell" data-l="Needs">Item Manager, Stock User, Quality Manager</span></div>
+		<div class="mrow" role="row"><span class="mk" role="cell" data-l="Screen">Goods in</span><span class="ms" role="cell" data-l="Gates on">Purchase Order</span><span class="mv" role="cell" data-l="Needs">Purchase User</span></div>
+		<div class="mrow" role="row"><span class="mk" role="cell" data-l="Screen">Dispatch</span><span class="ms" role="cell" data-l="Gates on">Sales Order</span><span class="mv" role="cell" data-l="Needs">Sales User</span></div>
+		<div class="mrow" role="row"><span class="mk" role="cell" data-l="Screen">Recall</span><span class="ms" role="cell" data-l="Gates on">Company, Batch, Delivery Note, Stock Ledger Entry</span><span class="mv" role="cell" data-l="Needs">Item Manager, Stock User</span></div>
+	</div>
+	<p>
+		Three that surprise people: <strong>Batch</strong> is readable by Item
+		Manager alone on a stock site; <strong>Quality Inspection</strong> by
+		ERPNext's own Quality Manager alone, which is why a batch's matching
+		inspection will not load without it; and <strong>Company</strong> by no FM
+		role at all.
+	</p>
+	<div class="note">
+		<p>
+			Because <code>Company</code> is unreadable to FM roles, the console
+			derives its company list from FM Manufacturing Policy instead, which
+			every FM role can read. That is why an account holding only FM roles
+			can still open the app.
+		</p>
+	</div>
+</section>
+
+<section id="alert">
+	<h2>The near-expiry alert</h2>
+	<p>
+		A daily scheduled job emails batches coming up on their expiry date,
+		using each company's <code>near_expiry_alert_days</code> horizon. It goes
+		to users holding <code>FM Quality Manager</code>,
+		<code>FM Production Manager</code> or <code>FM Warehouse Operator</code>.
+	</p>
+	<p>
+		It needs the scheduler to be running and outgoing email to be configured.
+		Neither is something the app can arrange for you, and with either missing
+		the job simply does nothing.
+	</p>
+	<div class="warn">
+		<p>
+			This is the only mail the app sends, and it goes to your own staff.
+			Batchwell never notifies a customer about anything — including a
+			recall.
+		</p>
+	</div>
+</section>
+
+<section id="demo">
+	<h2>Demo data</h2>
+<pre><code>bench --site &lt;site&gt; execute food_manufacturing.demo.seed.create_demo_data \
+  --kwargs '{"company":"Your Company (Demo)"}'
+
+bench --site &lt;site&gt; execute food_manufacturing.demo.seed.remove_demo_data \
+  --kwargs '{"company":"Your Company (Demo)"}'</code></pre>
+	<p>
+		The seeder creates <strong>real ERPNext documents</strong>, so the demo
+		exercises the same validations a plant would. Everything is prefixed
+		<code>FM Demo</code>, scoped to one company, and safe to run twice.
+	</p>
+	<p>
+		It deliberately leaves work open on every screen — two work orders to
+		complete, a purchase order to receive, a sales order to pick, one lot
+		still in quarantine and one rejected. A demo where every queue is empty
+		reads as a broken app.
+	</p>
+	<div class="warn">
+		<p>
+			<strong>Never seed a production company.</strong> Two further cautions:
+			the seeder turns on <code>Stock Settings.enable_serial_and_batch_no_for_item</code>,
+			which affects <em>every</em> company on the site (teardown restores it
+			only if the seeder changed it); and demo data in the company your tests
+			discover will make company-wide assertions fail.
+		</p>
+	</div>
+</section>
+
+<section id="upgrading">
+	<h2>Upgrading</h2>
+<pre><code>cd ~/frappe-bench/apps/food_manufacturing
+git pull
+cd ~/frappe-bench
+bench --site &lt;site&gt; migrate
+bench build --app food_manufacturing
+bench --site &lt;site&gt; clear-cache</code></pre>
+	<p>
+		<code>migrate</code> re-asserts the roles, custom fields and modules, so a
+		field removed by hand comes back. <code>build</code> is not optional: the
+		console is compiled, and a stale build is the cause of most of what
+		follows.
+	</p>
+	<div class="note">
+		<p>
+			After changing any Python in the app on a development bench,
+			<code>clear-cache</code> is not enough — restart the server. A stale
+			worker serving old code looks exactly like a bug that will not fix.
+		</p>
+	</div>
+</section>
+
+<section id="troubleshooting">
+	<h2>Troubleshooting</h2>
+
+	<h3>"Insufficient Permission for Company" on first load</h3>
+	<p>
+		An account holding only FM roles cannot read <code>Company</code>. The
+		console works around this by deriving its company list from the policy —
+		so seeing this message means the browser is running an old build. Run
+		<code>yarn build</code> (or <code>bench build --app
+		food_manufacturing</code>) and <code>clear-cache</code>.
+	</p>
+
+	<h3>The console loads but shows nothing</h3>
+	<p>
+		The company has no FM Manufacturing Policy; the switcher marks it
+		<em>not set up</em>. Create one — see <a href="#policy">Company policy</a>.
+	</p>
+
+	<h3>CSRFTokenError: Invalid Request</h3>
+	<p>
+		The page shell did not supply boot data, so the frontend sent every
+		request without a CSRF token. The app loads perfectly and shows no data.
+		Rebuild and clear the cache.
+	</p>
+
+	<h3>A batch's matching inspection will not load</h3>
+	<p>
+		<code>Quality Inspection</code> is readable by ERPNext's
+		<strong>Quality Manager</strong> role alone. Grant it.
+	</p>
+
+	<h3>A blend reads "500 Nos" instead of kilograms</h3>
+	<p>
+		<code>Work Order.stock_uom</code> is only populated by the Desk form. The
+		app reads the unit from the Item instead, so if you see this anywhere, the
+		unit on the Item is what to check.
+	</p>
+
+	<h3>The near-expiry email never arrives</h3>
+	<p>
+		Check, in order: the scheduler is enabled on the site, outgoing email is
+		configured, at least one user holds one of the three notified roles, and
+		the company's <code>near_expiry_alert_days</code> horizon actually covers
+		a batch.
+	</p>
+</section>

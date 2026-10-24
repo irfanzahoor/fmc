@@ -1,0 +1,440 @@
+<section id="the-console">
+	<h2>The console</h2>
+	<p>
+		Batchwell's shop-floor console lives at <code>/fm</code> on your site. It
+		is a separate, deliberately small application: large targets, few fields
+		per screen, and no Desk form to get lost in. Supervisors and finance can
+		still use the full ERPNext Desk — the console does not replace it, and
+		nothing you do in one is hidden from the other.
+	</p>
+
+	<h3>Signing in</h3>
+	<p>
+		Use your normal staff account. An anonymous visitor is sent to the login
+		page, and a portal (Website User) account is refused outright — the
+		console is for staff only.
+	</p>
+
+	<h3>Choosing your company</h3>
+	<p>
+		The switcher at the top names the company every screen is reading. If
+		yours is marked <em>not set up</em>, it has no manufacturing policy yet
+		and nothing will work until an administrator creates one. Send them to
+		the <a href="/handbook/admin#policy">Administrator guide</a>.
+	</p>
+	<div class="note">
+		<p>
+			The company selector is a convenience, not a security boundary. Every
+			request is re-checked on the server, so picking a company you are not
+			permitted to see returns nothing rather than someone else's figures.
+		</p>
+	</div>
+
+	<h3>Appearance</h3>
+	<p>
+		Five palettes — <strong>Batchwell</strong> (the default forest green),
+		Midnight Blue, Amethyst, Graphite and Copper — and two font pairings,
+		Studio and Humanist. The choice is stored in your own browser, so it
+		follows you on that device and changes nothing for anyone else.
+	</p>
+	<p>
+		Chart colours deliberately <em>do not</em> follow the palette. A quality
+		status keeps one meaning on every screen and in every theme, and each one
+		also carries an icon and a word, so colour alone never states anything.
+	</p>
+</section>
+
+<section id="a-day">
+	<h2>A day in the plant</h2>
+	<p>Each arrow is a screen, and each one leaves a standard ERPNext document behind it.</p>
+<pre><code>Purchase Order
+   └─ Goods in ──────────► batch created, quality status Quarantine
+                              │
+Quality ◄─────────────────────┘
+   └─ Release / Hold / Reject   (audited: who, when, and why)
+                              │
+                              ▼
+Production ──────► the blend consumes Released lots only
+   └─ records actual output and process loss, flags a run outside tolerance
+                              │
+                              ▼
+Packaging ───────► bulk blend becomes 50 g / 100 g packs
+                              │
+                              ▼
+Dispatch ────────► FEFO suggestion, shelf-life floor, quality gate
+                              │
+                              ▼
+Recall ──────────► trace any batch forward to customers, or back to the lot</code></pre>
+</section>
+
+<section id="workspace">
+	<h2>My workspace</h2>
+	<p>
+		<code>/fm/workspace</code> — the screen to open first. It shows the work
+		waiting for <em>your</em> role rather than the whole plant: the panels an
+		owner sees are not the panels a storekeeper sees.
+	</p>
+	<p>
+		Each panel names what it is counting and links straight to the screen
+		that clears it. A panel with nothing in it says so in words; an empty
+		panel is a good morning, not a broken screen.
+	</p>
+	<div class="note">
+		<p>
+			Where a figure has never been measured the workspace shows an em dash
+			(—), never a zero. "We did not measure this" and "this is zero" are
+			different facts and the app will not blur them.
+		</p>
+	</div>
+</section>
+
+<section id="overview">
+	<h2>Overview</h2>
+	<p>
+		<code>/fm/dashboard</code> — the plant at a glance. Four figures across
+		the top: <strong>average actual yield</strong>, <strong>awaiting
+		quality</strong>, <strong>near expiry</strong> and <strong>open work
+		orders</strong>. Below them, <em>Needs your attention</em> lists the
+		exceptions worth acting on, then the yield trend, output by item, the
+		stock quality mix and the expiry horizon.
+	</p>
+	<p>
+		Nothing here is editable. It is a reading screen: every tile and every
+		bar links to the screen where the work actually happens.
+	</p>
+</section>
+
+<section id="goods-in">
+	<h2>Goods in</h2>
+	<p>
+		<code>/fm/receiving</code> — receive stock against a purchase order and
+		capture what the supplier shipped.
+	</p>
+	<ol>
+		<li>Pick the purchase order. Its open lines load underneath.</li>
+		<li>
+			For each line, enter the <strong>receive quantity</strong>, the
+			<strong>supplier lot number</strong> and the supplier's
+			<strong>manufacturing date</strong>. The lot number is the supplier's
+			own, printed on their bag — not a number you invent.
+		</li>
+		<li>Press <strong>Post receipt</strong>.</li>
+	</ol>
+	<p>
+		That creates a standard Purchase Receipt and, for every batch-tracked
+		item, a Batch carrying the supplier lot, the manufacturing date, the
+		expiry date and a quality status of <strong>Quarantine</strong>. Where
+		the policy requires incoming inspection the stock lands in the quarantine
+		warehouse rather than in stores.
+	</p>
+	<div class="warn">
+		<p>
+			Stock in quarantine cannot be consumed or dispatched. It is not lost —
+			it is waiting for a quality decision, and it will appear in the Quality
+			queue the moment you post the receipt.
+		</p>
+	</div>
+	<p>
+		If you press the button twice, or the network drops mid-post, you will not
+		get two receipts. The screen sends a request identifier with the post, and
+		a repeat of the same request returns the original document instead of
+		posting again.
+	</p>
+</section>
+
+<section id="quality">
+	<h2>Quality</h2>
+	<p>
+		<code>/fm/quality</code> — the release queue, longest-waiting first, with
+		four counters above it: <strong>awaiting a decision</strong>, <strong>in
+		quarantine</strong>, <strong>currently on hold</strong> and
+		<strong>released in period</strong>.
+	</p>
+
+	<h3>Deciding on a batch</h3>
+	<p>
+		Select a batch and the panel beside it fills with what you need before
+		deciding: the item, the supplier and their lot number, the manufacturing
+		and expiry dates, how much remaining shelf life is left as a proportion
+		of the whole, the batch's decision history, and its genealogy — what it
+		was made from, or what it has become.
+	</p>
+	<p>Then record one of three decisions:</p>
+	<div class="matrix two" role="table">
+		<div class="mhead" role="row"><span class="mk" role="columnheader">Decision</span><span class="mv" role="columnheader">What happens</span></div>
+		<div class="mrow" role="row"><span class="mk" role="cell">Release</span><span class="mv" role="cell">Status becomes Released and the stock moves out of quarantine. It can now be consumed and dispatched.</span></div>
+		<div class="mrow" role="row"><span class="mk" role="cell">Hold</span><span class="mv" role="cell">The batch stays where it is and stays blocked. Use this when you are waiting on a result rather than refusing the stock.</span></div>
+		<div class="mrow" role="row"><span class="mk" role="cell">Reject</span><span class="mv" role="cell">The stock moves to the rejected warehouse and can never be consumed. From there it can be returned to the supplier or written off by someone authorised to do it.</span></div>
+	</div>
+	<p>
+		Every decision is a submitted record naming who decided, when, and why.
+		It cannot be edited afterwards — a later decision supersedes an earlier
+		one, and both stay on the batch's history.
+	</p>
+
+	<h3>Inspections</h3>
+	<p>
+		Where a Quality Inspection exists for the batch, its readings are shown
+		beside the decision so you are not reading a result in one window and
+		deciding in another. A reading on a different item or a different batch
+		is not accepted as evidence for this one, and a cancelled inspection
+		cannot support a release.
+	</p>
+	<div class="note">
+		<p>
+			<strong>Inspecting and releasing are different jobs.</strong> An
+			<code>FM Quality Inspector</code> records results. Only an
+			<code>FM Quality Manager</code> can release, hold or reject. If the
+			decision form is missing for you, that is the reason.
+		</p>
+	</div>
+</section>
+
+<section id="production">
+	<h2>Production</h2>
+	<p>
+		<code>/fm/production</code> — the open work orders, and the screen that
+		closes them.
+	</p>
+	<ol>
+		<li>Pick a run from <strong>Open work orders</strong>.</li>
+		<li>
+			<strong>Ingredients &amp; released lots</strong> shows what the run
+			needs and which released batches can supply it, earliest-expiring
+			first. A lot that is in quarantine, on hold or rejected is not
+			offered, because it cannot be used.
+		</li>
+		<li>
+			Under <strong>Finish this run</strong>, enter the good quantity
+			produced and the <strong>process loss</strong> — the material that is
+			gone, not material you recovered as a by-product.
+		</li>
+		<li>Press <strong>Post and complete</strong>.</li>
+	</ol>
+	<p>
+		The app posts the stock entries, creates the output batch, and works out
+		the yield: planned against actual, with process loss kept separate. A run
+		outside the company's yield tolerance is flagged for review — flagged, not
+		blocked. The run still happened; someone should look at it before the next
+		one.
+	</p>
+	<div class="warn">
+		<p>
+			Quantities are in the item's own unit. If a blend reads "500 Nos" where
+			you expect kilograms, the unit is wrong on the item, not on the run —
+			tell your administrator.
+		</p>
+	</div>
+	<p>
+		Packaging is a separate run per pack size: it consumes the bulk blend and
+		the packaging materials, never the raw ingredients again. That is what
+		makes it impossible to consume an ingredient twice.
+	</p>
+</section>
+
+<section id="costing">
+	<h2>Recipe cost and packaging</h2>
+	<p>
+		<code>/fm/costing</code> — two tools that answer "what should this cost"
+		and "what do I need to buy".
+	</p>
+
+	<h3>What a batch should cost</h3>
+	<p>
+		Choose a recipe and a batch size. The simulator prices it from the recipe
+		and shows the total per batch broken into <strong>ingredients</strong>,
+		<strong>packaging</strong> and <strong>operating</strong>, with an
+		ingredient-by-ingredient breakdown underneath and the
+		<strong>assumptions</strong> it used stated openly beside the figure.
+	</p>
+	<div class="warn">
+		<p>
+			This is an estimate priced from the source the BOM declares. It is not
+			posted valuation and is never presented as the ledger's answer. What a
+			batch <em>did</em> cost comes from the ledger, and the two are shown
+			separately on purpose.
+		</p>
+	</div>
+
+	<h3>What a pack run needs</h3>
+	<p>
+		Enter the pack quantities you intend to run. The planner works out the
+		blend, pouches, labels and cartons required, then nets off free stock,
+		open requests and expected receipts, so what is left is the real
+		shortfall rather than a gross requirement.
+	</p>
+	<p>
+		<strong>Create draft</strong> raises a <em>draft</em> Material Request for
+		the shortfall. It is not an order. A buyer reviews and submits it —
+		purchasing authority does not sit behind a shop-floor button.
+	</p>
+</section>
+
+<section id="dispatch">
+	<h2>Dispatch</h2>
+	<p>
+		<code>/fm/dispatch</code> — pick batches against a sales order and raise
+		the delivery note.
+	</p>
+	<p>
+		Choose the sales order and the lines load with a FEFO suggestion already
+		filled in: the earliest-expiring eligible batch, with held, rejected,
+		expired and too-near-expiry stock excluded. Where the order is in a
+		selling unit and stock is held in another, <strong>Sales quantity →
+		stock quantity</strong> shows the conversion rather than leaving you to
+		do it.
+	</p>
+	<p>You can pick a different batch. What happens then is set by your company's policy:</p>
+	<div class="matrix two" role="table">
+		<div class="mhead" role="row"><span class="mk" role="columnheader">FEFO setting</span><span class="mv" role="columnheader">Picking out of order</span></div>
+		<div class="mrow" role="row"><span class="mk" role="cell">Off</span><span class="mv" role="cell">Allowed silently.</span></div>
+		<div class="mrow" role="row"><span class="mk" role="cell">Warn</span><span class="mv" role="cell">Allowed, with a warning naming the batch you skipped.</span></div>
+		<div class="mrow" role="row"><span class="mk" role="cell">Block</span><span class="mv" role="cell">Refused. Pick the suggested batch, or have the policy changed.</span></div>
+	</div>
+	<p>
+		Three things are refused whatever the FEFO setting: an expired batch, a
+		batch below the company's minimum remaining shelf life, and a batch that
+		quality has not released. <strong>Create delivery note</strong> posts a
+		standard Delivery Note, and every one of those checks runs again on the
+		server as it is submitted.
+	</p>
+</section>
+
+<section id="recall">
+	<h2>Recall</h2>
+	<p>
+		<code>/fm/recall</code> — read-only, and open to anyone who can read
+		stock. Give it a batch and it traces in both directions.
+	</p>
+	<ul>
+		<li>
+			<strong>Forward</strong>, from a supplier lot: every batch it became,
+			and every delivery and customer that received it.
+		</li>
+		<li>
+			<strong>Backward</strong>, from a sold pack: the bulk blend it was
+			filled from, the run that made it, the ingredient batches that run
+			consumed, and the supplier lot behind each one.
+		</li>
+	</ul>
+	<p>
+		The screen reports <strong>affected batches</strong>, what is still on
+		hand, and <strong>customer deliveries and returns</strong>. The trace is
+		derived from submitted stock transactions every time you ask, not from a
+		separate record that could quietly fall out of step with the ledger.
+		Cancelled and returned transactions are marked rather than silently
+		dropped.
+	</p>
+	<div class="warn">
+		<p>
+			Recall produces the list of who to contact. It does
+			<strong>not</strong> contact them. Telling a customer has legal and
+			commercial weight, and stays a human decision.
+		</p>
+	</div>
+</section>
+
+<section id="insights">
+	<h2>Insights</h2>
+	<p>Two reading screens for looking back over a period rather than acting now.</p>
+	<ul>
+		<li>
+			<strong>Production insights</strong> (<code>/fm/insights/production</code>)
+			— yield by run, output by item, and the process loss rate.
+		</li>
+		<li>
+			<strong>Quality overview</strong> (<code>/fm/insights/quality</code>)
+			— stock by quality status, and the expiry horizon.
+		</li>
+	</ul>
+	<p>
+		Process loss is shown as a <em>rate</em>, not a weight. Ranked in
+		kilograms the product you make most of always looks like the worst
+		offender, which is a fact about volume rather than about waste.
+	</p>
+</section>
+
+<section id="rules">
+	<h2>The five rules</h2>
+	<p>
+		These are the things the app will stop you doing. All five are enforced on
+		the server, so they hold in the console, in the Desk, over the API and in a
+		data import alike — there is no screen that quietly skips them.
+	</p>
+	<div class="matrix two" role="table">
+		<div class="mhead" role="row"><span class="mk" role="columnheader">Rule</span><span class="mv" role="columnheader">What it stops</span></div>
+		<div class="mrow" role="row"><span class="mk" role="cell">Quality gate</span><span class="mv" role="cell">Consuming or dispatching stock that is in quarantine, on hold or rejected. Only Released stock moves.</span></div>
+		<div class="mrow" role="row"><span class="mk" role="cell">Shelf life</span><span class="mv" role="cell">Dispatching a batch below the company's minimum remaining shelf life. Expired stock is blocked outright.</span></div>
+		<div class="mrow" role="row"><span class="mk" role="cell">FEFO</span><span class="mv" role="cell">Picking out of expiry order — warned or blocked, depending on the policy.</span></div>
+		<div class="mrow" role="row"><span class="mk" role="cell">Yield</span><span class="mv" role="cell">Nothing, but a run outside tolerance is flagged for review before the next one.</span></div>
+		<div class="mrow" role="row"><span class="mk" role="cell">Recipe confidentiality</span><span class="mv" role="cell">Reading the formula. Ingredient percentages are visible only to an FM Recipe Manager — an operator can run a blend without ever seeing what is in it.</span></div>
+	</div>
+	<div class="note">
+		<p>
+			Every threshold in those rules is <strong>your company's</strong>, set
+			in its policy. The app ships no food-safety values of its own and makes
+			no certification or compliance claim.
+		</p>
+	</div>
+</section>
+
+<section id="charts">
+	<h2>Reading the charts</h2>
+	<p>The shape of each chart follows the job its data has to do.</p>
+	<div class="matrix three" role="table">
+		<div class="mhead" role="row"><span class="mk" role="columnheader">Where</span><span class="ms" role="columnheader">Form</span><span class="mv" role="columnheader">Read it as</span></div>
+		<div class="mrow" role="row"><span class="mk" role="cell" data-l="Where">Yield over runs</span><span class="ms" role="cell" data-l="Form">Line and area</span><span class="mv" role="cell" data-l="Read it as">A trend against the dashed planned-yield line.</span></div>
+		<div class="mrow" role="row"><span class="mk" role="cell" data-l="Where">Yield on a tile</span><span class="ms" role="cell" data-l="Form">Sparkline</span><span class="mv" role="cell" data-l="Read it as">The shape of the recent run, beside the number.</span></div>
+		<div class="mrow" role="row"><span class="mk" role="cell" data-l="Where">Output and loss</span><span class="ms" role="cell" data-l="Form">Ranked bars</span><span class="mv" role="cell" data-l="Read it as">Relative magnitude within one unit. Kilograms and packs never share a length axis.</span></div>
+		<div class="mrow" role="row"><span class="mk" role="cell" data-l="Where">Stock by status</span><span class="ms" role="cell" data-l="Form">Stacked bar</span><span class="mv" role="cell" data-l="Read it as">Part against whole, across the four fixed statuses.</span></div>
+		<div class="mrow" role="row"><span class="mk" role="cell" data-l="Where">Expiry horizon</span><span class="ms" role="cell" data-l="Form">Columns</span><span class="mv" role="cell" data-l="Read it as">An ordered time scale, most urgent first. It is never re-sorted by size.</span></div>
+		<div class="mrow" role="row"><span class="mk" role="cell" data-l="Where">Shelf life on a batch</span><span class="ms" role="cell" data-l="Form">Meter</span><span class="mv" role="cell" data-l="Read it as">One ratio against the limit that would block it.</span></div>
+	</div>
+	<p>
+		Every chart has a table view, works from the keyboard, and respects
+		<code>prefers-reduced-motion</code>. On a phone the yield plot is replaced
+		by its run table rather than squeezed — twelve points in a phone's width
+		is not a readable chart.
+	</p>
+</section>
+
+<section id="refusals">
+	<h2>When a screen refuses</h2>
+	<p>
+		A refusal names what is missing. There are two kinds, and they need
+		different people.
+	</p>
+
+	<h3>"You need the … role"</h3>
+	<p>
+		A permission problem. The console's screens read standard ERPNext
+		documents, and Batchwell's own roles deliberately do not widen access to
+		those — so you need both. The message names the role to ask for. Your
+		administrator grants it; see
+		<a href="/handbook/admin#roles">Granting roles</a>.
+	</p>
+
+	<h3>"This company is not set up"</h3>
+	<p>
+		The company has no manufacturing policy. Nothing on any screen will work
+		until one exists, because every rule reads its thresholds from it.
+	</p>
+
+	<h3>A blocked action</h3>
+	<p>
+		A refused release, a blocked dispatch or a rejected consumption is the app
+		working, not failing. The message says which batch and which rule. If the
+		rule itself is wrong for your plant, the threshold is configurable — that
+		is a conversation with whoever owns the policy, not something to work
+		around.
+	</p>
+	<div class="note">
+		<p>
+			Two symptoms that are nearly always a stale build rather than a
+			permission problem: <em>"Insufficient Permission for Company"</em> on
+			the very first load, and the console loading but showing no data at all.
+			Both are in the
+			<a href="/handbook/admin#troubleshooting">Administrator guide</a>.
+		</p>
+	</div>
+</section>

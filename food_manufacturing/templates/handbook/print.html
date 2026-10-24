@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<title>Batchwell — {{ guide.title }}</title>
+	{% include "templates/handbook/style.html" %}
+</head>
+<body>
+	<div class="hb">
+		{% include "templates/handbook/masthead.html" %}
+
+		{# On paper the sidebar is gone, so the contents go in the flow instead. #}
+		<section>
+			<h2>Contents</h2>
+			<ol>
+				{% for label, anchor in guide.nav %}<li>{{ label }}</li>{% endfor %}
+			</ol>
+		</section>
+
+		<div class="main">{% include body %}</div>
+
+		<footer class="foot">
+			<p><strong>Batchwell</strong> · {{ guide.title }} · {{ generated_on }}</p>
+			<p>
+				Generated from the application's own handbook, which is served at
+				<code>/handbook/{{ slug }}</code> on any site running the app.
+			</p>
+		</footer>
+	</div>
+</body>
+</html>

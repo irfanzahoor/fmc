@@ -1,0 +1,22 @@
+{# Shared by the web layout and the print layout. #}
+<header class="mast">
+	<div class="mast-mark">
+		{% include "templates/handbook/mark.html" %}
+		<div>
+			<p class="mast-brand">Batchwell</p>
+			<p class="mast-sub">Spice and masala, batch by batch</p>
+		</div>
+	</div>
+
+	{% if guide %}
+		<h1>{{ guide.title }}</h1>
+		<p class="lede">{{ guide.blurb }}</p>
+		<span class="who">{{ guide.audience }}</span>
+	{% else %}
+		<h1>The Batchwell handbook</h1>
+		<p class="lede">
+			Three guides covering the whole application: running it on a shift,
+			setting it up, and changing the code underneath.
+		</p>
+	{% endif %}
+</header>

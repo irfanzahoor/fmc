@@ -8,6 +8,10 @@ Built on standard ERPNext purchasing, inventory, manufacturing, sales and
 accounting. This app adds the food-manufacturing rules that ERPNext does not
 model; it does not duplicate stock ledgers, valuation, invoices or payments.
 
+> **Start with the handbook.** Install the app and open `/handbook` — an
+> operating manual, an administrator guide and a developer reference, each
+> downloadable as a PDF. This README is the short version.
+
 ---
 
 ## Contents
@@ -151,8 +155,8 @@ is refused, an anonymous visitor is sent to login).
 | `/fm/insights/production` | Yield by run, output by item, process loss rate |
 | `/fm/insights/quality` | Stock by quality status, expiry horizon |
 
-**Appearance.** Five palettes — Midnight Blue (default), Forest, Amethyst,
-Graphite and Copper — and two font pairings, stored per browser. Chart colours
+**Appearance.** Five palettes — Batchwell forest green (default), Midnight
+Blue, Amethyst, Graphite and Copper — and two font pairings, stored per browser. Chart colours
 deliberately **do not** follow the theme: a quality status keeps one meaning
 everywhere, and every status also carries an icon and a word, so colour alone
 never states anything.
@@ -270,13 +274,28 @@ anywhere else, it is reading the Work Order field.
 ## Status
 
 All seven milestones plus the operator console, verified on Frappe 16.52.0 /
-ERPNext 16.27.0: **241 tests passing**. The acceptance scenario runs end to end
+ERPNext 16.27.0: **347 tests passing** across 30 test modules. The acceptance scenario runs end to end
 against real ERPNext stock. Every screen has been rendered and reviewed against a
 live session at phone, tablet and desktop widths, and in all five palettes.
 
 See `docs/tasks.md` for what is still owed before a pilot.
 
 ## Documentation
+
+**The handbook is served by the app itself**, at `/handbook` on any site with it
+installed. Three guides, each downloadable as a branded PDF:
+
+| Guide | For | Covers |
+|---|---|---|
+| [Operating manual](/handbook/operating) | Everyone who works a shift | The console screen by screen, the five rules, reading the charts, what a refusal means |
+| [Administrator guide](/handbook/admin) | Whoever installs and configures | Install, company policy, items, recipes, roles, the daily alert, demo data, upgrades, troubleshooting |
+| [Developer reference](/handbook/developer) | Anyone changing the code | Architecture, module map, document events, data model, the HTTP surface, permissions, tests, house rules |
+
+Each guide's page and its PDF render from one template, so they cannot drift
+apart. The figures in them are counted from the source rather than remembered.
+
+The documents below are the working notes the handbook was written from; the
+handbook is the one to read first.
 
 - `docs/PRD.md` — scope and assumptions
 - `docs/data-model.md` — standard-feature reuse map and custom DocTypes

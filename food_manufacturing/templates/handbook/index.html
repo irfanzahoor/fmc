@@ -1,0 +1,68 @@
+<section>
+	<div class="hb-cards">
+		{% for key, g in guides.items() %}
+			<a class="hb-card" href="/handbook/{{ key }}">
+				<h3>{{ g.title }}</h3>
+				<p class="who2">{{ g.audience }}</p>
+				<p>{{ g.blurb }}</p>
+			</a>
+		{% endfor %}
+	</div>
+</section>
+
+<section class="panel">
+	<h2>What Batchwell is</h2>
+	<p>
+		An application for Frappe {{ facts.frappe_version }} and ERPNext
+		{{ facts.erpnext_version }} that adds the rules a spice and masala plant
+		runs on and ERPNext does not model: which supplier lot went into which
+		blend, whether a batch has been released by quality, how much blend
+		survived the grinder, and which customers received stock from a lot you
+		now need back.
+	</p>
+	<p>
+		It adds no second stock ledger and no second valuation. Receipts are
+		Purchase Receipts, runs are Work Orders and Stock Entries, dispatch is a
+		Delivery Note. Accounting behaves exactly as it does in ERPNext, because
+		it <em>is</em> ERPNext.
+	</p>
+
+	<div class="matrix two" role="table">
+		<div class="mhead" role="row"><span class="mk" role="columnheader">In the app</span><span class="mv" role="columnheader">What it is</span></div>
+		<div class="mrow" role="row"><span class="mk" role="cell">Operator console</span><span class="mv" role="cell"><code>/fm</code> — {{ facts.screens }} screens built for gloved hands and tablets</span></div>
+		<div class="mrow" role="row"><span class="mk" role="cell">Desk workspace</span><span class="mv" role="cell"><code>/app/batchwell</code> — the full ERPNext Desk for supervisors and finance</span></div>
+		<div class="mrow" role="row"><span class="mk" role="cell">Its own DocTypes</span><span class="mv" role="cell">{{ facts.doctypes }}, plus {{ facts.custom_fields }} custom fields on standard ones</span></div>
+		<div class="mrow" role="row"><span class="mk" role="cell">Its own roles</span><span class="mv" role="cell">{{ facts.roles }}, sitting alongside the ERPNext roles your team already holds</span></div>
+		<div class="mrow" role="row"><span class="mk" role="cell">Automated tests</span><span class="mv" role="cell">{{ facts.tests }} across {{ facts.test_modules }} modules</span></div>
+	</div>
+</section>
+
+<section class="panel">
+	<h2>Which guide do you want</h2>
+	<p>
+		If you are <strong>working a shift</strong> — receiving stock, releasing a
+		batch, finishing a run, picking a delivery — the
+		<a href="/handbook/operating">Operating manual</a> is the only one you
+		need.
+	</p>
+	<p>
+		If you are <strong>putting the app on a site</strong> for the first time,
+		or a company is behaving oddly, start with the
+		<a href="/handbook/admin">Administrator guide</a>. It covers the company
+		policy that everything keys off, and the handful of failures that look
+		like bugs and are configuration.
+	</p>
+	<p>
+		If you are <strong>changing the code</strong>, the
+		<a href="/handbook/developer">Developer reference</a> has the module map,
+		the document events, the HTTP surface and the house rules this repository
+		is held to.
+	</p>
+	<div class="note">
+		<p>
+			Looking for something to send a vendor or a customer? The
+			<a href="/proposal">capability document</a> is the short, outward-facing
+			summary, and downloads as a PDF.
+		</p>
+	</div>
+</section>

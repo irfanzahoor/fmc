@@ -162,4 +162,5 @@ accident.
 | Fresh install | **NOT RUN** (point 2) |
 | Concurrency | **NOT TESTED** (point 5) |
 | Capability document, page and PDF | **PASS** — 2026-10-24, three PDF pages and the page at 1100px and 390px all rendered and read |
+| Handbook, 3 guides, pages and PDFs | **PASS** — 2026-10-24, all four routes rendered at 1280px and 620px, three PDFs rendered and read, unknown slug 404s |
 | Keyboard-only walkthrough | **NOT RUN** — focus order read and photographed, not driven |

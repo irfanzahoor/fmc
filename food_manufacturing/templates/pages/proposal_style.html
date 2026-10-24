@@ -1,17 +1,7 @@
 {# Shared by the web page and the PDF. wkhtmltopdf renders with print media, so
    everything here is print-first and the screen inherits it. #}
 <style>
-	:root {
-		--green: #0c4224;
-		--green-soft: #e6f0ea;
-		--gold: #cca23c;
-		--gold-soft: #faf4e4;
-		--gold-ink: #7d5f14;
-		--ink: #12241a;
-		--muted: #5a6d62;
-		--rule: #dbe7e0;
-		--paper: #ffffff;
-	}
+{% include "templates/includes/brand.html" %}
 
 	* { box-sizing: border-box; }
 

@@ -1,0 +1,58 @@
+{% extends "templates/web.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block head_include %}{% include "templates/handbook/style.html" %}{% endblock %}
+
+{% block page_content %}
+<div class="hb">
+	{% include "templates/handbook/masthead.html" %}
+
+	{% if guide %}
+		<p class="bar no-print">
+			<a href="/handbook">← All guides</a>
+			<a class="pdf"
+			   href="/api/method/food_manufacturing.www.handbook.download?guide={{ slug }}">
+				Download as PDF
+			</a>
+		</p>
+	{% endif %}
+
+	{# Without a sidebar the landing page gets the full column: the reading
+	   measure that suits a guide leaves the three cards at a third of it. #}
+	<div class="cols{% if not guide %} wide{% endif %}">
+		{% if guide %}
+		<nav class="side no-print" aria-label="Contents">
+			<h2>On this page</h2>
+			<ol>
+				{% for label, anchor in guide.nav %}
+					<li><a href="#{{ anchor }}">{{ label }}</a></li>
+				{% endfor %}
+			</ol>
+
+			<h2>Other guides</h2>
+			{% for key, g in guides.items() %}
+				{% if key != slug %}
+					<a class="other" href="/handbook/{{ key }}">{{ g.title }} →</a>
+				{% endif %}
+			{% endfor %}
+		</nav>
+		{% endif %}
+
+		<main class="main">{% include body %}</main>
+	</div>
+
+	<footer class="foot">
+		<p>
+			<strong>Batchwell</strong> · an application for Frappe
+			{{ facts.frappe_version }} and ERPNext {{ facts.erpnext_version }} ·
+			{{ generated_on }}
+		</p>
+		<p>
+			Figures in this handbook are counted from the source, not remembered.
+			No certification, accreditation or regulatory compliance claim is made
+			anywhere in it.
+		</p>
+	</footer>
+</div>
+{% endblock %}
