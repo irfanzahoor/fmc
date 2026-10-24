@@ -29,7 +29,28 @@ Ordered by what would hurt most if it stayed unfixed.
   `migrate` → full test suite, all green, on a throwaway site.
 - **Blocker:** no database root credentials on this machine.
 
-### 3. The suite is order-dependent and flakes
+### 3. CI runs 15 of the 347 tests
+
+- **What:** `bench run-tests --app food_manufacturing` discovers only
+  `tests/test_operator_guards_unit.py` — 15 tests. It reports "Running 15
+  unspecified-category tests for food_manufacturing" and exits OK. Every other
+  module passes when named directly with `--module`, so the tests are fine; the
+  discovery is not. `.github/workflows/ci-v16.yml` line 135 uses exactly that
+  `--app` form.
+- **Why it matters:** CI has been reporting green while exercising 4% of the
+  suite. Any regression outside operator guards would merge unnoticed. The 347
+  figure quoted in the README, `PROJECT_STATUS.md` and the capability document
+  has only ever been true of a module-by-module run.
+- **Verified on:** 2026-10-24, site `steps_erp.local`, Frappe 16.52.0. Looping
+  over the 30 `test_*.py` files with `--module` gives 347 tests, 30 modules OK.
+- **Likely cause:** v16 discovers app tests through the module folders listed in
+  `modules.txt`; `food_manufacturing/tests/` is not one of them, so only
+  whatever the runner picks up incidentally runs.
+- **Done when:** a single command runs all 347, and CI uses it. Either move the
+  tests under the declared modules, or replace the CI step with the module loop
+  and assert the expected count so a silently-shrinking suite fails the build.
+
+### 4. The suite is order-dependent and flakes
 - **What:** two tests have been seen to fail in a full run and pass in
   isolation — `test_a_deactivated_bom_cannot_be_costed` (fixed: it now restores
   `is_active` in a `finally`) and
@@ -42,7 +63,7 @@ Ordered by what would hurt most if it stayed unfixed.
 - **Done when:** the full suite passes ten consecutive runs, or the leak is
   found and the fixture isolated.
 
-### 4. Two-process concurrency is untested
+### 5. Two-process concurrency is untested
 - **What:** acceptance 4.7. The retry keys, the `for_update` row locks and the
   idempotency fingerprints are all written for contention that has never been
   reproduced — the suite is single-process.
@@ -55,7 +76,7 @@ Ordered by what would hurt most if it stayed unfixed.
 
 ## P2 — Visible to users
 
-### 5. The period selector does not filter
+### 6. The period selector does not filter
 - **What:** "Last 30 days" on the Overview and Insights pages is a static pill.
   The role dashboard's selector *does* work.
 - **Why it matters:** a control that looks interactive and is not is worse than
@@ -63,18 +84,18 @@ Ordered by what would hurt most if it stayed unfixed.
 - **Done when:** it changes `days` and reloads, or it stops looking like a
   control.
 
-### 6. Stores and Quality dashboard panels show counts without rows
+### 7. Stores and Quality dashboard panels show counts without rows
 - **What:** only the owner's "short of material" panel renders row detail.
   `panel.kind` exists for exactly this and is unused by the others.
 - **Why it matters:** a count tells you there is a problem; the rows tell you
   which one.
 - **Done when:** near-expiry and pending-inspection panels render their rows.
 
-### 7. The Desk workspace is not reachable from the console
+### 8. The Desk workspace is not reachable from the console
 - **What:** `FM Recall Investigation` is a Desk report with no link from `/fm`.
 - **Done when:** the Recall screen links to it for the full trace.
 
-### 8. The HTML prototype's remaining details
+### 9. The HTML prototype's remaining details
 - Fullscreen button in the topbar.
 - Circular progress ring on the production detail card.
 - **Receiving, Dispatch and Recall were never compared screen-by-screen**
@@ -84,7 +105,7 @@ Ordered by what would hurt most if it stayed unfixed.
 
 ## P3 — Correctness worth hardening
 
-### 9. The release gate ignores the inspection's stage
+### 10. The release gate ignores the inspection's stage
 - **What:** releasing a batch matches an accepted Quality Inspection by item and
   batch, but does not require its stage to suit the decision — an *Incoming*
   check can release a finished pack.
@@ -92,19 +113,19 @@ Ordered by what would hurt most if it stayed unfixed.
 - **Done when:** decided deliberately — either the stage is enforced, or the
   docs say plainly that it is not.
 
-### 10. "Ready to start" relies on a flag, not the planner
+### 11. "Ready to start" relies on a flag, not the planner
 - **What:** the production dashboard counts runs without a shortage flag rather
   than re-running the packaging planner per work order.
 - **Done when:** either it runs the planner, or the metric is renamed to what it
   actually measures.
 
-### 11. The cost simulator's `docstatus` guard has no test
+### 12. The cost simulator's `docstatus` guard has no test
 - **What:** this bench submits a BOM on insert and cancelling is blocked while
   the recipe links to it, so the fixture cannot reach a draft or cancelled BOM.
   Deactivation *is* covered.
 - **Done when:** a fixture can produce one, or the guard is proven another way.
 
-### 12. No HTTP round-trip tests for the newer endpoints
+### 13. No HTTP round-trip tests for the newer endpoints
 - **What:** permissions are exercised in-process with `frappe.set_user`, which
   is the same `has_permission` path, but argument parsing over HTTP is only
   covered for the cost simulator.
@@ -133,11 +154,12 @@ accident.
 
 | Check | State |
 |---|---|
-| Test suite (347) | **PASS** |
+| Test suite (347) | **PASS** — 2026-10-24, run module by module. The `--app` form runs 15 (point 3). |
 | Live-session render, desktop and phone | **PASS** for Overview, Production, Quality, Costing, Workspace |
 | Brand contrast | **PASS** — measured, all AA |
 | Chart palette | **PASS** — validator run, all surfaces |
 | `ruff` | **NOT RUN** (point 1) |
 | Fresh install | **NOT RUN** (point 2) |
-| Concurrency | **NOT TESTED** (point 4) |
+| Concurrency | **NOT TESTED** (point 5) |
+| Capability document, page and PDF | **PASS** — 2026-10-24, three PDF pages and the page at 1100px and 390px all rendered and read |
 | Keyboard-only walkthrough | **NOT RUN** — focus order read and photographed, not driven |
