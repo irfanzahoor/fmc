@@ -201,6 +201,7 @@ import {
 	ChevronRight,
 	ClipboardCheck,
 	Factory,
+	Calculator,
 	Gauge,
 	LayoutDashboard,
 	LineChart,
@@ -233,6 +234,7 @@ const navigation = computed(() => [
 			{ name: 'Receiving', label: 'Receiving', icon: PackageCheck },
 			{ name: 'Dispatch', label: 'Dispatch', icon: Truck },
 			{ name: 'Recall', label: 'Recall', icon: Siren },
+			{ name: 'Costing', label: 'Costing', icon: Calculator },
 		],
 	},
 	{

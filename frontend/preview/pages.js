@@ -28,6 +28,21 @@ for (const [name, component] of Object.entries({ Badge, Button, Dialog, FeatherI
 app.mount('#app')
 
 /*
+ * `?pick=<selector>:<value>` selects an option after mount, so a table that
+ * only appears once something is chosen can still be screenshotted.
+ */
+const pick = new URLSearchParams(location.search).get('pick')
+if (pick) {
+	const [selector, value] = pick.split('::')
+	setTimeout(() => {
+		const el = document.querySelector(selector)
+		if (!el) return console.warn('[harness] no element for', selector)
+		el.value = value
+		el.dispatchEvent(new Event('change', { bubbles: true }))
+	}, 1200)
+}
+
+/*
  * `?hover=<selector>` drives one pointer interaction after mount.
  *
  * Headless Chrome takes a screenshot but never moves a mouse, so a tooltip or

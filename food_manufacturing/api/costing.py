@@ -78,3 +78,26 @@ def request_packaging_shortfall(
 		schedule_date=schedule_date,
 		request_id=request_id,
 	)
+
+
+@frappe.whitelist()
+def get_packs_for(bulk_item: str) -> list:
+	"""Finished goods filled from ``bulk_item``.
+
+	The pack picker needs these before anything has been costed, and the link
+	already exists on the Item - nothing is inferred about which SKUs a blend
+	fills.
+	"""
+	frappe.has_permission("Item", "read", throw=True)
+
+	return frappe.get_list(
+		"Item",
+		filters={
+			"fm_bulk_item": bulk_item,
+			"fm_material_nature": "Finished Good",
+			"disabled": 0,
+		},
+		fields=["name as item_code", "item_name", "fm_pack_size", "fm_pack_uom"],
+		order_by="fm_pack_size asc",
+		limit=50,
+	)

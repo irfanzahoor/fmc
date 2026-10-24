@@ -51,6 +51,12 @@ export const routes = [
 		meta: { title: 'Quality overview' },
 	},
 	{
+		path: '/costing',
+		name: 'Costing',
+		component: () => import('@/pages/Costing.vue'),
+		meta: { title: 'Recipe cost and packaging' },
+	},
+	{
 		path: '/workspace',
 		name: 'Workspace',
 		component: () => import('@/pages/RoleDashboard.vue'),

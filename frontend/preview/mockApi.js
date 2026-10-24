@@ -172,6 +172,65 @@ export const roleDashboard = {
 		}),
 }
 
+export const costing = {
+	boms: () => delay([
+		{ name: 'BOM-GM-BULK-001', item: 'GM-BULK', item_name: 'Garam Masala Bulk',
+		  quantity: 100, uom: KG, currency: 'PKR', rm_cost_as_per: 'Valuation Rate' },
+	]),
+	packsFor: () => delay([
+		{ item_code: 'GM-50G', item_name: 'Garam Masala 50 g', fm_pack_size: 0.05, fm_pack_uom: KG },
+		{ item_code: 'GM-100G', item_name: 'Garam Masala 100 g', fm_pack_size: 0.1, fm_pack_uom: KG },
+	]),
+	simulate: () => delay({
+		basis: 'estimate', bom: 'BOM-GM-BULK-001', item: 'GM-BULK',
+		company: 'FM Demo Foods', currency: 'PKR', shows_ingredient_detail: true,
+		scenario: null, delta: null,
+		baseline: {
+			batch_qty: 100, batch_uom: KG, yield_percent: 97, good_qty: 97,
+			ingredient_cost: 8000, packaging_cost: 0, operating_cost: 1200, total_cost: 9200,
+			cost_per_unit: 94.85,
+			ingredients: [
+				{ item_code: 'CHI', item_name: 'Red Chilli Powder', qty: 60, uom: KG,
+				  bom_qty: 60, bom_uom: KG, conversion_factor: 1, rate: 100, amount: 6000,
+				  rate_source: 'Moving-average valuation, as costed on this BOM', overridden: false },
+				{ item_code: 'CUM', item_name: 'Cumin Powder', qty: 40, uom: KG,
+				  bom_qty: 40, bom_uom: KG, conversion_factor: 1, rate: 50, amount: 2000,
+				  rate_source: 'Moving-average valuation, as costed on this BOM', overridden: false },
+			],
+			packaging: [],
+			packs: [
+				{ item_code: 'GM-50G', item_name: 'Garam Masala 50 g', pack_size: 0.05,
+				  pack_uom: KG, bulk_item: 'GM-BULK', packs_per_batch: 1940,
+				  cost_per_pack: 4.74, requested_qty: null, note: null },
+			],
+			assumptions: [
+				'Estimated cost, not ledger valuation. Actual batch cost comes from submitted stock transactions.',
+				'Material priced as Valuation Rate, the source this BOM declares.',
+				'Cost is spread over good output at 97% yield.',
+			],
+		},
+	}),
+	planPackaging: () => delay({
+		company: 'FM Demo Foods', loss_percent: 2, has_shortage: true,
+		notes: [],
+		lines: [
+			{ item_code: 'GM-BULK', item_name: 'Garam Masala Bulk', uom: KG, role: '1-blend',
+			  required_qty: 51, conversion: { from_qty: 50, from_uom: 'Gram', factor: 0.001, to_uom: KG },
+			  actual_qty: 201, committed_qty: 0, requested_qty: 0, expected_qty: 0,
+			  available_qty: 201, shortage_qty: 0, sources: [] },
+			{ item_code: 'POUCH-50', item_name: 'Pouch 50 g', uom: NOS, role: '2-packaging',
+			  required_qty: 1020, conversion: null,
+			  actual_qty: 400, committed_qty: 0, requested_qty: 0, expected_qty: 200,
+			  available_qty: 400, shortage_qty: 420, sources: [] },
+			{ item_code: 'LABEL-50', item_name: 'Label 50 g', uom: NOS, role: '2-packaging',
+			  required_qty: 1020, conversion: null,
+			  actual_qty: 1500, committed_qty: 0, requested_qty: 0, expected_qty: 0,
+			  available_qty: 1500, shortage_qty: 0, sources: [] },
+		],
+	}),
+	requestShortfall: () => delay({ material_request: 'MAT-MR-2026-00012', created: true, shortages: [] }),
+}
+
 export const dashboard = {
 	get: () =>
 		delay({

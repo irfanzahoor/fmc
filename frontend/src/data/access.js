@@ -25,4 +25,6 @@ export const SCREEN_ROLES = {
 	dispatch: ['Sales User'],
 	// get_recall gates on Company, Batch, Delivery Note and Stock Ledger Entry.
 	recall: ['Item Manager', 'Stock User'],
+	// simulate_recipe_cost gates on BOM; the packaging planner reads Item and Bin.
+	costing: ['Item Manager', 'Manufacturing User', 'Stock User'],
 }

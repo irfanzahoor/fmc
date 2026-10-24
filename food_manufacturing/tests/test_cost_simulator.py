@@ -212,6 +212,21 @@ class TestCostSimulator(FMTestCase):
 		# 30 kg of chilli at 120 = 3,600, plus 20 kg of cumin at 50 = 1,000.
 		self.assertAlmostEqual(result["scenario"]["ingredient_cost"], 4600.0, places=2)
 
+	def test_the_pack_picker_lists_only_this_blends_packs(self):
+		"""Nothing is inferred about which SKUs a blend fills; the Item says."""
+		from food_manufacturing.api.costing import get_packs_for
+
+		mine = fixtures.ensure_item(f"ACostPackA {self.tag}", nature="Finished Good", has_batch=False)
+		other = fixtures.ensure_item(f"ACostPackB {self.tag}", nature="Finished Good", has_batch=False)
+		frappe.db.set_value("Item", mine, {"fm_bulk_item": self.blend, "fm_pack_size": 0.05})
+		frappe.db.set_value("Item", other, {"fm_pack_size": 0.1})
+		frappe.clear_document_cache("Item", mine)
+		frappe.clear_document_cache("Item", other)
+
+		codes = {row["item_code"] for row in get_packs_for(self.blend)}
+		self.assertIn(mine, codes)
+		self.assertNotIn(other, codes)
+
 	# --- permission and state -----------------------------------------------
 
 	def test_a_deactivated_bom_cannot_be_costed(self):

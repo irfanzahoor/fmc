@@ -620,3 +620,49 @@ you the means to change it.
 | Production screen, harness, 1440px | **PASS** — rendered and inspected |
 | `ruff` | **NOT RUN** |
 | Live-session render of the new filters | **NOT RUN** — harness only this phase |
+
+
+## Phase 3 — Recipe costing and packaging · **DONE**
+
+The engines existed from the earlier programme (`costing/simulator.py`,
+`costing/pricing.py`, `packaging/planning.py`). What was missing was a screen.
+`/fm/costing` is that screen; **no calculation was invented for it**.
+
+| Requirement | Where |
+|---|---|
+| Estimated vs posted cost, clearly distinguished | A gold banner states it before any figure, and `assumptions[0]` repeats it |
+| Ingredient, packaging and operating breakdown | Four cards plus a line table carrying each rate's **source** |
+| Packaging requirements and shortages in a table | Material · Required · Free stock · Requested · Expected · Short |
+| No invented calculations or availability | Every number comes from an endpoint that already existed |
+
+### Design decisions
+
+**The estimate/actual distinction leads.** It is the thing the brief turns on,
+so it is stated above the figures rather than footnoted below them.
+
+**Every rate shows where it came from** — "Moving-average valuation, as costed
+on this BOM" — because a cost nobody can trace is a cost nobody can argue with.
+
+**The formula stays gated.** A caller without permlevel-1 read on `FM Recipe`
+sees the totals and a plain explanation instead of the ingredient lines; the
+screen reflects what the server returned rather than deciding for itself.
+
+**Free stock is named, not implied.** The table separates what is on hand less
+commitments, what is already requested and what is expected, with a footnote
+saying why: planning the same run twice must not request it twice.
+
+**The pack picker opens on a real pack.** `get_packs_for` reads the
+`fm_bulk_item` link the Item already carries — nothing is inferred about which
+SKUs a blend fills — and the screen selects the first rather than opening on
+"None", which made the planner look broken.
+
+### Checks
+
+| Check | Result |
+|---|---|
+| Full suite (336) | **PASS** |
+| New pack-picker test | **PASS** |
+| Costing screen, harness, 1440px | **PASS** — rendered and inspected |
+| `ruff` | **NOT RUN** |
+| Live-session render | **NOT RUN** — harness only this phase |
+| "Propose Material Request" button | **NOT BUILT** — the endpoint exists and is wired into `api.js`; the button is Phase 5, with its confirmation |

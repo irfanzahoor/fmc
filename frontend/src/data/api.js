@@ -1,7 +1,12 @@
 import { call } from 'frappe-ui'
 
 /** Thin named wrappers, so a page never contains a dotted method path. */
-const mutations = new Set(['production.finish_production_run', 'receiving.receive_purchase_order', 'dispatch.create_delivery_note'])
+const mutations = new Set([
+	'production.finish_production_run',
+	'receiving.receive_purchase_order',
+	'dispatch.create_delivery_note',
+	'costing.request_packaging_shortfall',
+])
 const pending = new Map()
 const method = (name) => async (args = {}) => {
 	if (!mutations.has(name)) return call(`food_manufacturing.api.${name}`, args)
@@ -39,6 +44,14 @@ export const receiving = {
 
 export const bootstrap = {
 	get: method('session.get_bootstrap'),
+}
+
+export const costing = {
+	boms: method('costing.get_costable_boms'),
+	simulate: method('costing.simulate_recipe_cost'),
+	packsFor: method('costing.get_packs_for'),
+	planPackaging: method('costing.plan_packaging'),
+	requestShortfall: method('costing.request_packaging_shortfall'),
 }
 
 export const dashboard = {
