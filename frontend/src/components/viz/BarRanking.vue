@@ -1,8 +1,20 @@
 <template>
 	<figure class="fm-card p-4">
-		<figcaption class="mb-2">
-			<h3 class="text-sm font-semibold" :style="{ color: 'var(--viz-ink)' }">{{ title }}</h3>
-			<p v-if="subtitle" class="text-xs" :style="{ color: 'var(--viz-ink-secondary)' }">{{ subtitle }}</p>
+		<figcaption class="mb-2 flex flex-wrap items-start justify-between gap-2">
+			<div>
+				<h3 class="text-sm font-semibold" :style="{ color: 'var(--viz-ink)' }">{{ title }}</h3>
+				<p v-if="subtitle" class="text-xs" :style="{ color: 'var(--viz-ink-secondary)' }">{{ subtitle }}</p>
+			</div>
+			<!-- A card that summarises should say where the detail lives. -->
+			<RouterLink
+				v-if="to"
+				:to="to"
+				class="flex shrink-0 items-center gap-1 text-xs font-medium"
+				:style="{ color: 'var(--fm-primary)' }"
+			>
+				{{ toLabel }}
+				<ArrowUpRight class="h-3.5 w-3.5" aria-hidden="true" />
+			</RouterLink>
 		</figcaption>
 
 		<p v-if="!rows.length" class="py-10 text-center text-sm" :style="{ color: 'var(--viz-ink-secondary)' }">
@@ -23,7 +35,7 @@
 					class="fm-label mb-1.5 border-b pb-1"
 					:style="{ borderColor: 'var(--viz-grid)' }"
 				>
-					{{ group.unit || 'Unitless' }}
+					{{ group.label }}
 				</p>
 
 				<!-- A single row is not a ranking: one full-width bar says only
@@ -100,6 +112,8 @@
 
 <script setup>
 import { computed, ref } from 'vue'
+import { ArrowUpRight } from 'lucide-vue-next'
+import { RouterLink } from 'vue-router'
 
 const props = defineProps({
 	title: { type: String, required: true },
@@ -114,9 +128,36 @@ const props = defineProps({
 	// Off for an ORDERED scale. Expiry buckets run expired -> 90 days: sorting
 	// them by count puts "31-90 days" first and makes the subtitle a lie.
 	sorted: { type: Boolean, default: true },
+	// Where the fuller version of this card lives, if there is one.
+	to: { type: [Object, String], default: null },
+	toLabel: { type: String, default: 'View insights' },
 })
 
 const active = ref(null)
+
+/**
+ * "Bulk production · Kg" rather than a bare "KG".
+ *
+ * The unit alone says nothing about what is being compared. When every row in
+ * the group shares a material nature, that nature names the group; a mixed
+ * group falls back to the unit, because naming it after one of its halves
+ * would be wrong.
+ */
+const NATURE_LABEL = {
+	'Bulk Blend': 'Bulk production',
+	'Finished Good': 'Finished goods',
+	'Raw Material': 'Raw materials',
+	'Packaging Material': 'Packaging',
+}
+
+function groupLabel(rows, unit) {
+	const natures = new Set(rows.map((row) => row.nature).filter(Boolean))
+	const unitLabel = unit || 'Unitless'
+	if (natures.size !== 1) return unitLabel
+
+	const nature = NATURE_LABEL[[...natures][0]]
+	return nature ? `${nature} · ${unitLabel}` : unitLabel
+}
 
 const format = (value) =>
 	Number(value || 0).toLocaleString(undefined, {
@@ -146,6 +187,7 @@ const groups = computed(() => {
 
 		return {
 			unit,
+			label: groupLabel(ordered, unit),
 			rows: ordered.map((row) => ({
 				key: row.key || row.item_code || row.label || row._index,
 				label: row.label,

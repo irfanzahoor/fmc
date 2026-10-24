@@ -92,10 +92,7 @@
 						</ul>
 					</div>
 
-					<!-- The rail carries two cards so it stands as tall as the
-					     hero beside it; one short card left the column half empty. -->
-					<div class="space-y-4">
-						<div class="fm-card p-5">
+					<div class="fm-card p-5">
 						<div class="flex items-start justify-between gap-2">
 							<div>
 								<h2 class="text-lg font-bold">Needs your attention</h2>
@@ -106,14 +103,14 @@
 							</span>
 						</div>
 
-						<ul v-if="priorities.length" class="mt-4 space-y-1">
+						<ul v-if="priorities.length" class="mt-4 space-y-1.5">
 							<li v-for="item in priorities" :key="item.title">
 								<RouterLink
 									:to="item.to"
-									class="fm-tap flex items-center gap-3 rounded-xl px-2 text-left transition-colors hover:bg-[var(--fm-canvas)] motion-reduce:transition-none"
+									class="fm-tap flex items-center gap-3 rounded-xl px-2 py-2.5 text-left transition-colors hover:bg-[var(--fm-canvas)] motion-reduce:transition-none"
 								>
 									<span
-										class="grid h-9 w-9 shrink-0 place-items-center rounded-lg"
+										class="grid h-10 w-10 shrink-0 place-items-center rounded-xl"
 										:style="{ background: item.bg, color: item.fg }"
 										aria-hidden="true"
 									>
@@ -136,32 +133,43 @@
 						<p class="mt-4 border-t pt-3 text-xs fm-muted" :style="{ borderColor: 'var(--fm-border)' }">
 							Company-scoped stock and quality decisions.
 						</p>
-						</div>
+					</div>
+				</div>
 
+				<!-- Row two mirrors row one: a wide card beside a tall one, so
+				     neither column runs out before the other. -->
+				<div class="grid items-start gap-4 lg:grid-cols-2">
+					<BarRanking
+						title="Output by item"
+						subtitle="Bulk and finished goods, each on its own scale."
+						:rows="productionRows"
+						:to="{ name: 'ProductionInsights' }"
+						to-label="View insights"
+						empty-text="No output recorded in this period."
+					/>
+
+					<!-- One card, two readings of the same stock: what state it is
+					     in, and how long it has left. -->
+					<div class="fm-card p-4">
 						<StatusStack
+							bare
 							title="Stock quality"
 							:subtitle="`${qualityTotal} batches currently holding company stock.`"
 							:rows="data.quality_mix"
 						/>
+
+						<div class="my-4 border-t" :style="{ borderColor: 'var(--viz-grid)' }" />
+
+						<ColumnBuckets
+							bare
+							title="Expiry horizon"
+							subtitle="Most urgent stock first."
+							:rows="expiryRows"
+							unit-label="batches"
+							footnote="Rejected batches are left out: they are already out of use."
+							empty-text="No batch expires within 90 days."
+						/>
 					</div>
-				</div>
-
-				<div class="grid items-start gap-4 lg:grid-cols-2">
-					<BarRanking
-						title="Output by item"
-						subtitle="Separate scales for each unit."
-						:rows="productionRows"
-						empty-text="No output recorded in this period."
-					/>
-
-					<ColumnBuckets
-						title="Expiry horizon"
-						subtitle="Batches by how close they are to expiry. Most urgent on the left."
-						:rows="expiryRows"
-						unit-label="batches"
-						footnote="Rejected batches are left out: they are already out of use."
-						empty-text="No batch expires within 90 days."
-					/>
 				</div>
 
 				<ul class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -239,6 +247,7 @@ const productionRows = computed(() =>
 		label: row.label,
 		value: row.value,
 		unit: row.uom,
+		nature: row.nature,
 		note: row.loss ? `${row.runs} run(s) · ${row.loss} ${row.uom} process loss` : `${row.runs} run(s)`,
 	}))
 )

@@ -1,5 +1,5 @@
 <template>
-	<figure class="fm-card p-4">
+	<figure :class="bare ? '' : 'fm-card p-4'">
 		<figcaption class="mb-2">
 			<h3 class="text-sm font-semibold" :style="{ color: 'var(--viz-ink)' }">{{ title }}</h3>
 			<p v-if="subtitle" class="text-xs" :style="{ color: 'var(--viz-ink-secondary)' }">{{ subtitle }}</p>
@@ -61,13 +61,25 @@
 
 			<!-- Legend is always present, and each entry carries an icon plus a
 			     word, so a status is never conveyed by colour alone. -->
-			<!-- Two columns, not four: at rail width four entries run into one
-			     another and "8" sits against the next entry's icon. -->
-			<ul class="mt-3 grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs">
-				<li v-for="row in segments" :key="`k${row.label}`" class="flex items-center gap-1.5">
+			<!-- One row per status, count right-aligned: a 2x2 grid ran its
+			     entries into one another at rail width, and the numbers never
+			     lined up to be compared. -->
+			<ul class="mt-3 space-y-1.5 text-sm">
+				<li
+					v-for="row in segments"
+					:key="`k${row.label}`"
+					class="flex items-center gap-2"
+					@pointerenter="active = row"
+					@pointerleave="active = null"
+				>
 					<component :is="row.icon" class="h-3.5 w-3.5 shrink-0" :style="{ color: row.color }" aria-hidden="true" />
-					<span :style="{ color: 'var(--viz-ink-secondary)' }">{{ row.label }}</span>
-					<span class="fm-num font-semibold" :style="{ color: 'var(--viz-ink)' }">{{ row.value }}</span>
+					<span :style="{ color: 'var(--viz-ink)' }">{{ row.label }}</span>
+					<span class="ml-auto fm-num font-semibold" :style="{ color: 'var(--viz-ink)' }">
+						{{ row.value }}
+					</span>
+					<span class="w-14 text-right text-xs" :style="{ color: 'var(--viz-ink-secondary)' }">
+						{{ row.value === 1 ? 'batch' : 'batches' }}
+					</span>
 				</li>
 			</ul>
 		</template>
@@ -83,6 +95,7 @@ const props = defineProps({
 	subtitle: { type: String, default: '' },
 	rows: { type: Array, default: () => [] },
 	emptyText: { type: String, default: 'No quality-managed stock on hand.' },
+	bare: Boolean,
 })
 
 /* Reserved status roles. Icon and ink are fixed per role so a colour never

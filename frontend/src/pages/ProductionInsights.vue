@@ -53,6 +53,10 @@
 					/>
 				</div>
 
+				<!-- The rows behind the flag. A chart can say a run was outside
+				     tolerance; only this says by how much, and on what quantity. -->
+				<RunReview :rows="data.yield_exceptions || []" />
+
 				<p class="text-xs fm-muted">
 					Figures come from completed Work Orders in this company. A run whose ingredients use mixed
 					units has no computable yield and is left out of the trend rather than plotted as zero.
@@ -73,6 +77,7 @@ import { SCREEN_ROLES } from '@/data/access'
 import { dashboard } from '@/data/api'
 import BarRanking from '@/components/viz/BarRanking.vue'
 import LineTrend from '@/components/viz/LineTrend.vue'
+import RunReview from '@/components/viz/RunReview.vue'
 
 const props = defineProps({ company: { type: String, required: true } })
 
@@ -94,6 +99,7 @@ const outputRows = computed(() =>
 		label: row.label,
 		value: row.value,
 		unit: row.uom,
+		nature: row.nature,
 		note: `${row.runs} run(s)`,
 	}))
 )

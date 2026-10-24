@@ -145,13 +145,27 @@ class TestOperatorGuardsUnit(unittest.TestCase):
 			line = dispatch.get_picklist("SO")["lines"][0]
 		self.assertEqual(line["suggestion"], [{"batch_no": "FRESH", "qty": 2}])
 
+	@patch.object(quality, "get_item_uoms", return_value={"ITEM": "Kg"})
 	@patch.object(quality, "get_batch_shelf_life", return_value={})
 	@patch.object(quality, "get_batch_quantities", return_value={"LOCAL": 5})
 	@patch.object(frappe, "get_all", return_value=["WAREHOUSE"])
 	@patch.object(frappe, "get_list")
-	def test_queue_pages_after_company_stock_filter(self, get_list, warehouses, quantities, shelf):
-		get_list.return_value = [{"name": "FOREIGN"}, {"name": "LOCAL"}]
+	def test_queue_pages_after_company_stock_filter(self, get_list, warehouses, quantities, shelf, uoms):
+		get_list.return_value = [
+			{"name": "FOREIGN", "item": "ITEM"},
+			{"name": "LOCAL", "item": "ITEM"},
+		]
 		self.assertEqual([row["name"] for row in quality.get_release_queue("C", limit=1)], ["LOCAL"])
+
+	@patch.object(quality, "get_item_uoms", return_value={"ITEM": "Kg"})
+	@patch.object(quality, "get_batch_shelf_life", return_value={})
+	@patch.object(quality, "get_batch_quantities", return_value={"LOCAL": 5})
+	@patch.object(frappe, "get_all", return_value=["WAREHOUSE"])
+	@patch.object(frappe, "get_list")
+	def test_queue_rows_carry_their_unit(self, get_list, warehouses, quantities, shelf, uoms):
+		"""450 of chilli could be kilograms or pouches; the queue must say."""
+		get_list.return_value = [{"name": "LOCAL", "item": "ITEM"}]
+		self.assertEqual(quality.get_release_queue("C")[0]["stock_uom"], "Kg")
 
 	@patch.object(frappe, "get_all")
 	def test_recall_split_bundle_counts_only_affected_batch(self, get_all):

@@ -178,17 +178,25 @@ export const dashboard = {
 				{ label: 'WO-0042', item: 'Garam Masala Bulk', actual: 97.1, planned: 100, flagged: 0, on: '2026-10-22' },
 			],
 			production_by_item: [
-				{ item_code: 'GM-BULK', label: 'Garam Masala Bulk', uom: KG, value: 1842.5, loss: 56.2, runs: 6 },
-				{ item_code: 'CM-BULK', label: 'Chaat Masala Bulk', uom: KG, value: 1120, loss: 44.8, runs: 4 },
-				{ item_code: 'CP-BULK', label: 'Chilli Powder Bulk', uom: KG, value: 960, loss: 18, runs: 3 },
-				{ item_code: 'GM-50G', label: 'Garam Masala 50 g', uom: NOS, value: 24000, loss: 0, runs: 3 },
-				{ item_code: 'TM-BULK', label: 'Tandoori Masala Bulk', uom: KG, value: 420, loss: 34, runs: 1 },
+				{ item_code: 'GM-BULK', label: 'Garam Masala Bulk', uom: KG, nature: 'Bulk Blend', value: 1842.5, loss: 56.2, runs: 6 },
+				{ item_code: 'CM-BULK', label: 'Chaat Masala Bulk', uom: KG, nature: 'Bulk Blend', value: 1120, loss: 44.8, runs: 4 },
+				{ item_code: 'CP-BULK', label: 'Chilli Powder Bulk', uom: KG, nature: 'Bulk Blend', value: 960, loss: 18, runs: 3 },
+				{ item_code: 'GM-50G', label: 'Garam Masala 50 g', uom: NOS, nature: 'Finished Good', value: 24000, loss: 0, runs: 3 },
+				{ item_code: 'TM-BULK', label: 'Tandoori Masala Bulk', uom: KG, nature: 'Bulk Blend', value: 420, loss: 34, runs: 1 },
 			],
 			quality_mix: [
 				{ label: 'Released', role: 'good', value: 48 },
 				{ label: 'Quarantine', role: 'warning', value: 8 },
 				{ label: 'Rejected', role: 'critical', value: 3 },
 				{ label: 'Hold', role: 'serious', value: 4 },
+			],
+			yield_exceptions: [
+				{ work_order: 'MFG-WO-2026-00034', item_code: 'TM-BULK', item_name: 'Tandoori Masala Bulk', uom: 'Kg',
+				  input_qty: 500, produced_qty: 457, loss_qty: 43, yield_percent: 91.4, planned_percent: 100,
+				  basis: 'Input vs output', on: '2026-10-08' },
+				{ work_order: 'MFG-WO-2026-00039', item_code: 'TU-BULK', item_name: 'Turmeric Bulk', uom: 'Kg',
+				  input_qty: 400, produced_qty: 354, loss_qty: 46, yield_percent: 88.5, planned_percent: 100,
+				  basis: 'Input vs output', on: '2026-10-16' },
 			],
 			expiry_buckets: [
 				{ label: 'Expired', value: 1 },
@@ -282,11 +290,11 @@ export const production = {
 }
 
 const QUEUE = [
-	{ name: 'CHI-014', item: 'CHI', item_name: 'Chilli Powder', fm_quality_status: 'Quarantine', fm_supplier_lot_no: 'SV-261001', supplier: 'Spice Valley', expiry_date: '2027-01-12', manufacturing_date: '2026-01-12', creation: '2026-10-18 09:15:00', qty: 450, remaining_shelf_life_percent: 62 },
-	{ name: 'CUM-009', item: 'CUM', item_name: 'Cumin Whole', fm_quality_status: 'Quarantine', fm_supplier_lot_no: 'RJ-99420', supplier: 'Rajasthan Spice Co', expiry_date: '2027-02-20', manufacturing_date: '2026-02-20', creation: '2026-10-19 11:02:00', qty: 180, remaining_shelf_life_percent: 71 },
-	{ name: 'COR-021', item: 'COR', item_name: 'Coriander', fm_quality_status: 'Hold', fm_supplier_lot_no: 'GUJ-1102', supplier: 'Gujarat Agro', expiry_date: '2027-03-11', manufacturing_date: '2026-03-11', creation: '2026-10-20 08:40:00', qty: 90, remaining_shelf_life_percent: 58 },
-	{ name: 'PEP-006', item: 'PEP', item_name: 'Black Pepper', fm_quality_status: 'Quarantine', fm_supplier_lot_no: 'KL-8831', supplier: 'Kerala Estates', expiry_date: '2027-04-15', manufacturing_date: '2026-04-15', creation: '2026-10-21 14:25:00', qty: 40, remaining_shelf_life_percent: 80 },
-	{ name: 'TUR-015', item: 'TUR', item_name: 'Turmeric Whole', fm_quality_status: 'Quarantine', fm_supplier_lot_no: 'TN-4029', supplier: 'Tamil Nadu Farms', expiry_date: '2026-12-02', manufacturing_date: '2026-02-02', creation: '2026-10-22 07:10:00', qty: 320, remaining_shelf_life_percent: 18 },
+	{ name: 'CHI-014', item: 'CHI', item_name: 'Chilli Powder', fm_quality_status: 'Quarantine', fm_supplier_lot_no: 'SV-261001', supplier: 'Spice Valley', expiry_date: '2027-01-12', manufacturing_date: '2026-01-12', creation: '2026-10-18 09:15:00', qty: 450, stock_uom: KG, remaining_shelf_life_percent: 62 },
+	{ name: 'CUM-009', item: 'CUM', item_name: 'Cumin Whole', fm_quality_status: 'Quarantine', fm_supplier_lot_no: 'RJ-99420', supplier: 'Rajasthan Spice Co', expiry_date: '2027-02-20', manufacturing_date: '2026-02-20', creation: '2026-10-19 11:02:00', qty: 180, stock_uom: KG, remaining_shelf_life_percent: 71 },
+	{ name: 'COR-021', item: 'COR', item_name: 'Coriander', fm_quality_status: 'Hold', fm_supplier_lot_no: 'GUJ-1102', supplier: 'Gujarat Agro', expiry_date: '2027-03-11', manufacturing_date: '2026-03-11', creation: '2026-10-20 08:40:00', qty: 90, stock_uom: KG, remaining_shelf_life_percent: 58 },
+	{ name: 'PEP-006', item: 'PEP', item_name: 'Black Pepper', fm_quality_status: 'Quarantine', fm_supplier_lot_no: 'KL-8831', supplier: 'Kerala Estates', expiry_date: '2027-04-15', manufacturing_date: '2026-04-15', creation: '2026-10-21 14:25:00', qty: 40, stock_uom: KG, remaining_shelf_life_percent: 80 },
+	{ name: 'TUR-015', item: 'TUR', item_name: 'Turmeric Whole', fm_quality_status: 'Quarantine', fm_supplier_lot_no: 'TN-4029', supplier: 'Tamil Nadu Farms', expiry_date: '2026-12-02', manufacturing_date: '2026-02-02', creation: '2026-10-22 07:10:00', qty: 320, stock_uom: KG, remaining_shelf_life_percent: 18 },
 ]
 
 export const quality = {
@@ -343,7 +351,7 @@ export const dispatch = {
 		fefo_mode: 'Block', min_remaining_shelf_life_percent: 30,
 		lines: [
 			{
-				name: 'soi-1', idx: 1, item_code: 'GM-50G', item_name: 'Garam Masala 50 g', uom: 'Carton', stock_uom: NOS,
+				name: 'soi-1', idx: 1, item_code: 'GM-50G', item_name: 'Garam Masala 50 g', uom: 'Carton', stock_uom: NOS, nature: 'Finished Good',
 				rate: 1440, ordered_qty: 2, delivered_qty: 0, pending_qty: 48, warehouse: 'Finished Goods',
 				suggestion: [{ batch_no: 'GM50-021', qty: 48 }], shortfall: 0,
 				candidates: [
@@ -352,7 +360,7 @@ export const dispatch = {
 				],
 			},
 			{
-				name: 'soi-2', idx: 2, item_code: 'GM-100G', item_name: 'Garam Masala 100 g', uom: 'Carton', stock_uom: NOS,
+				name: 'soi-2', idx: 2, item_code: 'GM-100G', item_name: 'Garam Masala 100 g', uom: 'Carton', stock_uom: NOS, nature: 'Finished Good',
 				rate: 2640, ordered_qty: 1, delivered_qty: 0, pending_qty: 24, warehouse: 'Finished Goods',
 				suggestion: [{ batch_no: 'GM100-009', qty: 24 }], shortfall: 0,
 				candidates: [
@@ -374,9 +382,9 @@ export const recall = {
 			{ name: 'GM100-009', item: 'Garam Masala 100 g', fm_supplier_lot_no: null, fm_quality_status: 'Hold' },
 		],
 		deliveries: [
-			{ delivery_note: 'MAT-DN-2026-00041', customer: 'Apex Retailers', batch_no: 'GM50-021', item_code: 'GM-50G', posting_date: '2026-10-14', stock_qty: 480, stock_uom: NOS, is_return: 0 },
-			{ delivery_note: 'MAT-DN-2026-00044', customer: 'Metro Wholesale', batch_no: 'GM100-009', item_code: 'GM-100G', posting_date: '2026-10-17', stock_qty: 240, stock_uom: NOS, is_return: 0 },
-			{ delivery_note: 'MAT-DN-2026-00046', customer: 'Apex Retailers', batch_no: 'GM50-021', item_code: 'GM-50G', posting_date: '2026-10-20', stock_qty: -24, stock_uom: NOS, is_return: 1 },
+			{ delivery_note: 'MAT-DN-2026-00041', customer: 'Apex Retailers', batch_no: 'GM50-021', item_code: 'GM-50G', posting_date: '2026-10-14', stock_qty: 480, stock_uom: NOS, nature: 'Finished Good', is_return: 0 },
+			{ delivery_note: 'MAT-DN-2026-00044', customer: 'Metro Wholesale', batch_no: 'GM100-009', item_code: 'GM-100G', posting_date: '2026-10-17', stock_qty: 240, stock_uom: NOS, nature: 'Finished Good', is_return: 0 },
+			{ delivery_note: 'MAT-DN-2026-00046', customer: 'Apex Retailers', batch_no: 'GM50-021', item_code: 'GM-50G', posting_date: '2026-10-20', stock_qty: -24, stock_uom: NOS, nature: 'Finished Good', is_return: 1 },
 		],
 	}),
 }

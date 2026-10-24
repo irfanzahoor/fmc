@@ -111,7 +111,10 @@
 										<span class="fm-num block text-xs fm-muted">{{ row.fm_supplier_lot_no || '—' }}</span>
 									</td>
 									<td><StatusChip :status="row.fm_quality_status" /></td>
-									<td class="fm-num text-right font-semibold">{{ fmt(row.qty) }}</td>
+									<td class="text-right">
+										<span class="fm-num font-semibold">{{ fmt(row.qty) }}</span>
+										<span v-if="row.stock_uom" class="ml-1 text-xs fm-muted">{{ row.stock_uom }}</span>
+									</td>
 								</tr>
 							</tbody>
 						</table>
@@ -224,10 +227,18 @@
 									</div>
 								</fieldset>
 
-								<label v-if="needsReason" class="mt-4 block">
+								<label class="mt-4 block">
 									<span class="fm-label">Decision notes</span>
-									<textarea v-model="form.reason" rows="3" required class="fm-input mt-1" placeholder="Explain the decision or required follow-up." />
-									<span class="mt-1 block text-xs fm-muted">A reason is mandatory for Hold or Reject.</span>
+									<textarea
+										v-model="form.reason"
+										rows="3"
+										:required="needsReason"
+										class="fm-input mt-1"
+										placeholder="Explain the decision or required follow-up."
+									/>
+									<span class="mt-1 block text-xs fm-muted">
+										A reason is mandatory for Hold or Reject.
+									</span>
 								</label>
 
 								<p v-if="submitError" role="alert" class="mt-4 whitespace-pre-line rounded-xl p-3 text-sm" :style="{ background: 'var(--fm-bad-bg)', color: 'var(--fm-bad)' }">

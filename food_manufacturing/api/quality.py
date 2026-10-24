@@ -10,6 +10,7 @@ import frappe
 from frappe import _
 from frappe.utils import cint, flt
 
+from food_manufacturing.items import get_item_uoms
 from food_manufacturing.dispatch.shelf_life import get_batch_shelf_life, remaining_shelf_life_percent
 from food_manufacturing.quality.inspection import get_inspections
 from food_manufacturing.production.genealogy import trace_backward
@@ -55,6 +56,9 @@ def get_release_queue(company: str, status: str | None = None, limit: int = 100,
 	names = [batch["name"] for batch in batches]
 	quantities = get_batch_quantities(names, warehouses)
 	shelf_life = get_batch_shelf_life(names)
+	# A quantity without its unit is not a quantity: 450 of chilli could be
+	# kilograms or pouches, and the queue is read to decide what to do with it.
+	uoms = get_item_uoms(batch["item"] for batch in batches)
 
 	queue = []
 	for batch in batches:
@@ -64,6 +68,7 @@ def get_release_queue(company: str, status: str | None = None, limit: int = 100,
 			continue
 
 		batch["qty"] = qty
+		batch["stock_uom"] = uoms.get(batch["item"])
 		batch["remaining_shelf_life_percent"] = remaining_shelf_life_percent(
 			shelf_life.get(batch["name"]) or {}
 		)

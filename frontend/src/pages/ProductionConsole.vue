@@ -58,6 +58,12 @@
 										<span class="fm-muted">Remaining</span>
 										<span class="fm-num font-semibold">{{ fmt(row.pending_qty) }} {{ row.stock_uom }}</span>
 									</div>
+									<!-- How far through the run is. The bar showed it; only a
+									     figure says whether it is 4% or 40%. -->
+									<div class="mt-1 flex items-center justify-between text-[11px] fm-muted">
+										<span>{{ row.status }}</span>
+										<span class="fm-num">{{ progress(row) }}% complete</span>
+									</div>
 									<div class="mt-1.5 h-1.5 w-full overflow-hidden rounded-full" :style="{ background: 'var(--fm-border)' }">
 										<div class="h-full rounded-full" :style="{ width: `${progress(row)}%`, background: 'var(--fm-primary)' }" />
 									</div>
@@ -285,7 +291,7 @@ function progress(row) {
 	const planned = Number(row.qty || 0)
 	if (!planned) return 0
 	const done = Number(row.produced_qty || 0) + Number(row.process_loss_qty || 0)
-	return Math.min(100, Math.max(0, (done / planned) * 100))
+	return Math.round(Math.min(100, Math.max(0, (done / planned) * 100)))
 }
 
 async function load() {

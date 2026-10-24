@@ -17,6 +17,7 @@ declare module 'vue' {
     PageHeader: typeof import('./src/components/PageHeader.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
+    RunReview: typeof import('./src/components/viz/RunReview.vue')['default']
     Sparkline: typeof import('./src/components/viz/Sparkline.vue')['default']
     StateBlock: typeof import('./src/components/StateBlock.vue')['default']
     StatTile: typeof import('./src/components/viz/StatTile.vue')['default']

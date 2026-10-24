@@ -1,5 +1,5 @@
 <template>
-	<figure class="fm-card p-4">
+	<figure :class="bare ? '' : 'fm-card p-4'">
 		<figcaption class="mb-2">
 			<h3 class="text-sm font-semibold" :style="{ color: 'var(--viz-ink)' }">{{ title }}</h3>
 			<p v-if="subtitle" class="text-xs" :style="{ color: 'var(--viz-ink-secondary)' }">{{ subtitle }}</p>
@@ -83,6 +83,7 @@ const props = defineProps({
 	unitLabel: { type: String, default: '' },
 	emptyText: { type: String, default: 'Nothing to show yet.' },
 	footnote: { type: String, default: '' },
+	bare: Boolean,
 	/** Ordered scale, so the ramp steps with position, not with magnitude. */
 	ramp: {
 		type: Array,

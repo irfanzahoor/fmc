@@ -51,10 +51,26 @@
 			</nav>
 
 			<div class="mt-auto border-t px-5 py-4" style="border-color: rgba(255, 255, 255, 0.1)">
-				<p class="truncate text-sm font-semibold text-white">{{ session.company || '—' }}</p>
-				<p class="truncate text-xs" :style="{ color: 'var(--fm-side-ink)' }">
-					Spice &amp; masala operations
-				</p>
+				<div class="flex items-center gap-2.5">
+					<!-- The company's own initials: at a glance, which plant you
+					     are standing in. A switcher two clicks away is not the
+					     same as seeing it. -->
+					<span
+						class="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-[11px] font-bold text-white"
+						:style="{ background: 'var(--fm-hero-soft)' }"
+						aria-hidden="true"
+					>
+						{{ companyInitials }}
+					</span>
+					<span class="min-w-0">
+						<span class="block truncate text-sm font-semibold text-white">
+							{{ session.company || '—' }}
+						</span>
+						<span class="block truncate text-xs" :style="{ color: 'var(--fm-side-ink)' }">
+							Spice &amp; masala operations
+						</span>
+					</span>
+				</div>
 			</div>
 		</aside>
 
@@ -252,6 +268,14 @@ const currentLabel = computed(
 
 /* Mark companies this app is not configured for, so an empty screen is
    predicted by the switcher rather than discovered after switching. */
+/** Up to two initials from the company name, for the sidebar footer mark. */
+const companyInitials = computed(() => {
+	const name = session.company || ''
+	const words = name.replace(/[^\p{L}\p{N} ]/gu, ' ').split(/\s+/).filter(Boolean)
+	if (!words.length) return '—'
+	return words.slice(0, 2).map((word) => word[0].toUpperCase()).join('')
+})
+
 function companyLabel(name) {
 	if (!session.configuredCompanies.length) return name
 	return session.isConfigured(name) ? name : `${name} · not set up`

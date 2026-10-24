@@ -310,3 +310,44 @@ label.
 the company policy field by field, material natures, the recipe's confidentiality, the
 daily round as a flow, every console route, the chart-form table, the role matrix and a
 troubleshooting section covering each failure earlier passes produced.
+
+
+### Sixth pass (2026-10-24) — measured against the prototype, screen by screen
+
+The feedback was that the HTML designs were never fully implemented and that the
+Vue app should have been *better* than them. Both halves were fair. This pass
+served the prototype and the Vue app side by side and compared each screen
+rather than reasoning about them.
+
+**What the prototype had and the Vue app had lost:**
+
+| Gap | Fix |
+|---|---|
+| The yield chart had **no x-axis** — you could not tell which run was which | Run labels along the bottom, thinned to what fits, shortened to their distinctive tail |
+| Production Insights had **no "Completed-run review" table** at all | `RunReview.vue`, fed by a new `yield_exceptions` list: the flagged runs with input, good output, loss and yield |
+| Output groups read a bare **"KG" / "NOS"** | "Bulk production · Kg", "Finished goods · Nos" — the group says what it groups, falling back to the unit when a group is mixed |
+| The **quality queue dropped its unit**: "450" not "450 Kg" | `get_release_queue` returns `stock_uom`; a quantity without its unit is not a quantity |
+| **Decision notes** only appeared after choosing Hold or Reject | Always shown. A release is worth annotating, and a field that appears mid-form moves the buttons under the cursor |
+| No **"View insights"** link from a summary card | `BarRanking` takes a `to` route |
+| The sidebar footer was plain text | The company's initials as a mark, as the reference has |
+| Run cards showed a progress bar with **no figure** | "42% complete" beside the status |
+
+**What I had made worse, and undid:** Stock quality and Expiry horizon were split
+into two cards, which left a half-empty card beside a full one; they are one card
+again, as the reference has them, and the status legend is a vertical list with
+right-aligned counts instead of a 2×2 grid that ran its entries together.
+
+**Where the Vue app is deliberately ahead of the prototype:** released-lot
+"+N more" counts and a "No released stock" warning on Production; a shelf-life
+meter on Quality; blocked dispatch rows named in words; honest em dashes for
+unmeasured values; every chart with a table view and keyboard access.
+
+`get_item_uoms` moved to `food_manufacturing/items.py` — three modules had grown
+their own copy.
+
+**Still not done**, and not claimed: the prototype's fullscreen button, its
+working period selector on the overview (ours is a static pill), the circular
+progress ring on the production detail card, and a screen-by-screen comparison
+of Receiving, Dispatch and Recall.
+
+317 tests pass. Verified against a live session.

@@ -14,6 +14,7 @@ which is both unit-free and the number a blending plant actually manages.
 import frappe
 from frappe.utils import add_days, cint, flt, getdate, today
 
+from food_manufacturing.items import get_item_uoms
 from food_manufacturing.stock_levels import get_batch_quantities
 
 #: Expiry buckets, most urgent first - the urgent row leads the chart rather
@@ -48,6 +49,7 @@ def get_dashboard(company: str, days: int = 30) -> dict:
 		"kpis": _kpis(company, runs, since),
 		"yield_trend": _yield_trend(company),
 		"production_by_item": _production_by_item(runs),
+		"yield_exceptions": _yield_exceptions(runs),
 		"quality_mix": _quality_mix(company),
 		"expiry_buckets": _expiry_buckets(company),
 	}
@@ -104,6 +106,8 @@ def _completed_runs(company: str, since) -> list:
 			"qty",
 			"produced_qty",
 			"process_loss_qty",
+			"fm_actual_input_qty",
+			"fm_yield_basis",
 			"fm_actual_yield_percent",
 			"fm_planned_yield_percent",
 			"fm_yield_flagged",
@@ -155,6 +159,41 @@ def _yield_trend(company: str) -> list:
 	]
 
 
+def _yield_exceptions(runs: list) -> list:
+	"""The runs that fell outside tolerance, with the figures behind the flag.
+
+	A chart says a run was flagged; it cannot say by how much, or on what
+	quantity. These are the rows an operator reviews before the next run, so
+	they carry input, good output and loss in the item's own unit.
+
+	The UOM comes from the Item for the same reason it does elsewhere: ERPNext
+	leaves ``Work Order.stock_uom`` at its ``Nos`` default.
+	"""
+	flagged = [run for run in runs if cint(run.fm_yield_flagged)]
+	if not flagged:
+		return []
+
+	uoms = get_item_uoms(run.production_item for run in flagged)
+
+	return [
+		{
+			"work_order": run.name,
+			"item_code": run.production_item,
+			"item_name": run.item_name or run.production_item,
+			"uom": uoms.get(run.production_item) or run.stock_uom,
+			# Missing measurements stay None: an em dash is not a zero.
+			"input_qty": flt(run.fm_actual_input_qty) or None,
+			"produced_qty": flt(run.produced_qty),
+			"loss_qty": flt(run.process_loss_qty),
+			"yield_percent": flt(run.fm_actual_yield_percent, 2),
+			"planned_percent": flt(run.fm_planned_yield_percent, 2) or None,
+			"basis": run.fm_yield_basis,
+			"on": str(getdate(run.modified)),
+		}
+		for run in flagged
+	]
+
+
 def _production_by_item(runs: list) -> list:
 	"""Output per item, highest first.
 
@@ -169,17 +208,16 @@ def _production_by_item(runs: list) -> list:
 		return []
 
 	item_codes = {run.production_item for run in runs if run.production_item}
-	uoms = {}
+	uoms, natures = {}, {}
 	if item_codes:
-		uoms = dict(
-			frappe.get_all(
-				"Item",
-				filters={"name": ("in", list(item_codes))},
-				fields=["name", "stock_uom"],
-				as_list=True,
-				order_by="name asc",
-			)
-		)
+		for row in frappe.get_all(
+			"Item",
+			filters={"name": ("in", list(item_codes))},
+			fields=["name", "stock_uom", "fm_material_nature"],
+			order_by="name asc",
+		):
+			uoms[row.name] = row.stock_uom
+			natures[row.name] = row.fm_material_nature
 
 	totals = {}
 	for run in runs:
@@ -189,6 +227,7 @@ def _production_by_item(runs: list) -> list:
 				"item_code": run.production_item,
 				"label": run.item_name or run.production_item,
 				"uom": uoms.get(run.production_item) or run.stock_uom,
+				"nature": natures.get(run.production_item),
 				"value": 0.0,
 				"loss": 0.0,
 				"runs": 0,

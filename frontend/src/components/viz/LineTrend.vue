@@ -124,6 +124,21 @@
 						</text>
 					</g>
 
+					<!-- x-axis: which run each point is. Thinned rather than
+					     crowded - every label would overlap past about eight
+					     points, and an unreadable label is worse than none. -->
+					<text
+						v-for="point in axisLabels"
+						:key="`x${point.label}`"
+						:x="point.x"
+						:y="H - PAD.b + 15"
+						text-anchor="middle"
+						font-size="10"
+						:fill="inkSecondary"
+					>
+						{{ point.short }}
+					</text>
+
 					<!-- crosshair -->
 					<line
 						v-if="active"
@@ -247,8 +262,11 @@ const rule = computed(() => (onHero.value ? 'rgba(255,255,255,0.16)' : 'var(--vi
 // own box rather than inheriting one tuned for a different width.
 const W = computed(() => (onHero.value ? 620 : 960))
 const H = computed(() => (onHero.value ? 230 : 250))
+// The bottom pad carries the x-axis band. Without it the run labels were
+// simply never drawn: the plot filled the box and there was nowhere to put
+// them, so the chart could not say which run was which.
 const PAD = computed(() =>
-	onHero.value ? { t: 22, r: 16, b: 22, l: 40 } : { t: 24, r: 20, b: 24, l: 46 }
+	onHero.value ? { t: 22, r: 16, b: 40, l: 40 } : { t: 24, r: 20, b: 42, l: 46 }
 )
 
 const active = ref(null)
@@ -323,6 +341,31 @@ const points = computed(() => {
 })
 
 const polyline = computed(() => points.value.map((p) => `${p.x},${p.y}`).join(' '))
+
+/**
+ * Run labels along the bottom, thinned to what fits.
+ *
+ * A work order name is long ("MFG-WO-2026-00031"), so only its distinctive tail
+ * is shown - the part an operator actually reads off the board.
+ */
+const axisLabels = computed(() => {
+	const rows = points.value
+	if (!rows.length) return []
+
+	const room = (W.value - PAD.value.l - PAD.value.r) / 54
+	const step = Math.max(1, Math.ceil(rows.length / Math.max(room, 1)))
+
+	return rows
+		.filter((_row, index) => index % step === 0 || index === rows.length - 1)
+		.map((row) => ({ ...row, short: shorten(row.label) }))
+})
+
+function shorten(label) {
+	if (!label) return ''
+	const tail = String(label).split('-').pop()
+	// A bare sequence number is ambiguous on its own; keep a hint of the prefix.
+	return tail && tail.length <= 6 ? `#${tail.replace(/^0+/, '') || tail}` : String(label).slice(-8)
+}
 
 const areaPath = computed(() => {
 	if (!points.value.length) return ''
