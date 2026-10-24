@@ -789,3 +789,52 @@ Every open point is tracked in **[docs/BACKLOG.md](BACKLOG.md)**, ranked, with
 what "done" means for each. The three that block a pilot: `ruff` has never run
 here, a fresh install has never been verified, and two-process concurrency is
 untested.
+
+---
+
+# Server audit — eight findings, all fixed (2026-10-24)
+
+A review of the server rules found five issues that let a rule be stepped
+around and three that produced wrong numbers. Each fix is enforced where every
+path reaches it — `doc_events` or the API module, never the form.
+
+Every fix was checked by reverting the source change and re-running its test:
+all of them fail without the fix, except where the finding turned out to be
+narrower than reported — see the notes on 4 and 7 below, which say so rather
+than claiming more than was found.
+
+## What was open, and what closed it
+
+| # | Finding | Fix |
+|---|---|---|
+| 1 | `Batch.fm_quality_status` was protected only by `read_only`, which is a form instruction. Any account that may write a Batch — **Item Manager**, which every console user has — could set a batch to *Released* through `/api/resource` or `frappe.client.set_value`, with no inspection and no release record. | `doc_events` guard on Batch (`overrides/batch.py`) refusing any document save that changes the quality or release fields. The app's own writers use `frappe.db.set_value` and so pass beneath it; `frappe.flags.fm_batch_quality_write` is the deliberate escape hatch. |
+| 2 | Only purchased batches were stamped *Quarantine*. A batch created by a Manufacture entry carried a blank status, and blank means "not quality-managed" to every check — so an unreleased blend was consumable and an unreleased pack was dispatchable. | `overrides/stock_entry.py` stamps Manufacture and Repack output, governed by the new policy flag `quarantine_production_output` (default on) and scoped to Bulk Blend and Finished Good items. |
+| 3 | Two ways around the recipe permlevel. `get_work_order_detail` handed out per-ingredient quantities, which are the percentages once the batch size is known; and the cost simulator withheld the lines but still accepted per-item overrides, so raising one ingredient's rate by 1 returned that ingredient's quantity as the cost delta. | `recipe_access.may_see_formula` is now asked on both paths: the console withholds the quantities (keeping ingredient identity and readiness, which an operator needs), and the simulator refuses line overrides while still answering totals, yield and operating cost. |
+| 4 | `api/dashboard.get_dashboard` checked DocType permission only, and its panels aggregate with `get_all` and `db.count`, which ignore User Permissions. **Latent rather than open:** the endpoint did refuse a company the caller may not read, but only on reaching `_pending_qc_count`, which calls a quality helper carrying its own check — after another company's work orders had been read. Reordering or inlining that helper would have opened it. | The same `has_permission("Company", "read", doc=company)` check the role dashboards, exceptions, quality and recall endpoints already make, at the entry. A test pins it to the entry by failing if any panel is built first. Overview now needs a role granting Company read (Stock User) — the roles table and `access.js` say so. |
+| 5 | The supplier's manufacturing date was stored on the receipt and never reached the batch, so ERPNext dated the batch from the receipt and old stock read as fresh — which every shelf-life rule then inherited. | Receiving writes the date onto the batch and re-derives the expiry from the item's shelf life. Both dates only ever move earlier, so a mistyped date cannot extend a batch's life. |
+| 6 | Genealogy read every negative ledger entry as consumption and every positive one as output, so a Stores → WIP → Manufacture run reported 120 kg consumed for 60 kg of ingredient and listed the raw material as produced. | Staging transfers are excluded in `production/genealogy.py`: consumption is what leaves WIP for good, output is what a Manufacture entry brings in. |
+| 7 | Returns were judged by the outward rules. A customer return is a Delivery Note with negative quantities, so the batch a recall had just put on Hold could not be sent back — in the quality gate and in the shelf-life rule alike. FEFO turned out to be safe already: its breach comparison only considers rows with a positive quantity. | `batch_eligibility.is_inward` reads direction per row from the quantity; the quality and shelf-life rules skip inward rows. FEFO was left as it was, with a test pinning the behaviour it already had. |
+| 8 | Pack costing divided a batch quantity in kilograms by a fill quantity in grams. A 100 kg blend at 80/kg filled into 50 g packs returned 2 packs at 4,000 each instead of 2,000 packs at 4. | The fill is converted with the packaging module's own conversion helper, extended with `convert_qty` for an arbitrary target unit. A missing conversion is reported, never assumed to be 1. |
+
+## Found while testing the fixes
+
+`tests/fixtures.cleanup()` deleted the test Items but not their child rows.
+Re-creating an Item of the same name then left it with **two** `Item Default`
+rows, and ERPNext's `get_bom_items_as_dict` joins that table without
+de-duplicating — so every Work Order requirement computed from a BOM read
+double, then triple as the suite was run again. Requirements measured 60 kg,
+120 kg and 180 kg for the same recipe on three consecutive runs.
+
+That is a fixture leak with no connection to the test that fails from it, which
+makes it a strong candidate for the order-dependence recorded in
+[BACKLOG.md](BACKLOG.md) point 4. `cleanup()` now removes the child rows of
+every Item it deletes, reading the child tables from the schema rather than
+listing them.
+
+## On upgrading an existing install
+
+`quarantine_production_output` defaults to on, so after `bench migrate` a
+manufactured Bulk Blend or Finished Good batch needs a quality decision before
+it can be consumed or dispatched. That is the point of the fix, but it is a
+change in behaviour for a plant that was relying on production output being
+unmanaged: turn the flag off per company if the release step is not wanted yet.

@@ -5,7 +5,7 @@ hold on every path that reaches the database: the Desk form, ``/api/resource``,
 ``/api/method``, Data Import, and any server-side script that saves or submits a
 Stock Entry or Delivery Note.
 
-Two deliberate limits on scope:
+Three deliberate limits on scope:
 
 1. A batch whose ``fm_quality_status`` is blank is **not quality-managed** and is
    never blocked. Installing this app must not freeze stock that is already
@@ -13,10 +13,14 @@ Two deliberate limits on scope:
    status.
 2. Nothing is enforced for a company with no enabled ``FM Manufacturing
    Policy``. Policy is opt-in per company.
+3. Only rows that move stock **out** are checked. A customer return is a
+   Delivery Note with negative quantities, which is stock coming back - see
+   :func:`is_inward`.
 """
 
 import frappe
 from frappe import _
+from frappe.utils import flt
 
 from food_manufacturing.food_manufacturing_setup.doctype.fm_manufacturing_policy.fm_manufacturing_policy import (
 	get_policy_if_any,
@@ -36,7 +40,7 @@ def validate_stock_entry(doc, method=None):
 	if not policy:
 		return
 
-	rows = [(row, row.s_warehouse, row.t_warehouse) for row in doc.get("items") or []]
+	rows = [(row, row.s_warehouse, row.t_warehouse) for row in doc.get("items") or [] if not is_inward(row)]
 	_validate_rows(policy, rows, "Stock Entry Detail", context="consumption")
 
 
@@ -46,8 +50,24 @@ def validate_delivery_note(doc, method=None):
 	if not policy:
 		return
 
-	rows = [(row, row.warehouse, None) for row in doc.get("items") or []]
+	rows = [(row, row.warehouse, None) for row in doc.get("items") or [] if not is_inward(row)]
 	_validate_rows(policy, rows, "Delivery Note Item", context="dispatch")
+
+
+def is_inward(row) -> bool:
+	"""Whether this row brings stock in rather than sending it out.
+
+	ERPNext writes a customer return as a Delivery Note whose rows carry
+	negative quantities, and a supplier return as a Purchase Receipt the same
+	way. The stock is arriving, so none of the outward rules apply to it: a
+	batch put on Hold after a recall is exactly the batch a customer is sending
+	back, and refusing the return would leave the stock recorded as still out
+	there - the opposite of what a recall needs.
+
+	The sign is read per row rather than from ``is_return`` on the parent, so a
+	document carrying both directions is judged row by row.
+	"""
+	return flt(row.get("qty")) < 0
 
 
 # -- internals ---------------------------------------------------------------

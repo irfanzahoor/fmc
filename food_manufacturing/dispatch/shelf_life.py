@@ -25,7 +25,7 @@ from frappe.utils import cint, flt, getdate, today
 from food_manufacturing.food_manufacturing_setup.doctype.fm_manufacturing_policy.fm_manufacturing_policy import (
 	get_policy_if_any,
 )
-from food_manufacturing.quality.batch_eligibility import get_row_batches
+from food_manufacturing.quality.batch_eligibility import get_row_batches, is_inward
 
 
 def validate_delivery_note(doc, method=None) -> None:
@@ -34,7 +34,10 @@ def validate_delivery_note(doc, method=None) -> None:
 	if not policy:
 		return
 
-	rows = [row for row in doc.get("items") or [] if row.get("warehouse")]
+	# A return is a Delivery Note with negative quantities: the stock is coming
+	# back, and stock coming back is not a dispatch. Without this, a customer
+	# could not return the near-expiry stock a recall has just asked them for.
+	rows = [row for row in doc.get("items") or [] if row.get("warehouse") and not is_inward(row)]
 	if not rows:
 		return
 

@@ -174,3 +174,76 @@ class TestFMBatchRelease(FMTestCase):
 		self.assertEqual(frappe.db.get_value("Batch", batch, "fm_last_release"), first.name)
 		first.cancel()
 		self.assertEqual(self.status_of(batch), "Quarantine")
+
+	# -- the status is not an editable field ----------------------------------
+
+	def test_the_status_cannot_be_written_by_saving_the_batch(self):
+		"""``read_only`` is a form instruction, not a permission.
+
+		Marking the field read-only keeps it out of the way on the form, and
+		does nothing at all on ``/api/resource``, in Data Import or in a Server
+		Script. Without a guard, anyone who may write a Batch could release one
+		with no inspection and nothing saying who decided.
+		"""
+		batch = fixtures.ensure_batch(self.item, "A16", status="Quarantine")
+
+		doc = frappe.get_doc("Batch", batch)
+		doc.fm_quality_status = "Released"
+		with self.assertRaises(frappe.ValidationError):
+			doc.save()
+
+		self.assertEqual(self.status_of(batch), "Quarantine")
+
+	def test_the_client_api_cannot_write_the_status_either(self):
+		"""The same attempt through the endpoint a browser would use."""
+		batch = fixtures.ensure_batch(self.item, "A17", status="Quarantine")
+
+		with self.assertRaises(frappe.ValidationError):
+			frappe.client.set_value("Batch", batch, "fm_quality_status", "Released")
+
+		self.assertEqual(self.status_of(batch), "Quarantine")
+
+	def test_a_batch_cannot_be_created_already_released(self):
+		"""Nor can the guard be stepped around by setting it at insert."""
+		doc = frappe.get_doc(
+			{
+				"doctype": "Batch",
+				"batch_id": f"{fixtures.PREFIX}-A18",
+				"item": self.item,
+				"fm_quality_status": "Released",
+			}
+		)
+		with self.assertRaises(frappe.ValidationError):
+			doc.insert()
+
+	def test_the_audit_fields_are_protected_too(self):
+		"""Who released it and when are part of the same record."""
+		fixtures.ensure_policy(self.site, require_incoming_inspection=0)
+		batch = fixtures.ensure_batch(self.item, "A19", status="Quarantine")
+		self.make_release(batch, submit=True)
+
+		doc = frappe.get_doc("Batch", batch)
+		doc.fm_released_by = "Administrator"
+		doc.fm_last_release = None
+		with self.assertRaises(frappe.ValidationError):
+			doc.save()
+
+	def test_an_edit_that_leaves_the_quality_fields_alone_still_saves(self):
+		"""The guard is about four fields, not about locking the document."""
+		batch = fixtures.ensure_batch(self.item, "A20", status="Quarantine")
+
+		doc = frappe.get_doc("Batch", batch)
+		doc.description = "Blended from the October chilli intake"
+		doc.save()
+
+		self.assertEqual(frappe.db.get_value("Batch", batch, "description"), doc.description)
+		self.assertEqual(self.status_of(batch), "Quarantine")
+
+	def test_a_release_still_writes_the_status(self):
+		"""The one writer that must keep working."""
+		fixtures.ensure_policy(self.site, require_incoming_inspection=0)
+		batch = fixtures.ensure_batch(self.item, "A21", status="Quarantine")
+		release = self.make_release(batch, submit=True)
+
+		self.assertEqual(self.status_of(batch), "Released")
+		self.assertEqual(frappe.db.get_value("Batch", batch, "fm_last_release"), release.name)

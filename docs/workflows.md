@@ -8,6 +8,12 @@ Standard ERPNext documents are shown in plain text; this app's additions in **bo
 2. Receipt item captures **`fm_supplier_lot_no`**, **`fm_supplier_mfg_date`**; an internal
    `Batch` is created with `expiry_date`, `manufacturing_date`, `supplier`, and
    **`fm_quality_status = "Quarantine"`**.
+   The supplier's manufacturing date is written **onto the batch**, and the expiry is
+   re-derived from it against the item's shelf life. ERPNext otherwise dates a batch from
+   the receipt, so a lot blended three months before it arrived would read three months
+   fresher than it is — and the remaining-shelf-life check, the near-expiry alert and FEFO
+   all read those two dates. Both dates only ever move **earlier**: a supplier date cannot
+   extend a batch's life, so a mistyped one cannot make expired stock dispatchable.
 3. `Quality Inspection` (incoming) recorded against the receipt/batch.
 4. **`FM Batch Release`** records the decision by an authorised role:
    - *Released* → `fm_quality_status = "Released"`, stock moved out of quarantine.
@@ -36,7 +42,13 @@ paths — not just form buttons.
 2. `Stock Entry` (Material Transfer for Manufacture) moves **released** ingredient lots to WIP.
 3. **`FM Production Run`** records which supplier lots were actually allocated and in what
    quantity, against the planned BOM quantities.
-4. `Stock Entry` (Manufacture) produces the **bulk blend batch**.
+4. `Stock Entry` (Manufacture) produces the **bulk blend batch**, which is stamped
+   **Quarantine** on submit when the company's policy has
+   `quarantine_production_output` set (the default). A blend nobody has looked at is
+   therefore not consumable and not dispatchable until a decision is recorded against
+   it, exactly as a purchased lot is not. Only items the plant has classified as a
+   *Bulk Blend* or a *Finished Good* are stamped; anything unclassified behaves as
+   stock ERPNext.
 5. **Yield** is computed: planned vs actual, with `process_loss_qty` (non-recoverable) kept
    separate from recoverable by-products (via `compat/bom.py`). Deviation beyond
    `yield_variance_tolerance_percent` is flagged.
@@ -50,7 +62,9 @@ paths — not just form buttons.
    recording the bulk→packed link that makes genealogy derivable.
 3. Remaining bulk stock stays in the bulk warehouse as normal stock — it is not written off.
 4. Packaging variance (pouches/cartons consumed vs theoretical) is recorded.
-5. **Double consumption is structurally prevented:** raw ingredients are consumed by the
+5. Finished SKU batches are stamped **Quarantine** on the same rule as the blend, so a
+   pack needs its own release before it can be dispatched.
+6. **Double consumption is structurally prevented:** raw ingredients are consumed by the
    blending Work Order only. The packaging Work Order's BOM consumes the *bulk item*, never
    the raw ingredients, so no ingredient can be consumed twice.
 
@@ -82,6 +96,27 @@ Stock in the quarantine or rejected warehouse may move **only**:
 Any other movement out of quarantine or rejected is blocked. Movement *within* quarantine
 (bin to bin) is allowed, since it is not a release.
 
+**Stock coming back is not a movement out.** A customer return is a `Delivery Note` with
+negative quantities, and the outward rules - quality status, expiry and remaining shelf
+life - skip a row that brings stock in. The batch a recall asks customers to send back is
+by definition a batch on Hold, so a rule that blocked it would leave the stock recorded as
+still out in the market. Direction is read per row from the quantity, not from the document
+type. (FEFO already ignored returns: its breach comparison only considers rows with a
+positive quantity.)
+
+### The quality status is not an editable field
+
+`Batch.fm_quality_status` and the release fields beside it are written by **FM Batch
+Release** and by the receiving and production stamps, and by nothing else. The field is
+marked read-only on the form, but that is an instruction to the form: `/api/resource`,
+`frappe.client.set_value`, Data Import and Server Scripts all write a read-only field
+happily. A `doc_events` guard on `Batch` therefore refuses any document save that would
+change one of those fields, so the release gate cannot be stepped around by an account
+that may edit a Batch - **Item Manager**, for one, which every console user has.
+
+A deliberate administrative correction from `bench console` sets
+`frappe.flags.fm_batch_quality_write = True` first.
+
 ## 6. Traceability and recall (M6)
 
 - **Backward**, from a sold pack: `Delivery Note` → SKU `Batch` → `FM Packaging Run` →
@@ -90,6 +125,11 @@ Any other movement out of quarantine or rejected is blocked. Movement *within* q
   customer.
 - Genealogy is **derived** from submitted transactions, `Serial and Batch Bundle` entries
   and `Batch.parent_batch` — never from a separately maintained graph that could drift.
+- **Staging moves are not consumption.** A transfer to WIP writes two ledger entries for
+  the same material — out of stores and into WIP — and neither is a consumption or an
+  output. Only what leaves WIP for good counts as consumed, and only what a Manufacture
+  entry brings into stock counts as produced. Reading the transfer as well made 60 kg of an
+  ingredient appear as 120 kg consumed and put the raw material in the produced list.
 - Split batches and multiple ingredient lots produce multiple parents/children and are
   reported as such.
 - Cancelled and returned transactions are excluded from, or marked in, the trace rather than
@@ -130,7 +170,7 @@ gates on, read off this site's DocPerm rather than assumed:
 
 | Screen | Gates on | Needs |
 |---|---|---|
-| Overview, Insights | Work Order, Batch | Item Manager, Manufacturing User |
+| Overview, Insights | Company, Work Order, Batch | Item Manager, Manufacturing User, Stock User |
 | Production | Work Order | Manufacturing User |
 | Quality | Batch, Company, FM Batch Release, Quality Inspection | Item Manager, Stock User, Quality Manager |
 | Receiving | Purchase Order | Purchase User |

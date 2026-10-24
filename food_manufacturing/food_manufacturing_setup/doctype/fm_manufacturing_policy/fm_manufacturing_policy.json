@@ -19,6 +19,7 @@
   "finished_goods_warehouse",
   "quality_section",
   "require_incoming_inspection",
+  "quarantine_production_output",
   "block_unreleased_consumption",
   "column_break_quality",
   "block_rejected_consumption",
@@ -108,6 +109,13 @@
    "fieldname": "require_incoming_inspection",
    "fieldtype": "Check",
    "label": "Require Incoming Inspection"
+  },
+  {
+   "default": "1",
+   "description": "Put batches produced by a Manufacture or Repack entry into Quarantine, so a blend or a finished pack needs a quality decision before it can be consumed or dispatched.",
+   "fieldname": "quarantine_production_output",
+   "fieldtype": "Check",
+   "label": "Quarantine Manufactured Batches"
   },
   {
    "default": "1",

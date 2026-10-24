@@ -48,6 +48,9 @@ doc_events = {
 		"validate": "food_manufacturing.quality.batch_eligibility.validate_stock_entry",
 		"on_submit": [
 			"food_manufacturing.quality.batch_eligibility.validate_stock_entry",
+			# Stamping runs after the eligibility check, so a refused entry never
+			# leaves a quarantined batch behind.
+			"food_manufacturing.overrides.stock_entry.on_submit",
 			"food_manufacturing.production.yield_tracking.on_stock_entry_change",
 		],
 		"on_cancel": "food_manufacturing.production.yield_tracking.on_stock_entry_change",
@@ -62,6 +65,12 @@ doc_events = {
 			"food_manufacturing.quality.batch_eligibility.validate_delivery_note",
 			"food_manufacturing.dispatch.shelf_life.validate_delivery_note",
 		],
+	},
+	# Quality state on a Batch is written by FM Batch Release and by the
+	# receiving and production stamps, never by editing the document: read_only
+	# is a form instruction, not a permission.
+	"Batch": {
+		"validate": "food_manufacturing.overrides.batch.validate",
 	},
 	"Work Order": {
 		"validate": "food_manufacturing.overrides.work_order.validate",

@@ -16,9 +16,26 @@ from food_manufacturing.api.idempotency import retry_safe
 
 from food_manufacturing.dispatch.fefo import get_fefo_batches_bulk
 from food_manufacturing.production.genealogy import get_consumed_lots
+from food_manufacturing.recipe_access import may_see_formula
 
 #: Work Order states an operator still has something to do about.
 OPEN_STATUSES = ("Not Started", "In Process", "Submitted")
+
+#: Per-ingredient figures that are the formula written in another unit: 60 kg of
+#: chilli in a 100 kg batch is the 60% the recipe keeps at permlevel 1.
+#:
+#: What a run needs, which lots are eligible, how much of each is in the
+#: warehouse and whether that is enough are facts about stock and about this
+#: run's readiness, not about the formula, so they stay - an operator cannot
+#: stage a run without them. ``short_qty`` is in the list because it is
+#: ``outstanding_qty`` minus stock on hand, and stock on hand is given.
+FORMULA_FIELDS = (
+	"required_qty",
+	"transferred_qty",
+	"consumed_qty",
+	"outstanding_qty",
+	"short_qty",
+)
 
 
 @frappe.whitelist()
@@ -239,6 +256,18 @@ def get_work_order_detail(work_order: str) -> dict:
 			if row["available_qty"] is not None
 			else None
 		)
+		# Readiness is a yes or no, not a quantity, so it survives the formula
+		# check below and the screen can still say what needs staging.
+		row["short"] = None if row["short_qty"] is None else flt(row["short_qty"]) > 0
+
+	material_ready = not any(flt(row.get("short_qty")) > 0 for row in ingredients)
+	next_action = _next_action(doc, ingredients)
+
+	# Every figure the response still carries is decided before this point, so
+	# withholding happens once, in one place.
+	detail = may_see_formula(doc.bom_no)
+	if not detail:
+		_withhold_formula(ingredients)
 
 	return {
 		"work_order": {
@@ -263,12 +292,27 @@ def get_work_order_detail(work_order: str) -> dict:
 			"yield_basis": doc.get("fm_yield_basis"),
 		},
 		"ingredients": ingredients,
-		"material_ready": not any(flt(row.get("short_qty")) > 0 for row in ingredients),
+		# False means the quantities were withheld, not that they are zero - the
+		# screen says so rather than rendering blanks that look like a bug.
+		"shows_ingredient_detail": detail,
+		"material_ready": material_ready,
 		# The one thing to do next, decided on the server so the button and the
 		# rule that governs it cannot disagree.
-		"next_action": _next_action(doc, ingredients),
+		"next_action": next_action,
 		"consumed_lots": get_consumed_lots(doc.name),
 	}
+
+
+def _withhold_formula(ingredients: list) -> None:
+	"""Blank the quantities that would rebuild the recipe.
+
+	Blanked rather than dropped: a client that expects the key should read "not
+	given" instead of breaking, and None already means "unmeasured" everywhere
+	else in this API.
+	"""
+	for row in ingredients:
+		for fieldname in FORMULA_FIELDS:
+			row[fieldname] = None
 
 
 @frappe.whitelist(methods=["POST"])

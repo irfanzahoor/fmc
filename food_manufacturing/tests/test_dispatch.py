@@ -106,6 +106,86 @@ class TestDispatch(FMTestCase):
 
 		return doc
 
+	def take_back(self, delivery_note, submit=True):
+		"""The customer return of a delivery: negative quantities, same batch."""
+		from erpnext.stock.doctype.delivery_note.delivery_note import make_sales_return
+
+		doc = frappe.get_doc(make_sales_return(delivery_note))
+		for row in doc.items:
+			row.use_serial_batch_fields = 1
+
+		doc.insert()
+		if submit:
+			doc.submit()
+
+		return doc
+
+	# -- a return is stock coming back, not a dispatch ------------------------
+
+	def test_a_held_batch_can_still_be_returned(self):
+		"""The case a recall depends on.
+
+		Every outward rule used to run on a return as well, because a return is
+		a Delivery Note and the row carried a warehouse. So the moment a batch
+		was put on Hold - which is exactly what a recall does - the customer
+		could no longer send it back, and the stock stayed recorded as out
+		there. Quantity, not document type, says which way stock is moving.
+		"""
+		batch = self.stock_batch(f"RET-{self.tag}", qty=10)
+		delivered = self.deliver(batch, qty=4, submit=True)
+
+		frappe.db.set_value("Batch", batch, "fm_quality_status", "Hold")
+		frappe.clear_document_cache("Batch", batch)
+
+		returned = self.take_back(delivered.name)
+		self.assertEqual(flt(returned.items[0].qty), -4)
+
+	def test_a_rejected_batch_can_still_be_returned(self):
+		batch = self.stock_batch(f"RETREJ-{self.tag}", qty=10)
+		delivered = self.deliver(batch, qty=2, submit=True)
+
+		frappe.db.set_value("Batch", batch, "fm_quality_status", "Rejected")
+		frappe.clear_document_cache("Batch", batch)
+
+		self.assertTrue(self.take_back(delivered.name).name)
+
+	def test_a_batch_below_minimum_shelf_life_can_still_be_returned(self):
+		"""The shelf-life rule needs the same direction check as the quality one.
+
+		The stock ships while it is fresh and comes back when it is not, which
+		is the ordinary way a return happens.
+		"""
+		batch = self.stock_batch(f"RETNEAR-{self.tag}", qty=10)
+		delivered = self.deliver(batch, qty=3, submit=True)
+
+		frappe.db.set_value(
+			"Batch",
+			batch,
+			{"manufacturing_date": add_days(today(), -360), "expiry_date": add_days(today(), 4)},
+		)
+		frappe.clear_document_cache("Batch", batch)
+
+		self.assertTrue(self.take_back(delivered.name).name)
+
+	def test_a_return_is_not_judged_against_fefo(self):
+		"""Which batch a customer sends back is their doing, not a pick.
+
+		Unlike the quality and shelf-life rules, FEFO already ignored a return:
+		its breach comparison skips any row whose quantity is not positive. This
+		pins that down rather than fixing it - the rule is one refactor of that
+		comparison away from blocking returns like the other two did.
+		"""
+		later = self.stock_batch(f"RETFEFO-{self.tag}", qty=10, expiry=add_days(today(), 300))
+		delivered = self.deliver(later, qty=2, submit=True)
+
+		# An earlier-expiring batch arrives afterwards, and FEFO turns strict.
+		self.stock_batch(f"RETFEFOE-{self.tag}", qty=10, expiry=add_days(today(), 20))
+		fixtures.ensure_policy(
+			self.site, enforce_fefo="Block", min_remaining_shelf_life_percent=0
+		)
+
+		self.assertTrue(self.take_back(delivered.name).name)
+
 	# -- 6.2 / 6.4 expiry and shelf life -------------------------------------
 
 	def test_expired_batch_cannot_be_dispatched(self):

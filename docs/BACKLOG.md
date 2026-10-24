@@ -58,10 +58,18 @@ Ordered by what would hurt most if it stayed unfixed.
   seen once on 2026-10-24, passed on re-run).
 - **Why it matters:** a flaky suite trains people to re-run instead of read, and
   the next real regression gets re-run away with it.
-- **Likely cause:** tests share one long-lived site, so a fixture that mutates a
-  record another test later selects leaks between them.
-- **Done when:** the full suite passes ten consecutive runs, or the leak is
-  found and the fixture isolated.
+- **One leak found and closed (2026-10-24):** `fixtures.cleanup()` deleted the
+  test Items but not their child rows. Re-creating an Item of the same name left
+  it with two `Item Default` rows, and ERPNext's `get_bom_items_as_dict` joins
+  that table without de-duplicating, so every Work Order requirement read double
+  — then triple on the next run. Measured: the same recipe needing 60 kg, then
+  120 kg, then 180 kg on three consecutive runs. `cleanup()` now deletes the
+  child rows of every Item it removes. Whether this was *the* cause of the
+  cancel-chain flake is unproven; it was certainly **a** cause of
+  order-dependence, and the figures it corrupted are the ones several tests
+  assert on.
+- **Done when:** the full suite passes ten consecutive runs, or the remaining
+  leak is found and the fixture isolated.
 
 ### 5. Two-process concurrency is untested
 - **What:** acceptance 4.7. The retry keys, the `for_update` row locks and the
@@ -149,6 +157,16 @@ accident.
 | A packing-loss default | A plant's own measurement, not something this app should invent. Defaults to zero. |
 
 ---
+
+## Closed by the server audit (2026-10-24)
+
+Eight findings — five rules that could be stepped around, three wrong numbers —
+are fixed, each with a test that fails without the fix. The table of what each
+one was and what closed it is in
+[PROJECT_STATUS.md](PROJECT_STATUS.md#server-audit--eight-findings-all-fixed-2026-10-24).
+One carries an upgrade note: `quarantine_production_output` defaults to on, so a
+manufactured blend or pack now needs a quality decision before it can be
+consumed or dispatched.
 
 ## Verification standing
 

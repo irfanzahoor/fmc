@@ -76,3 +76,35 @@ def _global_factor(from_uom: str, to_uom: str) -> float:
 		return 1.0 / flt(inverse)
 
 	return 0.0
+
+
+def convert_qty(item_code: str, qty: float, from_uom: str, to_uom: str) -> tuple:
+	"""``(qty, factor, problem)`` for ``qty`` of ``item_code`` in ``to_uom``.
+
+	:func:`to_stock_qty` answers the common question - into the item's own stock
+	unit, which is what the item's UOM table describes. This answers the general
+	one, because a BOM may be written in a unit that is not the item's stock
+	unit, and for that pair only the global table can speak.
+
+	Same contract as the rest of this module: "unknown" comes back as a problem
+	the caller can show, never as a silent factor of 1.
+	"""
+	if not from_uom or not to_uom or from_uom == to_uom:
+		return flt(qty), 1.0, None
+
+	stock_uom = frappe.db.get_value("Item", item_code, "stock_uom")
+	if not stock_uom:
+		return 0.0, 0.0, _("Item {0} does not exist.").format(item_code)
+
+	if to_uom == stock_uom:
+		return to_stock_qty(item_code, qty, from_uom)
+
+	factor = _global_factor(from_uom, to_uom)
+	if not factor:
+		return (
+			0.0,
+			0.0,
+			_("No conversion from {0} to {1}. Add it to UOM Conversion Factor.").format(from_uom, to_uom),
+		)
+
+	return flt(qty) * factor, factor, None

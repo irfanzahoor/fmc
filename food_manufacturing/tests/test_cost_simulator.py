@@ -286,3 +286,81 @@ class TestCostSimulator(FMTestCase):
 
 		self.assertTrue(result["shows_ingredient_detail"])
 		self.assertEqual(len(result["baseline"]["ingredients"]), 2)
+
+	def test_an_override_is_refused_to_a_non_recipe_manager(self):
+		"""Withholding the lines is not enough on its own.
+
+		An override turns the totals into a measuring instrument: raise one
+		ingredient's rate by 1 and the change in total cost *is* that
+		ingredient's quantity. Repeat per item and the formula falls out of a
+		read-only endpoint - so the override is refused rather than answered.
+		"""
+		user = fixtures.ensure_user(
+			"costprobe", ("FM Production Manager", "Manufacturing User", "Item Manager")
+		)
+		frappe.set_user(user)
+
+		with self.assertRaises(frappe.PermissionError):
+			simulate(self.bom, overrides={self.chilli: {"rate": CHILLI_RATE + 1}})
+
+	def test_yield_and_operating_cost_may_still_be_varied_without_the_formula(self):
+		"""Neither varies by ingredient, so neither can single one out."""
+		user = fixtures.ensure_user(
+			"costyield", ("FM Production Manager", "Manufacturing User", "Item Manager")
+		)
+		frappe.set_user(user)
+
+		result = simulate(self.bom, yield_percent=90, operating_cost=500)
+
+		self.assertFalse(result["shows_ingredient_detail"])
+		self.assertAlmostEqual(result["scenario"]["total_cost"], 8500.0, places=2)
+		self.assertEqual(result["scenario"]["ingredients"], [])
+
+	def test_a_pack_written_in_grams_is_converted_to_the_batch_unit(self):
+		"""The fill is 50 g; the batch is costed in kilograms.
+
+		Dividing one by the other without the factor is a 1,000x error in both
+		directions at once - 2 packs at 4,000 each instead of 2,000 at 4.
+		"""
+		gram = fixtures.ensure_uom("Gram")
+		fixtures.ensure_uom_conversion(KG, gram, 1000)
+
+		pack = fixtures.ensure_item(
+			f"ACostGramPack {self.tag}", nature="Finished Good", has_batch=False
+		)
+		frappe.db.set_value("Item", pack, {
+			"fm_bulk_item": self.blend,
+			"fm_pack_size": 50,
+			"fm_pack_uom": gram,
+		})
+		frappe.clear_document_cache("Item", pack)
+
+		row = simulate(self.bom, packs=[{"item_code": pack}])["baseline"]["packs"][0]
+
+		self.assertAlmostEqual(row["packs_per_batch"], 2000.0, places=2)
+		self.assertAlmostEqual(row["cost_per_pack"], 4.0, places=4)
+		# The declared fill is reported as declared, with the factor beside it.
+		self.assertEqual(row["pack_size"], 50)
+		self.assertEqual(row["pack_uom"], gram)
+		self.assertAlmostEqual(row["qty_per_pack"], 0.05, places=6)
+		self.assertAlmostEqual(row["conversion"]["factor"], 0.001, places=6)
+		self.assertEqual(row["conversion"]["to_uom"], KG)
+
+	def test_a_pack_whose_unit_cannot_be_converted_says_so(self):
+		"""Never a number built on a guess - the module's standing rule."""
+		unknown = fixtures.ensure_uom("_FMT Jar")
+		pack = fixtures.ensure_item(
+			f"ACostJarPack {self.tag}", nature="Finished Good", has_batch=False
+		)
+		frappe.db.set_value("Item", pack, {
+			"fm_bulk_item": self.blend,
+			"fm_pack_size": 2,
+			"fm_pack_uom": unknown,
+		})
+		frappe.clear_document_cache("Item", pack)
+
+		row = simulate(self.bom, packs=[{"item_code": pack}])["baseline"]["packs"][0]
+
+		self.assertIsNone(row["cost_per_pack"])
+		self.assertIsNone(row["packs_per_batch"])
+		self.assertIn("conversion", row["note"].lower())

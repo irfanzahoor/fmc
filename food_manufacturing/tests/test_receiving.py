@@ -13,6 +13,7 @@ site-wide.
 """
 
 import frappe
+from frappe.utils import add_days, getdate, today
 
 from food_manufacturing.compat.testing import FMTestCase
 from food_manufacturing.overrides.purchase_receipt import stamp_batches
@@ -51,7 +52,7 @@ class TestReceiving(FMTestCase):
 		)
 		frappe.clear_document_cache("Stock Settings", "Stock Settings")
 
-	def make_receipt(self, item_code, warehouse, lot_no=None, submit=True):
+	def make_receipt(self, item_code, warehouse, lot_no=None, submit=True, mfg_date=None):
 		"""Build a receipt. Batch numbering is left entirely to ERPNext."""
 		doc = frappe.get_doc(
 			{
@@ -65,6 +66,7 @@ class TestReceiving(FMTestCase):
 						"rate": 100,
 						"warehouse": warehouse,
 						"fm_supplier_lot_no": lot_no,
+						"fm_supplier_mfg_date": mfg_date,
 					}
 				],
 			}
@@ -211,3 +213,80 @@ class TestReceiving(FMTestCase):
 		# Re-running the receipt's own stamping step must be a no-op.
 		stamp_batches(doc)
 		self.assertEqual(frappe.db.get_value("Batch", batch_no, "fm_quality_status"), "Released")
+
+	# -- 2.2 the supplier's manufacturing date is the one that counts ---------
+
+	def perishable(self, shelf_life_days=180):
+		"""An item ERPNext will date a batch for: expiring, with a shelf life."""
+		frappe.db.set_value(
+			"Item",
+			self.raw,
+			{"has_expiry_date": 1, "shelf_life_in_days": shelf_life_days},
+		)
+		frappe.clear_document_cache("Item", self.raw)
+
+	def dates_of(self, batch_no) -> dict:
+		return frappe.db.get_value(
+			"Batch", batch_no, ["manufacturing_date", "expiry_date"], as_dict=True
+		)
+
+	def test_the_supplier_manufacturing_date_reaches_the_batch(self):
+		"""ERPNext dates a batch from the receipt, which is not when it was made.
+
+		A lot the supplier blended 100 days ago arrives today, and left alone
+		the batch claims it was made today - so it reads as 100 days fresher
+		than it is, and the remaining-shelf-life check, the near-expiry alert
+		and FEFO all inherit that error.
+		"""
+		self.perishable(shelf_life_days=180)
+		made = getdate(add_days(today(), -100))
+
+		doc = self.make_receipt(self.raw, self.site["stores"], lot_no="SUP-MFG-1", mfg_date=made)
+		batch_no = self.batches_of(doc)[0]
+
+		dates = self.dates_of(batch_no)
+		self.assertEqual(getdate(dates.manufacturing_date), made)
+		# Shelf life runs from when it was made, not from when it arrived.
+		self.assertEqual(getdate(dates.expiry_date), getdate(add_days(made, 180)))
+
+	def test_a_supplier_date_never_makes_a_batch_look_fresher(self):
+		"""A mistyped date must not be able to extend a batch's life.
+
+		Both dates only ever move earlier. A supplier date in the future - a
+		typo, or a year written wrong - would otherwise push the expiry out and
+		make stock dispatchable that should not be.
+		"""
+		self.perishable(shelf_life_days=180)
+
+		doc = self.make_receipt(
+			self.raw,
+			self.site["stores"],
+			lot_no="SUP-MFG-2",
+			mfg_date=getdate(add_days(today(), 10)),
+		)
+		batch_no = self.batches_of(doc)[0]
+
+		dates = self.dates_of(batch_no)
+		self.assertEqual(getdate(dates.manufacturing_date), getdate(today()))
+		self.assertEqual(getdate(dates.expiry_date), getdate(add_days(today(), 180)))
+
+	def test_a_receipt_without_a_supplier_date_is_left_to_erpnext(self):
+		self.perishable(shelf_life_days=180)
+
+		doc = self.make_receipt(self.raw, self.site["stores"], lot_no="SUP-MFG-3")
+		batch_no = self.batches_of(doc)[0]
+
+		dates = self.dates_of(batch_no)
+		self.assertEqual(getdate(dates.manufacturing_date), getdate(today()))
+		self.assertEqual(getdate(dates.expiry_date), getdate(add_days(today(), 180)))
+
+	def test_the_supplier_date_is_recorded_even_when_inspection_is_off(self):
+		"""A date somebody entered is a fact about the material, not a policy."""
+		fixtures.ensure_policy(self.site, require_incoming_inspection=0)
+		self.perishable(shelf_life_days=90)
+		made = getdate(add_days(today(), -30))
+
+		doc = self.make_receipt(self.raw, self.site["stores"], mfg_date=made)
+		batch_no = self.batches_of(doc)[0]
+
+		self.assertEqual(getdate(self.dates_of(batch_no).manufacturing_date), made)

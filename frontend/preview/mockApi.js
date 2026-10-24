@@ -339,10 +339,15 @@ export const production = {
 				yield_variance_percent: wo.fm_yield_variance_percent,
 				yield_flagged: wo.fm_yield_flagged, yield_basis: wo.fm_yield_basis,
 			},
+			// `shows_ingredient_detail` false is how the server says the quantities
+			// were withheld from an account that may not read the recipe; the
+			// quantity fields then arrive as null, which is not a zero.
+			shows_ingredient_detail: true,
 			ingredients: [
 				{
 					item_code: 'CHI', item_name: 'Chilli Powder', required_qty: 300, transferred_qty: 0,
-					consumed_qty: 0, stock_uom: KG, source_warehouse: 'Stores',
+					consumed_qty: 0, outstanding_qty: 300, available_qty: 570, short_qty: 0, short: false,
+					stock_uom: KG, source_warehouse: 'Stores',
 					available_lots: [
 						{ batch_no: 'CHI-014', available_qty: 450, expiry_date: '2027-01-12', manufacturing_date: '2026-01-12', quality_status: 'Released' },
 						{ batch_no: 'CHI-018', available_qty: 120, expiry_date: '2027-03-02', manufacturing_date: '2026-03-02', quality_status: 'Released' },
@@ -350,18 +355,24 @@ export const production = {
 				},
 				{
 					item_code: 'CUM', item_name: 'Cumin Whole', required_qty: 125, transferred_qty: 0,
-					consumed_qty: 0, stock_uom: KG, source_warehouse: 'Stores',
+					consumed_qty: 0, outstanding_qty: 125, available_qty: 180, short_qty: 0, short: false,
+					stock_uom: KG, source_warehouse: 'Stores',
 					available_lots: [
 						{ batch_no: 'CUM-009', available_qty: 180, expiry_date: '2027-02-20', manufacturing_date: '2026-02-20', quality_status: 'Released' },
 					],
 				},
 				{
 					item_code: 'COR', item_name: 'Coriander', required_qty: 50, transferred_qty: 0,
-					consumed_qty: 0, stock_uom: KG, source_warehouse: 'Stores', available_lots: [],
+					consumed_qty: 0, outstanding_qty: 50, available_qty: 60, short_qty: 0, short: false,
+					stock_uom: KG, source_warehouse: 'Stores',
+					available_lots: [
+						{ batch_no: 'COR-003', available_qty: 60, expiry_date: '2027-05-30', manufacturing_date: '2026-05-30', quality_status: 'Released' },
+					],
 				},
 				{
 					item_code: 'PEP', item_name: 'Black Pepper', required_qty: 25, transferred_qty: 0,
-					consumed_qty: 0, stock_uom: KG, source_warehouse: 'Stores',
+					consumed_qty: 0, outstanding_qty: 25, available_qty: 40, short_qty: 0, short: false,
+					stock_uom: KG, source_warehouse: 'Stores',
 					available_lots: [
 						{ batch_no: 'PEP-006', available_qty: 40, expiry_date: '2027-04-15', manufacturing_date: '2026-04-15', quality_status: 'Released' },
 					],

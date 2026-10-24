@@ -18,6 +18,8 @@ from frappe import _
 from frappe.utils import cint, flt
 
 from food_manufacturing.costing.pricing import price_items
+from food_manufacturing.packaging.conversion import convert_qty
+from food_manufacturing.recipe_access import may_see_formula
 
 #: A simulation is an estimate from a declared price source, never ledger value.
 BASIS = "estimate"
@@ -45,7 +47,8 @@ def simulate(
 	overrides = frappe.parse_json(overrides) if isinstance(overrides, str) else (overrides or {})
 
 	doc = _readable_bom(bom)
-	detail = _may_see_formula(doc)
+	detail = may_see_formula(doc.name)
+	_guard_overrides(overrides, detail)
 
 	baseline = _cost(doc, batch_qty, packs, {}, None, None, detail)
 	changed = bool(overrides) or yield_percent is not None or operating_cost is not None
@@ -88,20 +91,30 @@ def _readable_bom(bom: str):
 	return doc
 
 
-def _may_see_formula(doc) -> bool:
-	"""Whether this user may see the per-ingredient lines.
+def _guard_overrides(overrides: dict, detail: bool) -> None:
+	"""Refuse per-ingredient overrides to a caller who may not see the lines.
 
-	A BOM generated from an FM Recipe carries the formula in the clear - the
-	quantities *are* the percentages. The recipe keeps them at permlevel 1, so
-	this endpoint must not become the way around that: a caller without that
-	access gets the totals, which is what costing is for, and no line detail.
+	Withholding the lines is not enough on its own. The totals are honest and
+	deliberately given - costing is what this endpoint is for - but an override
+	turns them into a measuring instrument: raise one ingredient's rate by 1 and
+	the change in total cost *is* that ingredient's quantity. Repeat per item and
+	the formula falls out of a read-only endpoint, which is exactly the way round
+	the recipe's permlevel that this module must not become.
+
+	Yield and operating cost are not refused: neither varies by ingredient, so
+	neither can single one out.
 	"""
-	recipe = frappe.db.get_value("FM Recipe", {"bom": doc.name, "docstatus": 1}, "name")
-	if not recipe:
-		return True
+	if detail or not overrides:
+		return
 
-	meta = frappe.get_meta("FM Recipe")
-	return 1 in meta.get_permlevel_access("read")
+	frappe.throw(
+		_(
+			"Ingredient overrides need access to the confidential formula of this "
+			"recipe. Totals are available without it."
+		),
+		frappe.PermissionError,
+		title=_("Formula Not Accessible"),
+	)
 
 
 def _cost(doc, batch_qty, packs, overrides, yield_percent, operating_cost, detail) -> dict:
@@ -190,6 +203,23 @@ def _lines(doc, factor, overrides) -> tuple:
 	return ingredients, packaging
 
 
+def _unpriced_pack(item, fill_uom: str, note: str) -> dict:
+	"""A pack row that says why it carries no cost."""
+	return {
+		"item_code": item.name,
+		"item_name": item.item_name,
+		"pack_size": flt(item.fm_pack_size) or None,
+		"pack_uom": fill_uom,
+		"bulk_item": item.fm_bulk_item,
+		"qty_per_pack": None,
+		"conversion": None,
+		"packs_per_batch": None,
+		"cost_per_pack": None,
+		"requested_qty": None,
+		"note": note,
+	}
+
+
 def _natures(item_codes: list) -> dict:
 	"""Material nature per item, in one query."""
 	codes = {code for code in item_codes if code}
@@ -210,6 +240,13 @@ def _packs(packs: list, total: float, good_qty: float, doc) -> list:
 	Pack cost is the blend it holds, by fill quantity - the packaging materials
 	for the pack itself are a separate packaging run with its own BOM, and
 	folding them in here would double-count them against that run.
+
+	The fill quantity is written in the unit the plant thinks in - a 50 g sachet
+	- while the batch is costed in the unit the BOM is written in, usually
+	kilograms. Dividing one by the other without the factor is a 1,000x error in
+	both directions at once: 100 kg of blend reads as 2 packs at 4,000 each
+	instead of 2,000 packs at 4. So the fill is converted first, and a missing
+	conversion is reported rather than assumed to be 1.
 	"""
 	if not packs or not good_qty:
 		return []
@@ -235,28 +272,39 @@ def _packs(packs: list, total: float, good_qty: float, doc) -> list:
 			continue
 
 		fill = flt(item.fm_pack_size)
+		fill_uom = item.fm_pack_uom or item.stock_uom
+
 		# Without a declared fill quantity there is nothing to divide by; say so
 		# rather than quoting a number built on a guess.
 		if fill <= 0:
-			out.append({
-				"item_code": item.name,
-				"item_name": item.item_name,
-				"pack_size": None,
-				"pack_uom": item.fm_pack_uom,
-				"packs_per_batch": None,
-				"cost_per_pack": None,
-				"note": _("No pack size is set on this item."),
-			})
+			out.append(_unpriced_pack(item, fill_uom, _("No pack size is set on this item.")))
+			continue
+
+		# The blend being filled: the pack's own bulk item when it declares one,
+		# and otherwise whatever this BOM makes.
+		bulk_item = item.fm_bulk_item or doc.item
+		held, factor, problem = convert_qty(bulk_item, fill, fill_uom, doc.uom)
+		if problem or held <= 0:
+			out.append(_unpriced_pack(item, fill_uom, problem or _("The pack fill converts to zero.")))
 			continue
 
 		out.append({
 			"item_code": item.name,
 			"item_name": item.item_name,
 			"pack_size": fill,
-			"pack_uom": item.fm_pack_uom or item.stock_uom,
+			"pack_uom": fill_uom,
 			"bulk_item": item.fm_bulk_item,
-			"packs_per_batch": good_qty / fill,
-			"cost_per_pack": per_unit * fill,
+			# How much of the batch's own unit one pack holds, and the factor it
+			# took to get there - shown rather than silently applied.
+			"qty_per_pack": held,
+			"conversion": {
+				"from_qty": fill,
+				"from_uom": fill_uom,
+				"factor": factor,
+				"to_uom": doc.uom,
+			},
+			"packs_per_batch": good_qty / held,
+			"cost_per_pack": per_unit * held,
 			"requested_qty": flt(row.get("qty")) or None,
 			"note": None,
 		})

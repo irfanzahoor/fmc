@@ -10,8 +10,10 @@
  * Kept in step with the role table in `docs/workflows.md`.
  */
 export const SCREEN_ROLES = {
-	// get_dashboard gates on Work Order and Batch.
-	overview: ['Item Manager', 'Manufacturing User'],
+	// get_dashboard gates on Company, Work Order and Batch. Company is checked
+	// as a document because the panels aggregate with get_all and db.count,
+	// which do not apply User Permissions; Stock User is what grants it.
+	overview: ['Item Manager', 'Manufacturing User', 'Stock User'],
 	// get_production_queue and get_work_order_detail gate on Work Order.
 	production: ['Manufacturing User'],
 	// get_release_queue gates on Batch, Company and FM Batch Release; Company

@@ -136,7 +136,29 @@ def cleanup():
 	"""Remove everything this test prefix created."""
 	frappe.db.delete("FM Batch Release", {"batch": ("like", f"{PREFIX}-%")})
 	frappe.db.delete("Batch", {"name": ("like", f"{PREFIX}-%")})
-	frappe.db.delete("Item", {"name": ("like", f"{PREFIX} %")})
+	_delete_items()
+
+
+def _delete_items():
+	"""Delete the test items **and** the child rows hanging off them.
+
+	Deleting only the parent leaves orphans, and an orphaned child row is not
+	harmless here. Re-creating an Item of the same name gives it a second
+	``Item Default`` row, because ERPNext appends one from the Item Group - and
+	``get_bom_items_as_dict`` joins that table without de-duplicating, so every
+	Work Order requirement computed from a BOM reads double. Run the suite again
+	and it reads triple. A fixture that leaks like that makes the whole suite
+	order-dependent, and the symptom appears nowhere near the cause.
+
+	Child tables are read from the schema rather than listed, so a new one in a
+	later version is cleaned up too.
+	"""
+	pattern = f"{PREFIX} %"
+
+	for field in frappe.get_meta("Item").get_table_fields():
+		frappe.db.delete(field.options, {"parent": ("like", pattern), "parenttype": "Item"})
+
+	frappe.db.delete("Item", {"name": ("like", pattern)})
 
 
 def ensure_user(suffix: str, roles: tuple, user_type: str = "System User") -> str:

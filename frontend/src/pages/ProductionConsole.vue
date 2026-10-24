@@ -167,6 +167,12 @@
 										<ShieldCheck class="h-3.5 w-3.5" aria-hidden="true" />
 										Released stock only
 									</span>
+									<!-- A blank quantity is withheld, not zero. Saying which
+									     keeps an em dash from reading as a bug. -->
+									<span v-if="formulaWithheld" class="fm-chip fm-chip-warn">
+										<Lock class="h-3.5 w-3.5" aria-hidden="true" />
+										Quantities need recipe access
+									</span>
 								</div>
 
 								<div class="overflow-x-auto">
@@ -186,19 +192,19 @@
 										<tbody>
 											<tr v-for="line in detail.ingredients" :key="line.item_code">
 												<td class="font-medium align-top">{{ line.item_name || line.item_code }}</td>
-												<td class="fm-num align-top">{{ fmt(line.required_qty) }} {{ line.stock_uom }}</td>
+												<td class="fm-num align-top">{{ qty(line.required_qty, line.stock_uom) }}</td>
 												<td class="align-top">
-													<span class="fm-num">{{ fmt(line.outstanding_qty) }} {{ line.stock_uom }}</span>
+													<span class="fm-num">{{ qty(line.outstanding_qty, line.stock_uom) }}</span>
 													<span
-														v-if="line.short_qty > 0"
+														v-if="line.short"
 														class="mt-0.5 flex items-center gap-1 text-[11px] font-medium"
 														:style="{ color: 'var(--fm-bad)' }"
 													>
 														<AlertTriangle class="h-3 w-3 shrink-0" aria-hidden="true" />
-														short {{ fmt(line.short_qty) }} {{ line.stock_uom }}
+														{{ line.short_qty === null ? 'short of stock' : `short ${fmt(line.short_qty)} ${line.stock_uom}` }}
 													</span>
 												</td>
-												<td class="fm-num fm-muted align-top">{{ fmt(line.consumed_qty) }} {{ line.stock_uom }}</td>
+												<td class="fm-num fm-muted align-top">{{ qty(line.consumed_qty, line.stock_uom) }}</td>
 												<td class="align-top">
 													<span v-if="earliest(line)" class="fm-num font-semibold">{{ earliest(line).batch_no }}</span>
 													<span v-else class="fm-chip fm-chip-warn">
@@ -223,6 +229,17 @@
 								<p class="flex items-center gap-2 border-t px-5 py-3 text-xs fm-muted" :style="{ borderColor: 'var(--fm-border)' }">
 									<ShieldCheck class="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
 									Only eligible released lots can be consumed. The server enforces this on submit.
+								</p>
+
+								<p
+									v-if="formulaWithheld"
+									class="flex items-center gap-2 border-t px-5 py-3 text-xs fm-muted"
+									:style="{ borderColor: 'var(--fm-border)' }"
+								>
+									<Lock class="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+									Ingredient quantities are part of the confidential formula, so this
+									account sees which ingredients a run needs and whether they are in
+									stock, but not how much of each.
 								</p>
 							</div>
 
@@ -310,7 +327,7 @@
 
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue'
-import { AlertTriangle, Check, CheckCircle, Clock, Factory, LineChart, RefreshCw, Search, ShieldCheck } from 'lucide-vue-next'
+import { AlertTriangle, Check, CheckCircle, Clock, Factory, LineChart, Lock, RefreshCw, Search, ShieldCheck } from 'lucide-vue-next'
 
 import PageHeader from '@/components/PageHeader.vue'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
@@ -388,6 +405,12 @@ const tabs = [
 ]
 
 const fmt = (value) => Number(value || 0).toLocaleString(undefined, { maximumFractionDigits: 3 })
+/* A withheld figure is not a zero. The server blanks the ingredient quantities
+   for an account that may not read the recipe, and printing 0 for that would be
+   a wrong number rather than a missing one. */
+const qty = (value, uom) =>
+	value === null || value === undefined ? '—' : `${fmt(value)} ${uom || ''}`.trim()
+const formulaWithheld = computed(() => detail.value?.shows_ingredient_detail === false)
 const unit = computed(() => detail.value?.work_order?.stock_uom || '')
 /* The earliest-expiring released lot fills the columns; the rest are counted,
    so Available and Expiry always carry a real value or an em dash. */

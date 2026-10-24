@@ -145,6 +145,7 @@ Named after its company (`autoname: field:company`), so exactly one policy per c
 | `rejected_warehouse` | Link Warehouse (reqd) | rejected material, blocked from production |
 | `bulk_warehouse`, `packaging_warehouse`, `finished_goods_warehouse` | Link Warehouse | defaults for production and packaging |
 | `require_incoming_inspection` | Check (default 1) | QI required before release |
+| `quarantine_production_output` | Check (default 1) | batches a Manufacture or Repack entry creates start in Quarantine, so a blend or pack needs its own decision |
 | `block_unreleased_consumption` | Check (default 1) | block consuming un-released batches |
 | `block_rejected_consumption` | Check (default 1) | block consuming rejected/held batches |
 | `min_remaining_shelf_life_percent` | Percent (default 25) | dispatch floor |

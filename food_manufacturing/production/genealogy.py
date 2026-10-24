@@ -21,12 +21,23 @@ never counted twice.
 import frappe
 from frappe.utils import flt
 
-#: Stock Entry purposes that consume ingredients into a Work Order.
-CONSUMPTION_PURPOSES = (
+#: Stock Entry purposes that belong to a Work Order's material flow.
+WORK_ORDER_PURPOSES = (
 	"Material Transfer for Manufacture",
 	"Material Consumption for Manufacture",
 	"Manufacture",
 )
+
+#: Staging moves, counted in neither direction.
+#:
+#: A transfer to WIP writes two real ledger entries for the same material - it
+#: leaves stores and arrives in WIP - and neither of them is a consumption or an
+#: output. Reading them as such made a 60 kg ingredient appear as 120 kg
+#: consumed, once on the transfer and again when the Manufacture entry drew it
+#: out of WIP, and put the raw material itself in the produced list. What a run
+#: consumed is what left WIP for good; what it produced is what the Manufacture
+#: entry brought into stock.
+TRANSFER_PURPOSES = ("Material Transfer for Manufacture",)
 
 
 def get_work_order_batches(work_order: str) -> dict:
@@ -39,26 +50,42 @@ def get_work_order_batches(work_order: str) -> dict:
 	Direction comes from the sign of ``actual_qty`` on the Stock Ledger Entry:
 	negative is consumption, positive is output. Reading it from the ledger
 	rather than from the voucher means a reversal nets itself out.
+
+	Staging transfers are left out of both buckets - see
+	:data:`TRANSFER_PURPOSES` - because the sign cannot tell a consumption from
+	a move to WIP: both are negative.
 	"""
-	vouchers = _work_order_stock_entries(work_order)
+	purpose_by_voucher = _work_order_stock_entries(work_order)
+	if not purpose_by_voucher:
+		return {"consumed": [], "produced": []}
 
 	sles = frappe.get_all(
 		"Stock Ledger Entry",
 		filters={
 			"voucher_type": "Stock Entry",
-			"voucher_no": ("in", vouchers),
+			"voucher_no": ("in", list(purpose_by_voucher)),
 			"is_cancelled": 0,
 		},
-		fields=["name", "item_code", "batch_no", "warehouse", "actual_qty", "serial_and_batch_bundle"],
+		fields=[
+			"name",
+			"item_code",
+			"batch_no",
+			"warehouse",
+			"actual_qty",
+			"serial_and_batch_bundle",
+			"voucher_no",
+		],
 		order_by="item_code asc, name asc",
 	)
+
+	movements = [sle for sle in sles if purpose_by_voucher.get(sle.voucher_no) not in TRANSFER_PURPOSES]
 
 	consumed = {}
 	produced = {}
 
-	bundles = [sle.serial_and_batch_bundle for sle in sles if sle.serial_and_batch_bundle]
+	bundles = [sle.serial_and_batch_bundle for sle in movements if sle.serial_and_batch_bundle]
 
-	for sle in sles:
+	for sle in movements:
 		# Rows with a bundle are accounted for from the bundle instead.
 		if sle.serial_and_batch_bundle or not sle.batch_no:
 			continue
@@ -131,21 +158,24 @@ def get_consumed_lots(work_order: str) -> list:
 	return consumed
 
 
-def _work_order_stock_entries(work_order: str) -> list:
-	"""Submitted Stock Entries belonging to a Work Order."""
-	names = frappe.get_all(
+def _work_order_stock_entries(work_order: str) -> dict:
+	"""Submitted Stock Entries of a Work Order, each with its purpose.
+
+	The purpose comes back with the name because direction alone cannot tell a
+	consumption from a staging move: both are negative in the ledger.
+	"""
+	rows = frappe.get_all(
 		"Stock Entry",
 		filters={
 			"work_order": work_order,
 			"docstatus": 1,
-			"purpose": ("in", CONSUMPTION_PURPOSES),
+			"purpose": ("in", WORK_ORDER_PURPOSES),
 		},
-		pluck="name",
+		fields=["name", "purpose"],
 		order_by="posting_date asc, name asc",
 	)
-	# An empty IN () is invalid SQL, so give the caller a value that matches
-	# nothing instead.
-	return names or [""]
+
+	return {row.name: row.purpose for row in rows}
 
 
 def _drop_empty(bucket: dict) -> list:

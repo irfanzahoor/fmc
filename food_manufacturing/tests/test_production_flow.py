@@ -136,6 +136,69 @@ class TestProductionFlow(FMTestCase):
 		doc.submit()
 		return doc
 
+	def make_staged_work_order(self, bom, qty=100):
+		"""A Work Order that stages material in WIP before consuming it.
+
+		``skip_transfer`` is 0 here, unlike the rest of this module, because the
+		transfer leg is exactly what the genealogy has to *not* count.
+		"""
+		doc = frappe.get_doc(
+			{
+				"doctype": "Work Order",
+				"production_item": self.blend,
+				"bom_no": bom,
+				"qty": qty,
+				"company": self.site["company"],
+				"fg_warehouse": self.site["stores"],
+				# A WIP warehouse the material genuinely has to move to, so the
+				# transfer writes two ledger entries of its own.
+				"wip_warehouse": self.site["quarantine"],
+				"source_warehouse": self.site["stores"],
+				"use_multi_level_bom": 0,
+				"skip_transfer": 0,
+			}
+		)
+		doc.insert()
+		doc.submit()
+		return doc
+
+	def transfer_to_wip(self, work_order, qty):
+		"""Submit the Material Transfer for Manufacture entry."""
+		from erpnext.manufacturing.doctype.work_order.work_order import make_stock_entry
+
+		entry = frappe.get_doc(
+			make_stock_entry(work_order.name, "Material Transfer for Manufacture", qty)
+		)
+		for row in entry.items:
+			row.use_serial_batch_fields = 1
+
+		entry.insert()
+		entry.submit()
+		return entry
+
+	def issue(self, item_code, batch, qty):
+		"""Material Issue out of stores - the consumption the gate guards."""
+		doc = frappe.get_doc(
+			{
+				"doctype": "Stock Entry",
+				"stock_entry_type": "Material Issue",
+				"purpose": "Material Issue",
+				"company": self.site["company"],
+				"items": [
+					{
+						"item_code": item_code,
+						"qty": qty,
+						"s_warehouse": self.site["stores"],
+						"batch_no": batch,
+						"use_serial_batch_fields": 1,
+					}
+				],
+			}
+		)
+		doc.insert()
+		doc.submit()
+		return doc
+
 	def manufacture(self, work_order, fg_qty, batch_id, process_loss_qty=0):
 		"""Submit a Manufacture Stock Entry against the Work Order."""
 		from erpnext.manufacturing.doctype.work_order.work_order import make_stock_entry
@@ -241,3 +304,99 @@ class TestProductionFlow(FMTestCase):
 		batches = get_work_order_batches(work_order.name)
 		self.assertEqual(batches["consumed"], [])
 		self.assertEqual(batches["produced"], [])
+
+	# -- a manufactured batch is quality-managed from birth -------------------
+
+	def test_a_manufactured_batch_starts_in_quarantine(self):
+		"""Receiving stamps purchased batches; production has to stamp its own.
+
+		A blank status means "not quality-managed" to every check in the app, so
+		a blend nobody had looked at used to be consumable and a pack nobody had
+		released used to be dispatchable.
+		"""
+		chilli_lot = self.receive(self.chilli, 60, f"LOT-CHILLI-{self.tag}")
+		cumin_lot = self.receive(self.cumin, 40, f"LOT-CUMIN-{self.tag}")
+		self.release(chilli_lot)
+		self.release(cumin_lot)
+
+		recipe = self.approve_recipe()
+		work_order = self.make_work_order(recipe.bom, qty=100)
+		self.manufacture(work_order, 100, f"BULK-{self.tag}")
+
+		blend_batch = f"_FMT-BULK-{self.tag}"
+		self.assertEqual(
+			frappe.db.get_value("Batch", blend_batch, "fm_quality_status"), "Quarantine"
+		)
+
+	def test_an_unreleased_blend_cannot_be_consumed(self):
+		"""The gate the production stamp exists for."""
+		chilli_lot = self.receive(self.chilli, 60, f"LOT-CHILLI-{self.tag}")
+		cumin_lot = self.receive(self.cumin, 40, f"LOT-CUMIN-{self.tag}")
+		self.release(chilli_lot)
+		self.release(cumin_lot)
+
+		recipe = self.approve_recipe()
+		work_order = self.make_work_order(recipe.bom, qty=100)
+		self.manufacture(work_order, 100, f"BULK-{self.tag}")
+		blend_batch = f"_FMT-BULK-{self.tag}"
+
+		with self.assertRaises(frappe.ValidationError):
+			self.issue(self.blend, blend_batch, 10)
+
+		# And the decision - not an edit of the batch - is what opens the gate.
+		self.release(blend_batch)
+		self.assertTrue(self.issue(self.blend, blend_batch, 10).name)
+
+	def test_a_policy_can_leave_manufactured_batches_unmanaged(self):
+		"""Opt-in, like every other rule here: a plant that does not inspect its
+		own output is not forced into a release step by installing the app."""
+		fixtures.ensure_policy(
+			self.site,
+			require_incoming_inspection=0,
+			quarantine_production_output=0,
+			yield_variance_tolerance_percent=2,
+		)
+
+		chilli_lot = self.receive(self.chilli, 60, f"LOT-CHILLI-{self.tag}")
+		cumin_lot = self.receive(self.cumin, 40, f"LOT-CUMIN-{self.tag}")
+		self.release(chilli_lot)
+		self.release(cumin_lot)
+
+		recipe = self.approve_recipe()
+		work_order = self.make_work_order(recipe.bom, qty=100)
+		self.manufacture(work_order, 100, f"BULK-{self.tag}")
+
+		self.assertFalse(
+			frappe.db.get_value("Batch", f"_FMT-BULK-{self.tag}", "fm_quality_status")
+		)
+
+	# -- staging is not consumption ------------------------------------------
+
+	def test_staging_material_in_wip_is_counted_once(self):
+		"""A transfer to WIP must not read as a consumption or an output.
+
+		Stores -> WIP -> Manufacture writes three ledger entries for the same
+		60 kg of chilli: out of stores, into WIP, and out of WIP for good. Only
+		the last one is a consumption, and none of them is production output.
+		"""
+		chilli_lot = self.receive(self.chilli, 60, f"LOT-CHILLI-{self.tag}")
+		cumin_lot = self.receive(self.cumin, 40, f"LOT-CUMIN-{self.tag}")
+		self.release(chilli_lot)
+		self.release(cumin_lot)
+
+		recipe = self.approve_recipe()
+		work_order = self.make_staged_work_order(recipe.bom, qty=100)
+		self.transfer_to_wip(work_order, 100)
+		self.manufacture(work_order, 100, f"BULK-{self.tag}")
+
+		batches = get_work_order_batches(work_order.name)
+		consumed = {(e["item_code"], e["batch_no"]): flt(e["qty"]) for e in batches["consumed"]}
+		produced = {(e["item_code"], e["batch_no"]): flt(e["qty"]) for e in batches["produced"]}
+
+		self.assertEqual(consumed.get((self.chilli, chilli_lot)), 60)
+		self.assertEqual(consumed.get((self.cumin, cumin_lot)), 40)
+
+		# The raw material arriving in WIP is not output.
+		self.assertNotIn((self.chilli, chilli_lot), produced)
+		self.assertNotIn((self.cumin, cumin_lot), produced)
+		self.assertEqual(produced.get((self.blend, f"_FMT-BULK-{self.tag}")), 100)

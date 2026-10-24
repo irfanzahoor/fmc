@@ -127,5 +127,30 @@ class TestPermissions(FMTestCase):
 		self.assertFalse(frappe.has_permission("FM Manufacturing Policy", "write"))
 
 	def test_batch_quality_status_is_read_only_on_the_form(self):
-		"""Operators must not be able to set the status directly."""
+		"""Keeps the field out of the way on the form - and nothing more.
+
+		``read_only`` is an instruction to the form. It is not a permission, and
+		this assertion on its own used to read as though it were: the guard that
+		actually stops the field being written lives in
+		``overrides/batch.py`` and is proved in test_batch_release.py.
+		"""
 		self.assertEqual(frappe.get_meta("Batch").get_field("fm_quality_status").read_only, 1)
+
+	def test_an_operator_cannot_write_the_quality_status_through_the_api(self):
+		"""The boundary itself, from the account that would try it.
+
+		An Item Manager may write a Batch - that is what makes Batch readable to
+		the console at all - so without a server-side guard this account could
+		release a batch with no inspection and no record of who decided.
+		"""
+		batch = fixtures.ensure_batch(self.item, "C8", status="Quarantine")
+		user = fixtures.ensure_user("itemmgr", ("FM Production Operator", "Item Manager"))
+
+		frappe.set_user(user)
+		try:
+			with self.assertRaises(frappe.ValidationError):
+				frappe.client.set_value("Batch", batch, "fm_quality_status", "Released")
+		finally:
+			frappe.set_user("Administrator")
+
+		self.assertEqual(frappe.db.get_value("Batch", batch, "fm_quality_status"), "Quarantine")

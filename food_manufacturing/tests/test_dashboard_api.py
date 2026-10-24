@@ -226,3 +226,59 @@ class TestDashboardAPI(FMTestCase):
 		finally:
 			frappe.set_user("Administrator")
 			fixtures.cleanup_users()
+
+	def test_a_company_restricted_user_cannot_read_another_company(self):
+		"""A company the caller may not read is refused, and their own answers."""
+		fixtures.cleanup_users()
+		# Stock User is what carries Company read on a stock ERPNext site; the
+		# console has needed ERPNext's own roles alongside the FM ones since the
+		# role dashboards, which check the company the same way.
+		user = fixtures.ensure_user(
+			"dashforeign",
+			("FM Production Manager", "Manufacturing User", "Item Manager", "Stock User"),
+		)
+		fixtures.restrict_user_to_company(user, self.site["foreign_company"])
+		frappe.set_user(user)
+		try:
+			with self.assertRaises(frappe.PermissionError):
+				get_dashboard(self.site["company"])
+
+			# Their own company still answers.
+			self.assertEqual(
+				get_dashboard(self.site["foreign_company"])["company"],
+				self.site["foreign_company"],
+			)
+		finally:
+			frappe.set_user("Administrator")
+			fixtures.cleanup_users()
+
+	def test_the_company_is_checked_before_any_panel_is_built(self):
+		"""Where the check is matters as much as that it exists.
+
+		The panels aggregate with `get_all` and `db.count`, neither of which
+		applies User Permissions. The endpoint did refuse a company the caller
+		may not read - but only on reaching `_pending_qc_count`, which calls a
+		quality helper that carries its own check, and by then `_completed_runs`
+		had already read another company's work orders. A boundary that depends
+		on which helper happens to be called first is not a boundary, so this
+		pins the check to the entry: nothing is read before it.
+		"""
+		from unittest.mock import patch
+
+		fixtures.cleanup_users()
+		user = fixtures.ensure_user(
+			"dashorder",
+			("FM Production Manager", "Manufacturing User", "Item Manager", "Stock User"),
+		)
+		fixtures.restrict_user_to_company(user, self.site["foreign_company"])
+		frappe.set_user(user)
+		try:
+			with patch(
+				"food_manufacturing.api.dashboard._completed_runs",
+				side_effect=AssertionError("read another company's runs before the check"),
+			):
+				with self.assertRaises(frappe.PermissionError):
+					get_dashboard(self.site["company"])
+		finally:
+			frappe.set_user("Administrator")
+			fixtures.cleanup_users()

@@ -35,6 +35,15 @@ TREND_RUNS = 12
 @frappe.whitelist()
 def get_dashboard(company: str, days: int = 30) -> dict:
 	"""Every dashboard panel in one read-only call."""
+	# The company is checked as a document, and first. Every panel below
+	# aggregates with frappe.get_all and frappe.db.count, neither of which
+	# applies the caller's User Permissions, so DocType-level read on Work Order
+	# and Batch says nothing about *this* company. Without this line the
+	# endpoint still refused a company the caller may not read - but only once
+	# it reached `_pending_qc_count`, which calls a helper that happens to carry
+	# its own check, and by then another company's runs had been read. A
+	# boundary that depends on the call order of a helper is not a boundary.
+	frappe.has_permission("Company", "read", doc=company, throw=True)
 	frappe.has_permission("Work Order", "read", throw=True)
 	frappe.has_permission("Batch", "read", throw=True)
 

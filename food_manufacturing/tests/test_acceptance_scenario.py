@@ -199,7 +199,27 @@ class TestAcceptanceScenario(FMTestCase):
 		work_order, _entry, bulk_batch = self.run_work_order(
 			self.blend, bom.name, 100, fg_batch_id=f"BULK-{self.tag}", process_loss_qty=3
 		)
+
+		# A manufactured blend is quarantined on submit, so quality decides
+		# before it can be packed. That is the step a plant actually takes;
+		# without it the packing run below is refused, which is the point.
+		self.release(bulk_batch)
+
 		return chilli_lot, cumin_lot, work_order, bulk_batch
+
+	def release(self, batch):
+		"""The quality decision that lets a batch move on."""
+		doc = frappe.get_doc(
+			{
+				"doctype": "FM Batch Release",
+				"batch": batch,
+				"company": self.site["company"],
+				"decision": "Release",
+			}
+		)
+		doc.insert()
+		doc.submit()
+		return doc
 
 	def test_blending_consumes_100kg_and_yields_97kg_with_3kg_loss(self):
 		chilli_lot, cumin_lot, work_order, bulk_batch = self.blend_97kg()

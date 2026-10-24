@@ -278,3 +278,90 @@ class TestRecipeConfidentiality(FMTestCase):
 		by_item = {row.item_code: row.percentage for row in doc.ingredients}
 		self.assertEqual(by_item[self.chilli], 60)
 		self.assertEqual(by_item[self.cumin], 40)
+
+	# -- path 4: the production console ---------------------------------------
+
+	def work_order_for_the_recipe(self, qty=100):
+		"""A submitted run against the BOM this recipe generates."""
+		self.recipe.submit()
+
+		doc = frappe.get_doc(
+			{
+				"doctype": "Work Order",
+				"production_item": self.blend,
+				"bom_no": self.recipe.bom,
+				"qty": qty,
+				"company": self.site["company"],
+				"fg_warehouse": self.site["stores"],
+				"wip_warehouse": self.site["stores"],
+				"source_warehouse": self.site["stores"],
+				"use_multi_level_bom": 0,
+				"skip_transfer": 1,
+			}
+		)
+		doc.insert()
+		doc.submit()
+		return doc
+
+	def console_user(self, suffix, fm_role):
+		"""An operator account: an FM role plus the ERPNext roles it needs.
+
+		Work Order and Batch are ERPNext's own documents; this app does not
+		widen access to them through its roles, so the standard ones come too.
+		"""
+		return fixtures.ensure_user(suffix, (fm_role, "Manufacturing User", "Item Manager"))
+
+	def test_the_console_withholds_ingredient_quantities_from_an_outsider(self):
+		"""Quantities are percentages once the batch size is known.
+
+		60 kg of chilli in a 100 kg run *is* the 60% the recipe keeps at
+		permlevel 1, so the production console must not hand it to an account
+		that cannot read the recipe - otherwise the permlevel only protects the
+		recipe form.
+		"""
+		from food_manufacturing.api.production import get_work_order_detail
+
+		work_order = self.work_order_for_the_recipe()
+		frappe.set_user(self.console_user("console_out", "FM Production Manager"))
+
+		detail = get_work_order_detail(work_order.name)
+
+		self.assertFalse(detail["shows_ingredient_detail"])
+		self.assertTrue(detail["ingredients"])
+		for row in detail["ingredients"]:
+			# Which ingredients, and whether they are there, an operator needs.
+			self.assertTrue(row["item_code"])
+			self.assertIn(row["short"], (True, False, None))
+			# How much of each, they do not get.
+			for fieldname in ("required_qty", "transferred_qty", "consumed_qty", "short_qty"):
+				self.assertIsNone(row[fieldname], msg=f"{row['item_code']}.{fieldname}")
+
+	def test_the_console_gives_the_quantities_to_a_recipe_manager(self):
+		from food_manufacturing.api.production import get_work_order_detail
+
+		work_order = self.work_order_for_the_recipe()
+		frappe.set_user(self.console_user("console_in", "FM Recipe Manager"))
+
+		detail = get_work_order_detail(work_order.name)
+
+		self.assertTrue(detail["shows_ingredient_detail"])
+		quantities = {row["item_code"]: row["required_qty"] for row in detail["ingredients"]}
+		self.assertEqual(quantities[self.chilli], 60)
+		self.assertEqual(quantities[self.cumin], 40)
+
+	def test_readiness_survives_the_formula_check(self):
+		"""Withholding the numbers must not make a run look ready.
+
+		There is no stock for this run, so it is short of both ingredients. The
+		screen has to keep saying so without quoting how much.
+		"""
+		from food_manufacturing.api.production import get_work_order_detail
+
+		work_order = self.work_order_for_the_recipe()
+		frappe.set_user(self.console_user("console_ready", "FM Production Manager"))
+
+		detail = get_work_order_detail(work_order.name)
+
+		self.assertFalse(detail["material_ready"])
+		self.assertTrue(all(row["short"] for row in detail["ingredients"]))
+		self.assertFalse(detail["next_action"]["enabled"])

@@ -7,10 +7,12 @@ reached by hook.
 
 import frappe
 from frappe import _
+from frappe.utils import add_days, cint, getdate
 
 from food_manufacturing.food_manufacturing_setup.doctype.fm_manufacturing_policy.fm_manufacturing_policy import (
 	get_policy_if_any,
 )
+from food_manufacturing.items import get_item_natures
 from food_manufacturing.quality.batch_eligibility import get_row_batches
 
 #: Item natures that must pass incoming inspection before use.
@@ -22,7 +24,9 @@ def validate(doc, method=None):
 
 
 def on_submit(doc, method=None):
-	stamp_batches(doc)
+	rows = _receipt_rows(doc.name)
+	stamp_batches(doc, rows)
+	record_supplier_dates(rows)
 
 
 def route_to_quarantine(doc) -> None:
@@ -38,7 +42,7 @@ def route_to_quarantine(doc) -> None:
 		return
 
 	rows = doc.get("items") or []
-	natures = _get_item_natures(rows)
+	natures = get_item_natures([row.item_code for row in rows])
 
 	redirected = []
 	for row in rows:
@@ -61,7 +65,29 @@ def route_to_quarantine(doc) -> None:
 		)
 
 
-def stamp_batches(doc) -> None:
+def _receipt_rows(receipt: str) -> list:
+	"""The receipt's rows, read back from the database.
+
+	ERPNext populates ``serial_and_batch_bundle`` with ``frappe.db.set_value``
+	during submit, which does not update the in-memory child rows, so trusting
+	``doc.items`` here would miss every bundle-created batch.
+	"""
+	return frappe.get_all(
+		"Purchase Receipt Item",
+		filters={"parent": receipt},
+		fields=[
+			"name",
+			"item_code",
+			"batch_no",
+			"serial_and_batch_bundle",
+			"fm_supplier_lot_no",
+			"fm_supplier_mfg_date",
+		],
+		order_by="idx asc",
+	)
+
+
+def stamp_batches(doc, rows: list | None = None) -> None:
 	"""Put received batches into Quarantine and record the supplier lot.
 
 	An existing status is never overwritten: a batch may legitimately already be
@@ -71,26 +97,11 @@ def stamp_batches(doc) -> None:
 	if not policy or not policy.require_incoming_inspection:
 		return
 
-	# Read the rows back from the database. ERPNext populates
-	# `serial_and_batch_bundle` with frappe.db.set_value during submit, which
-	# does not update the in-memory child rows, so trusting `doc.items` here
-	# would miss every bundle-created batch.
-	rows = frappe.get_all(
-		"Purchase Receipt Item",
-		filters={"parent": doc.name},
-		fields=[
-			"name",
-			"item_code",
-			"batch_no",
-			"serial_and_batch_bundle",
-			"fm_supplier_lot_no",
-		],
-		order_by="idx asc",
-	)
+	rows = _receipt_rows(doc.name) if rows is None else rows
 	if not rows:
 		return
 
-	natures = _get_item_natures(rows)
+	natures = get_item_natures([row.item_code for row in rows])
 	inspected_rows = [row for row in rows if natures.get(row.item_code) in INSPECTED_NATURES]
 	if not inspected_rows:
 		return
@@ -123,17 +134,87 @@ def stamp_batches(doc) -> None:
 			frappe.clear_document_cache("Batch", batch_no)
 
 
-def _get_item_natures(rows) -> dict:
-	"""Map item code -> fm_material_nature, in one query."""
-	item_codes = {row.item_code for row in rows if row.item_code}
-	if not item_codes:
-		return {}
+def record_supplier_dates(rows: list) -> None:
+	"""Carry the supplier's manufacturing date onto the batch it created.
 
-	items = frappe.get_all(
-		"Item",
-		filters={"name": ("in", list(item_codes))},
-		fields=["name", "fm_material_nature"],
+	ERPNext dates a batch from the receipt, so a lot the supplier blended three
+	months before it arrived looks three months fresher than it is - and every
+	shelf-life rule in the app inherits that error: remaining-shelf-life at
+	dispatch, the near-expiry alert and FEFO all read these two dates.
+
+	The supplier's own date is the one the plant was actually given, so it wins,
+	and both dates only ever move **earlier**: receiving a lot may shorten the
+	life the batch claims, never extend it. That asymmetry is deliberate - a
+	mistyped date should not be able to make expired stock dispatchable.
+
+	Not gated on policy. A date somebody entered is a fact about the material,
+	not a rule a company opts into.
+	"""
+	dated = [row for row in rows if row.get("fm_supplier_mfg_date")]
+	if not dated:
+		return
+
+	batches_by_row = get_row_batches(dated)
+	if not batches_by_row:
+		return
+
+	made_by_row = {row.name: getdate(row.fm_supplier_mfg_date) for row in dated}
+
+	batches = {batch for row_batches in batches_by_row.values() for batch in row_batches}
+	current = frappe.get_all(
+		"Batch",
+		filters={"name": ("in", list(batches))},
+		fields=["name", "item", "manufacturing_date", "expiry_date"],
 		order_by="name asc",
 	)
+	if not current:
+		return
 
-	return {item.name: item.fm_material_nature for item in items}
+	shelf_life = _shelf_life_days([row.item for row in current])
+	current_by_name = {row.name: row for row in current}
+
+	for row_name, row_batches in batches_by_row.items():
+		for batch_no in row_batches:
+			batch = current_by_name.get(batch_no)
+			if not batch:
+				continue
+
+			values = _earlier_dates(batch, made_by_row[row_name], shelf_life.get(batch.item))
+			if not values:
+				continue
+
+			frappe.db.set_value("Batch", batch_no, values, update_modified=True)
+			frappe.clear_document_cache("Batch", batch_no)
+
+
+def _earlier_dates(batch, made, shelf_life_days) -> dict:
+	"""Which of the batch's two dates the supplier's date moves earlier."""
+	values = {}
+
+	if not batch.manufacturing_date or getdate(batch.manufacturing_date) > made:
+		values["manufacturing_date"] = made
+
+	days = cint(shelf_life_days)
+	if days:
+		expiry = add_days(made, days)
+		if not batch.expiry_date or getdate(batch.expiry_date) > getdate(expiry):
+			values["expiry_date"] = expiry
+
+	return values
+
+
+def _shelf_life_days(item_codes) -> dict:
+	"""Map item code -> shelf life in days, in one query."""
+	codes = {code for code in item_codes if code}
+	if not codes:
+		return {}
+
+	return {
+		row.name: row.shelf_life_in_days
+		for row in frappe.get_all(
+			"Item",
+			filters={"name": ("in", list(codes))},
+			fields=["name", "shelf_life_in_days"],
+			order_by="name asc",
+		)
+	}
