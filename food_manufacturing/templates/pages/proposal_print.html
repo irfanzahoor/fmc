@@ -1,0 +1,13 @@
+{# A complete document for wkhtmltopdf: the body alone has no <head>, so the
+   PDF rendered unstyled. Same style and same body as the web page. #}
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<title>Batchwell — capability document</title>
+		{% include "templates/pages/proposal_style.html" %}
+	</head>
+	<body>
+		{% include "templates/pages/proposal_body.html" %}
+	</body>
+</html>

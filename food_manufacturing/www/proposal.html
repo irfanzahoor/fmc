@@ -1,0 +1,40 @@
+{% extends "templates/web.html" %}
+
+{% block title %}Batchwell — capability document{% endblock %}
+
+{% block head_include %}
+{% include "templates/pages/proposal_style.html" %}
+<style>
+	/* The page frame is screen-only; the PDF renders the body alone. */
+	.proposal-bar {
+		max-width: 210mm;
+		margin: 0 auto;
+		padding: 10px 18mm;
+		display: flex;
+		justify-content: flex-end;
+	}
+	.proposal-download {
+		display: inline-flex;
+		align-items: center;
+		gap: 8px;
+		padding: 9px 16px;
+		border-radius: 10px;
+		background: #0c4224;
+		color: #ffffff;
+		font-weight: 600;
+		font-size: 10pt;
+		text-decoration: none;
+	}
+	.proposal-download:hover { background: #06301a; color: #ffffff; }
+</style>
+{% endblock %}
+
+{% block page_content %}
+<div class="proposal-bar no-print">
+	<a class="proposal-download" href="/api/method/food_manufacturing.www.proposal.download">
+		Download as PDF
+	</a>
+</div>
+
+{% include "templates/pages/proposal_body.html" %}
+{% endblock %}

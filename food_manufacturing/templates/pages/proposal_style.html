@@ -1,0 +1,203 @@
+{# Shared by the web page and the PDF. wkhtmltopdf renders with print media, so
+   everything here is print-first and the screen inherits it. #}
+<style>
+	:root {
+		--green: #0c4224;
+		--green-soft: #e6f0ea;
+		--gold: #cca23c;
+		--gold-soft: #faf4e4;
+		--gold-ink: #7d5f14;
+		--ink: #12241a;
+		--muted: #5a6d62;
+		--rule: #dbe7e0;
+		--paper: #ffffff;
+	}
+
+	* { box-sizing: border-box; }
+
+	body {
+		margin: 0;
+		background: #eef2ef;
+		color: var(--ink);
+		font-family: "Inter", -apple-system, "Segoe UI", system-ui, sans-serif;
+		font-size: 10.5pt;
+		line-height: 1.55;
+		-webkit-font-smoothing: antialiased;
+	}
+
+	.doc {
+		max-width: 210mm;
+		margin: 0 auto;
+		background: var(--paper);
+		padding: 0 18mm 16mm;
+	}
+
+	/* --- cover ------------------------------------------------------------ */
+
+	.cover {
+		margin: 0 -18mm 10mm;
+		padding: 16mm 18mm 12mm;
+		background: var(--green);
+		color: #ffffff;
+	}
+
+	.cover-mark { margin-bottom: 14mm; }
+	.cover-mark svg { width: 46px; height: 46px; vertical-align: middle; }
+	.cover-mark > div { display: inline-block; vertical-align: middle; margin-left: 12px; }
+	.brand { margin: 0; color: #ffffff; font-size: 17pt; font-weight: 800; letter-spacing: -0.015em; }
+	.brand-sub { margin: 1px 0 0; font-size: 8.5pt; color: #c2d6c9; }
+
+	/* Explicit: the host website theme styles h1 and would otherwise paint this
+	   dark green on dark green. */
+	.cover h1 {
+		margin: 0;
+		color: #ffffff;
+		font-size: 25pt;
+		line-height: 1.18;
+		font-weight: 800;
+		letter-spacing: -0.02em;
+	}
+
+	.lede {
+		margin: 5mm 0 0;
+		max-width: 150mm;
+		font-size: 11.5pt;
+		color: #d4e3da;
+	}
+
+	/* A gold rule is the one flourish; the rest of the accent is restraint. */
+	.facts {
+		margin: 10mm 0 0;
+		padding-top: 6mm;
+		border-top: 2px solid var(--gold);
+	}
+	.facts div {
+		display: inline-block;
+		vertical-align: top;
+		margin: 0 14mm 0 0;
+	}
+	.facts dt { margin: 0; font-size: 7.5pt; text-transform: uppercase; letter-spacing: 0.1em; color: var(--gold); }
+	.facts dd { margin: 2px 0 0; font-size: 11pt; font-weight: 700; }
+
+	.prepared { margin: 8mm 0 0; font-size: 9pt; color: #c2d6c9; }
+
+	/* --- body -------------------------------------------------------------- */
+
+	section { margin-top: 9mm; }
+	h2 { page-break-after: avoid; }
+	h3 { page-break-after: avoid; }
+
+	h2 {
+		margin: 0 0 3mm;
+		padding-bottom: 2mm;
+		border-bottom: 1px solid var(--rule);
+		font-size: 14pt;
+		font-weight: 800;
+		letter-spacing: -0.015em;
+		color: var(--green);
+	}
+
+	h3 { margin: 0 0 1.5mm; font-size: 10.5pt; font-weight: 700; color: var(--green); }
+	p { margin: 0 0 3mm; }
+	em { font-style: normal; font-weight: 600; }
+	code { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 9.5pt; }
+
+	.cols { margin-right: -6mm; }
+	.cols > div {
+		display: inline-block;
+		vertical-align: top;
+		width: 46%;
+		margin: 0 6mm 5mm 0;
+	}
+
+	/* Rows are blocks, not table rows: wkhtmltopdf splits a <tr> across a page
+	   break however it is styled, but honours page-break-inside on a block. */
+	.matrix { margin-top: 2mm; }
+	.mhead, .mrow { font-size: 0; page-break-inside: avoid; }
+	.mhead > span, .mrow > span {
+		display: inline-block;
+		vertical-align: top;
+		padding: 2.8mm 3mm;
+		font-size: 10.5pt;
+	}
+	.mhead {
+		background: var(--green-soft);
+		page-break-after: avoid;
+	}
+	.mhead > span {
+		color: var(--green);
+		font-size: 8pt;
+		text-transform: uppercase;
+		letter-spacing: 0.08em;
+	}
+	.mrow { border-bottom: 1px solid var(--rule); }
+	.two .mk { width: 32%; }
+	.two .mv { width: 68%; }
+	.three .mk { width: 20%; }
+	.three .ms { width: 24%; }
+	.three .mv { width: 56%; }
+
+	.steps { margin: 0; padding-left: 5mm; }
+	.steps li { margin-bottom: 2mm; page-break-inside: avoid; }
+
+	.limits { margin: 0; padding-left: 5mm; }
+	.limits li { margin-bottom: 1.8mm; page-break-inside: avoid; }
+
+	.note {
+		margin-top: 4mm;
+		padding: 3mm 4mm;
+		border-left: 3px solid var(--gold);
+		background: var(--gold-soft);
+		color: var(--gold-ink);
+		font-size: 9.5pt;
+	}
+
+	.foot {
+		margin-top: 12mm;
+		padding-top: 4mm;
+		border-top: 2px solid var(--gold);
+		font-size: 8.5pt;
+		color: var(--muted);
+	}
+	.foot p { margin: 0 0 1.5mm; }
+	.foot-note { font-size: 8pt; }
+
+	/* --- phones and small tablets ------------------------------------------
+	   Screen only: the PDF renders with print media, so none of this reaches it.
+	   Percentage columns that read well on A4 are unreadable at 390px, so the
+	   rows stack and the three-column matrix carries its own labels. */
+	@media screen and (max-width: 720px) {
+		.doc { padding: 0 6mm 12mm; }
+		.cover { margin: 0 -6mm 8mm; padding: 10mm 6mm 8mm; }
+		.cover h1 { font-size: 20pt; }
+		.lede { font-size: 10.5pt; }
+
+		.cover-mark { margin-bottom: 9mm; }
+		.cover-mark svg { display: block; }
+		.cover-mark > div { display: block; margin: 6px 0 0; }
+
+		.facts div { display: block; margin: 0 0 4mm; }
+		.facts div:last-child { margin-bottom: 0; }
+
+		.cols { margin-right: 0; }
+		.cols > div { display: block; width: 100%; margin: 0 0 6mm; }
+
+		.mhead { display: none; }
+		.mrow { padding: 2.5mm 0; }
+		/* Scoped through .matrix so these beat the A4 column widths. */
+		.matrix .mrow > span { display: block; width: 100%; padding: 0.5mm 0; }
+		.matrix .mrow > .mk { color: var(--green); }
+		.three .mrow > span::before {
+			content: attr(data-l) " — ";
+			color: var(--green);
+			font-weight: 700;
+		}
+	}
+
+	@media print {
+		body { background: var(--paper); }
+		.doc { max-width: none; padding: 0 16mm 10mm; }
+		.cover { margin: 0 -16mm 10mm; padding: 14mm 16mm 10mm; }
+		.no-print { display: none !important; }
+	}
+</style>

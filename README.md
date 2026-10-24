@@ -285,6 +285,12 @@ See `docs/tasks.md` for what is still owed before a pilot.
 - `docs/compatibility.md` — version matrix and cross-version risks
 - `docs/acceptance.md` — acceptance criteria per milestone
 - `docs/tasks.md` — milestone status
+- **Capability document** — a vendor-facing summary of what the app does, its
+  architecture and its stated limits, served at `/proposal` on any site with the
+  app installed and downloadable as a branded PDF from the button on that page.
+  Also reachable from the Batchwell workspace in Desk and from the operator
+  console sidebar. The page and the PDF render from the same template, so they
+  cannot drift apart.
 - [UI designs and handoff](docs/ui-design/README.md) — the presentation prototype and what was changed against it
 - `CLAUDE.md` — development standards for this repository
 
