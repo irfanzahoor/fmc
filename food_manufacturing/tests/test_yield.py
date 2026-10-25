@@ -9,6 +9,7 @@ figure at all.
 import frappe
 from frappe.utils import flt
 
+from food_manufacturing.compat.bom import byproduct_field, supports_work_order_byproducts
 from food_manufacturing.compat.testing import FMTestCase
 from food_manufacturing.production.yield_tracking import compute_yield
 from food_manufacturing.tests import fixtures
@@ -95,25 +96,38 @@ class TestYield(FMTestCase):
 	# -- 4.4 loss and by-products are separate -------------------------------
 
 	def test_byproducts_are_reported_separately_from_process_loss(self):
+		"""Recoverable by-product and non-recoverable loss stay distinct figures.
+
+		Where the version's Work Order carries no by-product table the
+		by-product figure is necessarily zero, and process loss must still
+		stand on its own - that is the contract either way.
+		"""
+		secondary = [{"item_code": "Oversize", "qty": 2}] if supports_work_order_byproducts() else None
 		doc = self.wo(
 			required=[{"item_code": "A", "required_qty": 100, "consumed_qty": 100, "stock_uom": "Kg"}],
 			qty=100,
 			produced_qty=95,
 			process_loss_qty=3,
-			secondary=[{"item_code": "Oversize", "qty": 2}],
+			secondary=secondary,
 		)
 		figures = compute_yield(doc)
 		self.assertEqual(flt(figures["fm_process_loss_qty_snapshot"]), 3)
-		self.assertEqual(flt(figures["fm_byproduct_qty"]), 2)
+		self.assertEqual(flt(figures["fm_byproduct_qty"]), 2 if secondary else 0)
 
 	def test_byproducts_read_through_the_compat_layer(self):
 		"""The by-product table is reached only via compat/bom.py."""
-		from food_manufacturing.compat.bom import byproduct_field, get_byproducts
+		from food_manufacturing.compat.bom import get_byproducts
 
-		doc = self.wo(
-			required=[{"item_code": "A", "required_qty": 100, "consumed_qty": 100, "stock_uom": "Kg"}],
-			secondary=[{"item_code": "Oversize", "qty": 7}],
-		)
+		required = [{"item_code": "A", "required_qty": 100, "consumed_qty": 100, "stock_uom": "Kg"}]
+
+		if not supports_work_order_byproducts():
+			# v15's Work Order has no by-product table at all, so the compat
+			# layer reports none and callers can still iterate unconditionally.
+			self.assertIsNone(byproduct_field("Work Order"))
+			self.assertEqual(get_byproducts(self.wo(required=required)), [])
+			return
+
+		doc = self.wo(required=required, secondary=[{"item_code": "Oversize", "qty": 7}])
 		self.assertEqual(byproduct_field("Work Order"), "secondary_items")
 		self.assertEqual([flt(r.qty) for r in get_byproducts(doc)], [7])
 
@@ -195,7 +209,10 @@ def build_work_order(required, qty=100, produced_qty=0, process_loss_qty=0, stoc
 	for row in required:
 		doc.append("required_items", row)
 
+	# Only v16+ carries a by-product table on the Work Order itself; on a
+	# version without one there is nowhere to put these rows.
+	fieldname = byproduct_field("Work Order")
 	for row in secondary or []:
-		doc.append("secondary_items", row)
+		doc.append(fieldname, row)
 
 	return doc

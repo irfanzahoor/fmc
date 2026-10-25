@@ -9,25 +9,37 @@ This is a Frappe/ERPNext app for spice and masala manufacturers.
   Local checkout: `/home/codeboy/fmc/frappe-code-standards`
 - Do not use other skills for code in this repository unless asked.
 
-## Project facts (detected 2026-10-22)
+## Project facts (detected 2026-10-22, versions updated 2026-10-25)
 
 | Fact | Value |
 |---|---|
 | Our app | `food_manufacturing` — DocTypes here are "ours" |
-| App repo path | `/home/codeboy/bench-16/apps/food_manufacturing` |
 | Module(s) | `Food Manufacturing Setup`, `Food Manufacturing Quality` |
 | Custom field prefix (other apps' DocTypes) | `fm_` |
 | Our DocType prefix | `FM ` (e.g. `FM Manufacturing Policy`) |
-| Primary bench | `/home/codeboy/bench-16` |
-| Primary site | `steps_erp.local` |
+| v16 bench / site | `/home/codeboy/bench-16` — `steps_erp.local` (branch `version-16`) |
+| v15 bench / site | `/home/codeboy/bench-15` — `fmc.local` (branch `version-15`) |
 | v16 versions | frappe 16.52.0 (`4515014c87`), erpnext 16.27.0 (`9d5c7605b8`) |
-| v15 | **out of scope** (2026-10-22). Do not add v15 claims or v15-only code paths. |
+| v15 versions | frappe 15.118.0 (`9b8d265b27`), erpnext 15.119.0 (`866688931b`) |
 | Python | 3.14.0 |
-| Other apps on the primary site | `erpnext`, `realestate` — extend only via hooks/fixtures |
+| Other apps on `steps_erp.local` | `erpnext`, `realestate` — extend only via hooks/fixtures |
+
+**Both v15 and v16 are delivery targets** as of 2026-10-25. All version differences live in
+`food_manufacturing/compat/`; read `docs/compatibility.md` before touching anything
+schema-dependent, and run the suite on **both** benches before finishing — a change green on
+one major and untested on the other is not done.
 
 `steps_erp.local` is a **populated, shared site** holding unrelated work (6 companies,
 11 warehouses, the `realestate` app). Never write test fixtures that create Companies or
 Warehouses there; discover existing records instead. See `food_manufacturing/tests/`.
+
+`fmc.local` is the disposable v15 site, flagged `fm_isolated_test_site` so
+`tests/ci_setup.prepare()` may give it fixture companies and parties. Its own `FMC` company
+is left alone by the suite. See "Test sites" in `docs/compatibility.md`.
+
+bench-16's redis does not always run; start it with `redis-server config/redis_cache.conf`
+and `redis-server config/redis_queue.conf` from `/home/codeboy/bench-16`, or every test
+fails with `Connection refused` on port 13002.
 
 ## Frontend
 
@@ -83,8 +95,11 @@ checks, POST-only mutations) and in the `doc_events` handlers beneath it.
 
 ## Commands
 
+Substitute the bench and site for the major you are on — `bench-16` / `steps_erp.local`
+or `bench-15` / `fmc.local`.
+
 ```bash
-cd /home/codeboy/bench-16
+cd /home/codeboy/bench-16                            # or /home/codeboy/bench-15
 bench --site steps_erp.local migrate                 # after DocType JSON, patch or fixture changes
 bench build --app food_manufacturing                 # after public JS/CSS changes
 bench --site steps_erp.local clear-cache             # after hooks.py changes

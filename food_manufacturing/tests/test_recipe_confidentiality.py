@@ -183,7 +183,7 @@ class TestRecipeConfidentiality(FMTestCase):
 		asks the question that matters: can a user get the formula out by
 		requesting it in an export?
 		"""
-		from frappe.core.doctype.data_import.exporter import Exporter
+		from food_manufacturing.compat.exporter import Exporter
 
 		exporter = Exporter(
 			"FM Recipe",

@@ -23,6 +23,7 @@ import frappe
 from frappe import _
 from frappe.utils import cint, flt, getdate
 
+from food_manufacturing.compat.bundle import get_entries
 from food_manufacturing.dispatch.shelf_life import get_batch_shelf_life
 from food_manufacturing.food_manufacturing_setup.doctype.fm_manufacturing_policy.fm_manufacturing_policy import (
 	get_policy_if_any,
@@ -175,8 +176,7 @@ def _find_breaches(rows, batches_by_row, company, policy=None) -> list:
 	minimum = flt(policy.min_remaining_shelf_life_percent) if policy else 0
 	bundle_names = [row.get("serial_and_batch_bundle") for row in rows if row.get("serial_and_batch_bundle")]
 	entries = (
-		frappe.get_all(
-			"Serial and Batch Entry",
+		get_entries(
 			filters={"parent": ("in", bundle_names), "is_cancelled": 0},
 			fields=["parent", "batch_no", "qty"],
 			order_by="parent asc, idx asc",

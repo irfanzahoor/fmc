@@ -4,9 +4,10 @@ This is the acceptance scenario's blending step, run for real: receive two
 ingredient lots into quarantine, release them, produce a bulk blend against an
 approved recipe, then assert the derived yield and the lot genealogy.
 
-The site's ``Stock Settings.enable_serial_and_batch_no_for_item`` is turned on
-for the duration and restored in tearDown, because batched stock is impossible
-without it and the host site has it off.
+Where the version gates lot handling behind a site-wide Stock Settings switch,
+it is turned on for the duration through ``compat.stock`` and restored in
+tearDown, because batched stock is impossible without it. On a version with no
+such switch both calls are no-ops.
 
 Each test gets its **own** items and batches, keyed off the test name. The
 framework rolls back per class rather than per test, so tests that post real
@@ -17,6 +18,7 @@ a required quantity of 120 kg against 60 kg of stock.
 import frappe
 from frappe.utils import flt
 
+from food_manufacturing.compat.stock import get_lot_feature, set_lot_feature
 from food_manufacturing.compat.testing import FMTestCase
 from food_manufacturing.production.genealogy import get_consumed_lots, get_work_order_batches
 from food_manufacturing.tests import fixtures
@@ -33,11 +35,8 @@ class TestProductionFlow(FMTestCase):
 		fixtures.cleanup_recipes()
 		fixtures.cleanup()
 
-		self.original_batch_setting = frappe.db.get_single_value(
-			"Stock Settings", "enable_serial_and_batch_no_for_item"
-		)
-		frappe.db.set_single_value("Stock Settings", "enable_serial_and_batch_no_for_item", 1)
-		frappe.clear_document_cache("Stock Settings", "Stock Settings")
+		self.original_batch_setting = get_lot_feature()
+		set_lot_feature(1)
 
 		self.policy = fixtures.ensure_policy(
 			self.site, require_incoming_inspection=0, yield_variance_tolerance_percent=2
@@ -52,12 +51,7 @@ class TestProductionFlow(FMTestCase):
 	def tearDown(self):
 		fixtures.cleanup_recipes()
 		fixtures.cleanup()
-		frappe.db.set_single_value(
-			"Stock Settings",
-			"enable_serial_and_batch_no_for_item",
-			self.original_batch_setting,
-		)
-		frappe.clear_document_cache("Stock Settings", "Stock Settings")
+		set_lot_feature(self.original_batch_setting)
 
 	# -- helpers --------------------------------------------------------------
 

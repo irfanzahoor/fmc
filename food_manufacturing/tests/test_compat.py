@@ -53,3 +53,16 @@ class TestCompat(FMTestCase):
 
 	def test_serial_and_batch_bundle_present(self):
 		self.assertTrue(frappe.db.exists("DocType", "Serial and Batch Bundle"))
+
+	def test_batch_expired_error_is_the_class_erpnext_raises(self):
+		"""ERPNext moved its stock exceptions to ``erpnext.exceptions`` in v16.
+
+		Identity matters, not just the name: an ``assertRaises`` against a
+		look-alike class would never match what the stock controller raises.
+		"""
+		from erpnext.controllers import stock_controller
+
+		from food_manufacturing.compat.exceptions import BatchExpiredError
+
+		self.assertIs(BatchExpiredError, stock_controller.BatchExpiredError)
+		self.assertTrue(issubclass(BatchExpiredError, frappe.ValidationError))

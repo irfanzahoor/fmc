@@ -19,6 +19,8 @@ import frappe
 from frappe.query_builder.functions import Sum
 from frappe.utils import flt
 
+from food_manufacturing.compat.bundle import get_entries, restrict_to_live
+
 
 def get_batch_quantities(batch_names, warehouses=None) -> dict:
 	"""Map batch name -> net on-hand quantity.
@@ -70,17 +72,15 @@ def _bundle_quantities(batch_names: list, warehouses) -> dict:
 	sle = frappe.qb.DocType("Stock Ledger Entry")
 	entry = frappe.qb.DocType("Serial and Batch Entry")
 
-	query = (
+	query = restrict_to_live(
 		frappe.qb.from_(sle)
 		.inner_join(entry)
 		.on(entry.parent == sle.serial_and_batch_bundle)
 		.select(entry.batch_no, Sum(entry.qty).as_("qty"))
 		.where(entry.batch_no.isin(batch_names))
-		.where(entry.is_cancelled == 0)
-		.where(sle.is_cancelled == 0)
-		.groupby(entry.batch_no)
-		.orderby(entry.batch_no)
-	)
+		.where(sle.is_cancelled == 0),
+		entry,
+	).groupby(entry.batch_no).orderby(entry.batch_no)
 	if warehouses:
 		query = query.where(sle.warehouse.isin(list(warehouses)))
 
@@ -105,15 +105,17 @@ def get_batch_balances(batch_names, warehouses) -> dict:
 		.orderby(sle.batch_no, sle.warehouse)
 	).run(as_dict=True)
 	bundled = (
-		frappe.qb.from_(sle)
-		.inner_join(entry)
-		.on(entry.parent == sle.serial_and_batch_bundle)
-		.select(entry.batch_no, sle.warehouse, Sum(entry.qty).as_("qty"))
-		.where(entry.batch_no.isin(list(batch_names)))
-		.where(sle.warehouse.isin(list(warehouses)))
-		.where(sle.is_cancelled == 0)
-		.where(entry.is_cancelled == 0)
-		.where(sle.posting_datetime <= frappe.utils.now_datetime())
+		restrict_to_live(
+			frappe.qb.from_(sle)
+			.inner_join(entry)
+			.on(entry.parent == sle.serial_and_batch_bundle)
+			.select(entry.batch_no, sle.warehouse, Sum(entry.qty).as_("qty"))
+			.where(entry.batch_no.isin(list(batch_names)))
+			.where(sle.warehouse.isin(list(warehouses)))
+			.where(sle.is_cancelled == 0)
+			.where(sle.posting_datetime <= frappe.utils.now_datetime()),
+			entry,
+		)
 		.groupby(entry.batch_no, sle.warehouse)
 		.orderby(entry.batch_no, sle.warehouse)
 	).run(as_dict=True)
@@ -168,8 +170,7 @@ def get_reserved_batch_quantities(batch_names, warehouses) -> dict:
 		if row.serial_and_batch_bundle and not row.use_serial_batch_fields
 	]
 	pos_entries = (
-		frappe.get_all(
-			"Serial and Batch Entry",
+		get_entries(
 			filters={"parent": ("in", bundles), "batch_no": ("in", list(batch_names)), "is_cancelled": 0},
 			fields=["batch_no", "warehouse", "qty"],
 			order_by="parent asc, idx asc",

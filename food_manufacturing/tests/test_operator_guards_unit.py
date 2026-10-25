@@ -167,19 +167,21 @@ class TestOperatorGuardsUnit(unittest.TestCase):
 		get_list.return_value = [{"name": "LOCAL", "item": "ITEM"}]
 		self.assertEqual(quality.get_release_queue("C")[0]["stock_uom"], "Kg")
 
+	# The bundle rows come from compat.bundle.get_entries, which reads the
+	# schema to decide where its columns live - so it is mocked as its own seam
+	# rather than through frappe.get_all, keeping this test database-free.
+	@patch.object(recall, "get_entries")
 	@patch.object(frappe, "get_all")
-	def test_recall_split_bundle_counts_only_affected_batch(self, get_all):
-		get_all.side_effect = [
-			[frappe._dict(parent="BUNDLE", batch_no="A", qty=-3)],
-			[
-				frappe._dict(
-					voucher_no="DN",
-					item_code="SKU",
-					batch_no=None,
-					actual_qty=-10,
-					serial_and_batch_bundle="BUNDLE",
-				)
-			],
+	def test_recall_split_bundle_counts_only_affected_batch(self, get_all, get_entries):
+		get_entries.return_value = [frappe._dict(parent="BUNDLE", batch_no="A", qty=-3)]
+		get_all.return_value = [
+			frappe._dict(
+				voucher_no="DN",
+				item_code="SKU",
+				batch_no=None,
+				actual_qty=-10,
+				serial_and_batch_bundle="BUNDLE",
+			)
 		]
 		rows = recall._movements({"A"}, "C", "Delivery Note")
 		self.assertEqual(rows[0]["qty"], -3)

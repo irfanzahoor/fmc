@@ -3,6 +3,7 @@
 import frappe
 
 from food_manufacturing.api.quality import QUEUE_STATUSES, get_batch_trail, get_release_queue
+from food_manufacturing.compat.stock import get_lot_feature, set_lot_feature
 from food_manufacturing.compat.testing import FMTestCase
 from food_manufacturing.tests import fixtures
 
@@ -17,11 +18,8 @@ class TestBatchTrail(FMTestCase):
 		fixtures.cleanup()
 		fixtures.cleanup_users()
 
-		self.original = frappe.db.get_single_value(
-			"Stock Settings", "enable_serial_and_batch_no_for_item"
-		)
-		frappe.db.set_single_value("Stock Settings", "enable_serial_and_batch_no_for_item", 1)
-		frappe.clear_document_cache("Stock Settings", "Stock Settings")
+		self.original = get_lot_feature()
+		set_lot_feature(1)
 
 		self.tag = self._testMethodName.replace("test_", "")[:12]
 		self.policy = fixtures.ensure_policy(self.site, require_incoming_inspection=0)
@@ -31,10 +29,7 @@ class TestBatchTrail(FMTestCase):
 		frappe.set_user("Administrator")
 		fixtures.cleanup()
 		fixtures.cleanup_users()
-		frappe.db.set_single_value(
-			"Stock Settings", "enable_serial_and_batch_no_for_item", self.original
-		)
-		frappe.clear_document_cache("Stock Settings", "Stock Settings")
+		set_lot_feature(self.original)
 
 	def receive(self, batch_no, qty=50):
 		doc = frappe.get_doc({

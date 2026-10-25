@@ -16,6 +16,7 @@ every number is read back from the stock ledger afterwards.
 import frappe
 from frappe.utils import flt
 
+from food_manufacturing.compat.stock import get_lot_feature, set_lot_feature
 from food_manufacturing.compat.testing import FMTestCase
 from food_manufacturing.packaging.validation import get_packaging_variance
 from food_manufacturing.production.genealogy import trace_backward
@@ -37,11 +38,8 @@ class TestAcceptanceScenario(FMTestCase):
 		fixtures.cleanup_recipes()
 		fixtures.cleanup()
 
-		self.original_batch_setting = frappe.db.get_single_value(
-			"Stock Settings", "enable_serial_and_batch_no_for_item"
-		)
-		frappe.db.set_single_value("Stock Settings", "enable_serial_and_batch_no_for_item", 1)
-		frappe.clear_document_cache("Stock Settings", "Stock Settings")
+		self.original_batch_setting = get_lot_feature()
+		set_lot_feature(1)
 
 		self.policy = fixtures.ensure_policy(
 			self.site, require_incoming_inspection=0, yield_variance_tolerance_percent=5
@@ -73,12 +71,7 @@ class TestAcceptanceScenario(FMTestCase):
 	def tearDown(self):
 		fixtures.cleanup_recipes()
 		fixtures.cleanup()
-		frappe.db.set_single_value(
-			"Stock Settings",
-			"enable_serial_and_batch_no_for_item",
-			self.original_batch_setting,
-		)
-		frappe.clear_document_cache("Stock Settings", "Stock Settings")
+		set_lot_feature(self.original_batch_setting)
 
 	# -- helpers --------------------------------------------------------------
 

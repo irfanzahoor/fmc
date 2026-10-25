@@ -155,27 +155,28 @@ class TestBatchEligibility(FMTestCase):
 
 	# -- dispatch -------------------------------------------------------------
 
-	def make_delivery(self, batch):
+	def make_delivery(self, batch, warehouse=None):
 		customer = frappe.db.get_value("Customer", {}, "name")
 		if not customer:
 			self.skipTest("Site has no Customer")
 
-		doc = frappe.get_doc(
+		# new_doc, not get_doc: only new_doc applies the DocType defaults, and a
+		# document validated without ever being inserted still needs them -
+		# ERPNext reads `is_return` while setting the incoming rate, and None
+		# there is not the same as 0.
+		doc = frappe.new_doc("Delivery Note")
+		doc.company = self.site["company"]
+		doc.customer = customer
+		doc.append(
+			"items",
 			{
-				"doctype": "Delivery Note",
-				"company": self.site["company"],
-				"customer": customer,
-				"items": [
-					{
-						"item_code": self.item,
-						"qty": 1,
-						"rate": 100,
-						"warehouse": self.site["stores"],
-						"batch_no": batch,
-						"use_serial_batch_fields": 1,
-					}
-				],
-			}
+				"item_code": self.item,
+				"qty": 1,
+				"rate": 100,
+				"warehouse": warehouse or self.site["stores"],
+				"batch_no": batch,
+				"use_serial_batch_fields": 1,
+			},
 		)
 		doc.run_method("validate")
 		return doc
@@ -193,29 +194,8 @@ class TestBatchEligibility(FMTestCase):
 	def test_quarantine_exception_does_not_apply_to_dispatch(self):
 		"""Dispatching *from* quarantine is never a permitted movement."""
 		batch = fixtures.ensure_batch(self.item, "B16", status="Quarantine")
-		customer = frappe.db.get_value("Customer", {}, "name")
-		if not customer:
-			self.skipTest("Site has no Customer")
-
-		doc = frappe.get_doc(
-			{
-				"doctype": "Delivery Note",
-				"company": self.site["company"],
-				"customer": customer,
-				"items": [
-					{
-						"item_code": self.item,
-						"qty": 1,
-						"rate": 100,
-						"warehouse": self.site["quarantine"],
-						"batch_no": batch,
-						"use_serial_batch_fields": 1,
-					}
-				],
-			}
-		)
 		with self.assertRaises(frappe.ValidationError):
-			doc.run_method("validate")
+			self.make_delivery(batch, warehouse=self.site["quarantine"])
 
 	# -- API path -------------------------------------------------------------
 

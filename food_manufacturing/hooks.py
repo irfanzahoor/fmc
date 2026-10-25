@@ -78,6 +78,17 @@ doc_events = {
 	},
 }
 
+# Overrides of framework endpoints
+# -------------------------------
+# Data Import's exporter ignores `permlevel` on v15, which would let a
+# permlevel-0 user export the confidential recipe formula. The replacement
+# reroutes only this app's own DocTypes; see overrides/data_import.py.
+override_whitelisted_methods = {
+	"frappe.core.doctype.data_import.data_import.download_template": (
+		"food_manufacturing.overrides.data_import.download_template"
+	),
+}
+
 # Operator SPA
 # ------------
 # The Vue app is served at /fm; vue-router owns everything below that prefix.

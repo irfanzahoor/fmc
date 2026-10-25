@@ -3,6 +3,7 @@
 import frappe
 from frappe.utils import add_days, flt, today
 
+from food_manufacturing.compat.stock import get_lot_feature, set_lot_feature
 from food_manufacturing.compat.testing import FMTestCase
 from food_manufacturing.production.genealogy import trace_forward
 from food_manufacturing.tests import fixtures
@@ -21,11 +22,8 @@ class TestDispatch(FMTestCase):
 			self.skipTest("Site has no Customer")
 
 		fixtures.cleanup()
-		self.original_batch_setting = frappe.db.get_single_value(
-			"Stock Settings", "enable_serial_and_batch_no_for_item"
-		)
-		frappe.db.set_single_value("Stock Settings", "enable_serial_and_batch_no_for_item", 1)
-		frappe.clear_document_cache("Stock Settings", "Stock Settings")
+		self.original_batch_setting = get_lot_feature()
+		set_lot_feature(1)
 
 		tag = self._testMethodName.replace("test_", "")[:16]
 		self.tag = tag
@@ -34,12 +32,7 @@ class TestDispatch(FMTestCase):
 
 	def tearDown(self):
 		fixtures.cleanup()
-		frappe.db.set_single_value(
-			"Stock Settings",
-			"enable_serial_and_batch_no_for_item",
-			self.original_batch_setting,
-		)
-		frappe.clear_document_cache("Stock Settings", "Stock Settings")
+		set_lot_feature(self.original_batch_setting)
 
 	def stock_batch(self, batch_id, qty=10, expiry=None, manufactured=None, status="Released"):
 		"""Receive stock, then set the batch's real dates.
@@ -205,7 +198,7 @@ class TestDispatch(FMTestCase):
 		expired dispatch possible. The policy flag can only ever be stricter
 		than ERPNext, never more permissive. Recorded in docs/acceptance.md.
 		"""
-		from erpnext.exceptions import BatchExpiredError
+		from food_manufacturing.compat.exceptions import BatchExpiredError
 
 		fixtures.ensure_policy(
 			self.site, block_expired_dispatch=0, min_remaining_shelf_life_percent=0

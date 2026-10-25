@@ -9,6 +9,8 @@ import frappe
 from frappe.query_builder.functions import Sum
 from frappe.utils import flt
 
+from food_manufacturing.compat.bundle import restrict_to_live
+from food_manufacturing.compat.stock import get_lot_feature, set_lot_feature
 from food_manufacturing.compat.testing import FMTestCase
 from food_manufacturing.costing.batch_cost import get_batch_actual_cost, get_batch_planned_cost
 from food_manufacturing.tests import fixtures
@@ -26,11 +28,8 @@ class TestBatchCosting(FMTestCase):
 	def setUp(self):
 		fixtures.cleanup_recipes()
 		fixtures.cleanup()
-		self.original_batch_setting = frappe.db.get_single_value(
-			"Stock Settings", "enable_serial_and_batch_no_for_item"
-		)
-		frappe.db.set_single_value("Stock Settings", "enable_serial_and_batch_no_for_item", 1)
-		frappe.clear_document_cache("Stock Settings", "Stock Settings")
+		self.original_batch_setting = get_lot_feature()
+		set_lot_feature(1)
 
 		self.policy = fixtures.ensure_policy(self.site, require_incoming_inspection=0)
 		# The full method name, untruncated: two names that truncate to the same
@@ -45,12 +44,7 @@ class TestBatchCosting(FMTestCase):
 	def tearDown(self):
 		fixtures.cleanup_recipes()
 		fixtures.cleanup()
-		frappe.db.set_single_value(
-			"Stock Settings",
-			"enable_serial_and_batch_no_for_item",
-			self.original_batch_setting,
-		)
-		frappe.clear_document_cache("Stock Settings", "Stock Settings")
+		set_lot_feature(self.original_batch_setting)
 
 	def receive(self, item_code, qty, rate, batch_id):
 		batch = fixtures.ensure_batch(item_code, batch_id, status="Released")
@@ -94,15 +88,15 @@ class TestBatchCosting(FMTestCase):
 			.where((sle.serial_and_batch_bundle.isnull()) | (sle.serial_and_batch_bundle == ""))
 		).run(as_dict=True)
 
-		bundled = (
+		bundled = restrict_to_live(
 			frappe.qb.from_(sle)
 			.inner_join(entry)
 			.on(entry.parent == sle.serial_and_batch_bundle)
 			.select(Sum(entry.stock_value_difference).as_("value"))
 			.where(entry.batch_no == batch_no)
-			.where(entry.is_cancelled == 0)
 			.where(sle.is_cancelled == 0)
-			.where(entry.is_outward == 0)
+			.where(entry.is_outward == 0),
+			entry,
 		).run(as_dict=True)
 
 		return flt(direct[0].value if direct else 0) + flt(bundled[0].value if bundled else 0)

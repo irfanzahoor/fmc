@@ -22,10 +22,15 @@ import frappe
 from frappe import _
 from frappe.utils import add_days, flt, nowdate, today
 
+from food_manufacturing.compat.stock import (
+	LOT_FEATURE_FIELD,
+	get_lot_feature,
+	lot_feature_field,
+	set_lot_feature,
+)
+
 PREFIX = "FM Demo"
 
-#: Stock Settings must allow batch bundles or no batched stock can move at all.
-BATCH_SETTING = "enable_serial_and_batch_no_for_item"
 #: Remembered here so teardown only reverts a value this module changed.
 BATCH_SETTING_FLAG = "fm_demo_restored_batch_setting"
 
@@ -127,9 +132,9 @@ def remove_demo_data(company: str | None = None, verbose: bool = True) -> None:
 	_retire_warehouses(company, log)
 
 	if frappe.db.get_default(BATCH_SETTING_FLAG):
-		frappe.db.set_single_value("Stock Settings", BATCH_SETTING, 0)
+		set_lot_feature(0)
 		frappe.db.set_default(BATCH_SETTING_FLAG, None)
-		log("Restored Stock Settings.enable_serial_and_batch_no_for_item to 0")
+		log(f"Restored Stock Settings.{LOT_FEATURE_FIELD} to 0")
 
 	log("Removed.")
 
@@ -209,14 +214,19 @@ def _resolve_company(company: str | None) -> str:
 
 
 def _enable_batch_setting(log) -> None:
-	current = frappe.db.get_single_value("Stock Settings", BATCH_SETTING)
-	if current:
+	if not lot_feature_field():
+		# Versions before the site-wide switch allow lot handling unconditionally,
+		# so there is nothing to turn on and nothing for teardown to restore.
+		log("Lot handling needs no site-wide switch on this version.")
 		return
 
-	frappe.db.set_single_value("Stock Settings", BATCH_SETTING, 1)
+	if get_lot_feature():
+		return
+
+	set_lot_feature(1)
 	# Remember that WE turned it on, so teardown can put it back.
 	frappe.db.set_default(BATCH_SETTING_FLAG, "1")
-	log("Enabled Stock Settings.enable_serial_and_batch_no_for_item (site-wide)")
+	log(f"Enabled Stock Settings.{LOT_FEATURE_FIELD} (site-wide)")
 
 
 def _ensure_warehouses(company: str, log) -> dict:

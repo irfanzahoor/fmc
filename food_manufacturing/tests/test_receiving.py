@@ -4,17 +4,18 @@ This submits a real Purchase Receipt so the standard ERPNext batch-creation path
 runs. The framework rolls the transaction back after each test, so no stock
 ledger entry survives.
 
-Precondition: ERPNext refuses to create a Serial and Batch Bundle unless
-``Stock Settings.enable_serial_and_batch_no_for_item`` is on, and batched
-receiving is impossible without it. The host site has it off, so these tests
-turn it on and restore the original value in tearDown - belt and braces on top
-of the transaction rollback, because Stock Settings is a Single and therefore
-site-wide.
+Precondition: where ERPNext gates lot handling behind a site-wide switch it
+refuses to create a Serial and Batch Bundle while that switch is off, and
+batched receiving is impossible without it. These tests turn it on through
+``compat.stock`` and restore the original value in tearDown - belt and braces on
+top of the transaction rollback, because Stock Settings is a Single and
+therefore site-wide. On a version with no such switch both calls are no-ops.
 """
 
 import frappe
 from frappe.utils import add_days, getdate, today
 
+from food_manufacturing.compat.stock import get_lot_feature, set_lot_feature
 from food_manufacturing.compat.testing import FMTestCase
 from food_manufacturing.overrides.purchase_receipt import stamp_batches
 from food_manufacturing.quality.batch_eligibility import get_row_batches
@@ -32,11 +33,8 @@ class TestReceiving(FMTestCase):
 		if not self.supplier:
 			self.skipTest("Site has no Supplier")
 
-		self.original_batch_setting = frappe.db.get_single_value(
-			"Stock Settings", "enable_serial_and_batch_no_for_item"
-		)
-		frappe.db.set_single_value("Stock Settings", "enable_serial_and_batch_no_for_item", 1)
-		frappe.clear_document_cache("Stock Settings", "Stock Settings")
+		self.original_batch_setting = get_lot_feature()
+		set_lot_feature(1)
 
 		fixtures.cleanup()
 		self.policy = fixtures.ensure_policy(self.site)
@@ -45,12 +43,7 @@ class TestReceiving(FMTestCase):
 
 	def tearDown(self):
 		fixtures.cleanup()
-		frappe.db.set_single_value(
-			"Stock Settings",
-			"enable_serial_and_batch_no_for_item",
-			self.original_batch_setting,
-		)
-		frappe.clear_document_cache("Stock Settings", "Stock Settings")
+		set_lot_feature(self.original_batch_setting)
 
 	def make_receipt(self, item_code, warehouse, lot_no=None, submit=True, mfg_date=None):
 		"""Build a receipt. Batch numbering is left entirely to ERPNext."""

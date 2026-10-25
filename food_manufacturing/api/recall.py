@@ -4,6 +4,7 @@ import frappe
 from frappe import _
 from frappe.utils import flt
 
+from food_manufacturing.compat.bundle import get_entries
 from food_manufacturing.stock_levels import get_batch_balances
 
 
@@ -172,8 +173,7 @@ def _movements(batches, company, voucher_type, vouchers=None, outward=None):
 	if outward is not None:
 		filters["actual_qty"] = ("<" if outward else ">", 0)
 	bundle_rows = (
-		frappe.get_all(
-			"Serial and Batch Entry",
+		get_entries(
 			filters={"batch_no": ("in", sorted(batches)), "is_cancelled": 0},
 			fields=["parent", "batch_no", "qty"],
 			order_by="parent asc, idx asc",
@@ -199,8 +199,7 @@ def _movements(batches, company, voucher_type, vouchers=None, outward=None):
 	if not batches:
 		bundles = sorted({r.serial_and_batch_bundle for r in ledger if r.serial_and_batch_bundle})
 		bundle_rows = (
-			frappe.get_all(
-				"Serial and Batch Entry",
+			get_entries(
 				filters={"parent": ("in", bundles), "is_cancelled": 0},
 				fields=["parent", "batch_no", "qty"],
 				order_by="parent asc, idx asc",

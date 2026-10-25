@@ -7,6 +7,7 @@ comes from a template the plant configured, never from this app.
 
 import frappe
 
+from food_manufacturing.compat.stock import get_lot_feature, set_lot_feature
 from food_manufacturing.compat.testing import FMTestCase
 from food_manufacturing.quality.inspection import (
 	STAGES,
@@ -71,11 +72,8 @@ class TestQualityInspection(FMTestCase):
 		return name
 
 	def receive(self, item_code, qty, batch_no):
-		original = frappe.db.get_single_value(
-			"Stock Settings", "enable_serial_and_batch_no_for_item"
-		)
-		frappe.db.set_single_value("Stock Settings", "enable_serial_and_batch_no_for_item", 1)
-		frappe.clear_document_cache("Stock Settings", "Stock Settings")
+		original = get_lot_feature()
+		set_lot_feature(1)
 		try:
 			doc = frappe.get_doc({
 				"doctype": "Stock Entry",
@@ -92,10 +90,7 @@ class TestQualityInspection(FMTestCase):
 			doc.submit()
 			return doc
 		finally:
-			frappe.db.set_single_value(
-				"Stock Settings", "enable_serial_and_batch_no_for_item", original
-			)
-			frappe.clear_document_cache("Stock Settings", "Stock Settings")
+			set_lot_feature(original)
 
 	# --- the three stages ---------------------------------------------------
 

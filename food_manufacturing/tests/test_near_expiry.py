@@ -3,6 +3,7 @@
 import frappe
 from frappe.utils import add_days, flt, today
 
+from food_manufacturing.compat.stock import get_lot_feature, set_lot_feature
 from food_manufacturing.compat.testing import FMTestCase
 from food_manufacturing.tasks.near_expiry import get_near_expiry_batches
 from food_manufacturing.tests import fixtures
@@ -17,11 +18,8 @@ class TestNearExpiry(FMTestCase):
 
 	def setUp(self):
 		fixtures.cleanup()
-		self.original_batch_setting = frappe.db.get_single_value(
-			"Stock Settings", "enable_serial_and_batch_no_for_item"
-		)
-		frappe.db.set_single_value("Stock Settings", "enable_serial_and_batch_no_for_item", 1)
-		frappe.clear_document_cache("Stock Settings", "Stock Settings")
+		self.original_batch_setting = get_lot_feature()
+		set_lot_feature(1)
 
 		self.policy = fixtures.ensure_policy(self.site, near_expiry_alert_days=30)
 		tag = self._testMethodName.replace("test_", "")[:16]
@@ -30,12 +28,7 @@ class TestNearExpiry(FMTestCase):
 
 	def tearDown(self):
 		fixtures.cleanup()
-		frappe.db.set_single_value(
-			"Stock Settings",
-			"enable_serial_and_batch_no_for_item",
-			self.original_batch_setting,
-		)
-		frappe.clear_document_cache("Stock Settings", "Stock Settings")
+		set_lot_feature(self.original_batch_setting)
 
 	def stock_batch(self, batch_id, qty, expiry, status="Released"):
 		batch = fixtures.ensure_batch(self.item, batch_id, status=status)

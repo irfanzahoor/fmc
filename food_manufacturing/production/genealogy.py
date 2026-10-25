@@ -21,6 +21,8 @@ never counted twice.
 import frappe
 from frappe.utils import flt
 
+from food_manufacturing.compat.bundle import get_entries
+
 #: Stock Entry purposes that belong to a Work Order's material flow.
 WORK_ORDER_PURPOSES = (
 	"Material Transfer for Manufacture",
@@ -108,8 +110,7 @@ def _bundle_entries(bundles: list) -> list:
 	if not bundles:
 		return []
 
-	return frappe.get_all(
-		"Serial and Batch Entry",
+	return get_entries(
 		filters={
 			"parent": ("in", bundles),
 			"batch_no": ("is", "set"),
@@ -188,8 +189,7 @@ def get_producing_work_orders(item_code: str, batch_no: str) -> list:
 
 	More than one is possible: a batch may be topped up by several runs.
 	"""
-	bundles = frappe.get_all(
-		"Serial and Batch Entry",
+	bundles = get_entries(
 		filters={"batch_no": batch_no, "is_cancelled": 0, "is_outward": 0},
 		pluck="parent",
 		order_by="parent asc",
@@ -329,8 +329,7 @@ def trace_forward(item_code: str, batch_no: str) -> list:
 
 def get_consuming_work_orders(batch_no: str) -> list:
 	"""Work Orders that consumed this batch."""
-	bundles = frappe.get_all(
-		"Serial and Batch Entry",
+	bundles = get_entries(
 		filters={"batch_no": batch_no, "is_cancelled": 0, "is_outward": 1},
 		pluck="parent",
 		order_by="parent asc",

@@ -1,7 +1,7 @@
 """Two-process posting checks; commits only on the explicit disposable CI site.
 
-Run after the normal suite: bench --site ci.localhost execute
-food_manufacturing.tests.concurrency.run
+Run after the normal suite, on a site flagged fm_isolated_test_site:
+bench --site <site> execute food_manufacturing.tests.concurrency.run
 """
 
 import json
@@ -14,6 +14,9 @@ from uuid import uuid4
 
 import frappe
 from frappe import _
+
+from food_manufacturing.compat.stock import get_lot_feature, set_lot_feature
+from food_manufacturing.tests.ci_setup import ISOLATION_FLAG
 
 WORKER = """
 import json, sys
@@ -37,8 +40,12 @@ finally:
 
 
 def run():
-	if frappe.local.site != "ci.localhost" or not frappe.conf.get("fm_isolated_test_site"):
-		frappe.throw(_("Concurrency checks require the disposable ci.localhost site."))
+	if not frappe.conf.get(ISOLATION_FLAG):
+		frappe.throw(
+			_("Concurrency checks require a disposable site with {0} set in its site config.").format(
+				frappe.bold(ISOLATION_FLAG)
+			)
+		)
 	from food_manufacturing.tests import fixtures
 	from food_manufacturing.tests.test_api import APITestCase
 
@@ -65,10 +72,7 @@ def run():
 	finally:
 		frappe.db.rollback()
 		# Keep committed ledger fixtures intact for inspection; discard this CI site afterwards.
-		frappe.db.set_single_value(
-			"Stock Settings", "enable_serial_and_batch_no_for_item", fixture.original_batch_setting
-		)
-		frappe.clear_document_cache("Stock Settings", "Stock Settings")
+		set_lot_feature(fixture.original_batch_setting)
 		frappe.db.commit()
 
 

@@ -25,6 +25,7 @@ import frappe
 from frappe.query_builder.functions import Sum
 from frappe.utils import flt
 
+from food_manufacturing.compat.bundle import restrict_to_live
 from food_manufacturing.production.genealogy import get_producing_work_orders
 
 
@@ -89,18 +90,20 @@ def _bundle_inward(batch_names: list):
 	sle = frappe.qb.DocType("Stock Ledger Entry")
 	entry = frappe.qb.DocType("Serial and Batch Entry")
 	rows = (
-		frappe.qb.from_(sle)
-		.inner_join(entry)
-		.on(entry.parent == sle.serial_and_batch_bundle)
-		.select(
-			entry.batch_no,
-			Sum(entry.stock_value_difference).as_("value"),
-			Sum(entry.qty).as_("qty"),
+		restrict_to_live(
+			frappe.qb.from_(sle)
+			.inner_join(entry)
+			.on(entry.parent == sle.serial_and_batch_bundle)
+			.select(
+				entry.batch_no,
+				Sum(entry.stock_value_difference).as_("value"),
+				Sum(entry.qty).as_("qty"),
+			)
+			.where(entry.batch_no.isin(batch_names))
+			.where(sle.is_cancelled == 0)
+			.where(entry.is_outward == 0),
+			entry,
 		)
-		.where(entry.batch_no.isin(batch_names))
-		.where(entry.is_cancelled == 0)
-		.where(sle.is_cancelled == 0)
-		.where(entry.is_outward == 0)
 		.groupby(entry.batch_no)
 		.orderby(entry.batch_no)
 	).run(as_dict=True)
