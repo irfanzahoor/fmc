@@ -1,0 +1,324 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "naming_series:",
+ "creation": "2026-10-25 15:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "naming_series",
+  "batch",
+  "item_code",
+  "item_name",
+  "column_break_main",
+  "company",
+  "drill_type",
+  "started_at",
+  "conducted_by",
+  "result_section",
+  "seconds_to_trace",
+  "affected_batches",
+  "affected_deliveries",
+  "affected_customers",
+  "column_break_result",
+  "truncated",
+  "trace_complete",
+  "quantity_section",
+  "inward_qty",
+  "dispatched_qty",
+  "on_hand_qty",
+  "column_break_quantity",
+  "in_rejected_warehouse",
+  "accounted_percent",
+  "balance_flagged",
+  "stock_uom",
+  "findings_section",
+  "findings",
+  "snapshot_section",
+  "trace_snapshot",
+  "audit_section",
+  "amended_from"
+ ],
+ "index_web_pages_for_search": 1,
+ "is_submittable": 1,
+ "links": [],
+ "modified": "2026-10-25 15:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Food Manufacturing Quality",
+ "name": "FM Recall Drill",
+ "owner": "Administrator",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "fields": [
+  {
+   "default": "FM-DRILL-.YYYY.-",
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "label": "Series",
+   "options": "FM-DRILL-.YYYY.-",
+   "reqd": 1
+  },
+  {
+   "description": "The lot the trace starts from: a supplier lot, a bulk blend or a packed SKU batch.",
+   "fieldname": "batch",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Batch",
+   "options": "Batch",
+   "reqd": 1
+  },
+  {
+   "fieldname": "item_code",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Item",
+   "options": "Item",
+   "read_only": 1
+  },
+  {
+   "fieldname": "item_name",
+   "fieldtype": "Data",
+   "label": "Item Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_main",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "label": "Company",
+   "options": "Company",
+   "reqd": 1
+  },
+  {
+   "default": "Mock Drill",
+   "description": "A Mock Drill is a practice exercise. An Actual Recall records a real event. Only the label differs - the trace and the figures are identical, and neither notifies anybody.",
+   "fieldname": "drill_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Type",
+   "options": "Mock Drill\nActual Recall",
+   "reqd": 1
+  },
+  {
+   "fieldname": "started_at",
+   "fieldtype": "Datetime",
+   "label": "Started At",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "conducted_by",
+   "fieldtype": "Link",
+   "label": "Conducted By",
+   "no_copy": 1,
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "result_section",
+   "fieldtype": "Section Break",
+   "label": "Trace Result"
+  },
+  {
+   "description": "Wall-clock seconds the trace itself took. This is the number an auditor asks for.",
+   "fieldname": "seconds_to_trace",
+   "fieldtype": "Float",
+   "label": "Seconds to Trace",
+   "no_copy": 1,
+   "precision": "3",
+   "read_only": 1
+  },
+  {
+   "fieldname": "affected_batches",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Affected Batches",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "affected_deliveries",
+   "fieldtype": "Int",
+   "label": "Affected Deliveries",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "affected_customers",
+   "fieldtype": "Int",
+   "label": "Customers to Contact",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_result",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "Set when the trace hit its depth limit, so the list of affected batches may be incomplete.",
+   "fieldname": "truncated",
+   "fieldtype": "Check",
+   "label": "Trace Truncated",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "default": "1",
+   "description": "Clear when the trace was truncated. A drill that could not see the whole chain is not evidence that the chain is traceable.",
+   "fieldname": "trace_complete",
+   "fieldtype": "Check",
+   "label": "Trace Complete",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "quantity_section",
+   "fieldtype": "Section Break",
+   "label": "Mass Balance"
+  },
+  {
+   "fieldname": "inward_qty",
+   "fieldtype": "Float",
+   "label": "Received or Made",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "dispatched_qty",
+   "fieldtype": "Float",
+   "label": "Dispatched",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "on_hand_qty",
+   "fieldtype": "Float",
+   "label": "Still On Hand",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_quantity",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "Stock already contained in the rejected warehouse, so it needs no further action.",
+   "fieldname": "in_rejected_warehouse",
+   "fieldtype": "Float",
+   "label": "In Rejected Warehouse",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "description": "How much of the lot the balance could place. Below 100% means stock the ledger cannot account for.",
+   "fieldname": "accounted_percent",
+   "fieldtype": "Percent",
+   "label": "Accounted For",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "description": "Set when a transformation step overran its input, or the disposition left a residual. Means a person should look, not that something is wrong.",
+   "fieldname": "balance_flagged",
+   "fieldtype": "Check",
+   "label": "Balance Flagged",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "stock_uom",
+   "fieldtype": "Link",
+   "label": "UOM",
+   "no_copy": 1,
+   "options": "UOM",
+   "read_only": 1
+  },
+  {
+   "fieldname": "findings_section",
+   "fieldtype": "Section Break",
+   "label": "Findings"
+  },
+  {
+   "description": "What the exercise showed, and what will be done about it. Written by the person who ran it.",
+   "fieldname": "findings",
+   "fieldtype": "Small Text",
+   "label": "Findings and Actions"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "snapshot_section",
+   "fieldtype": "Section Break",
+   "label": "Evidence Snapshot"
+  },
+  {
+   "description": "The trace exactly as it read when the drill was run. Kept because an auditor asks what was found on the day, which re-deriving today would not answer.",
+   "fieldname": "trace_snapshot",
+   "fieldtype": "Code",
+   "label": "Trace Snapshot",
+   "no_copy": 1,
+   "options": "JSON",
+   "read_only": 1
+  },
+  {
+   "fieldname": "audit_section",
+   "fieldtype": "Section Break",
+   "label": "Audit"
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "FM Recall Drill",
+   "read_only": 1
+  }
+ ],
+ "permissions": [
+  {
+   "amend": 1,
+   "cancel": 1,
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  },
+  {
+   "amend": 1,
+   "cancel": 1,
+   "create": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "FM Quality Manager",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  },
+  {
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "FM Quality Inspector"
+  },
+  {
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "FM Production Manager"
+  }
+ ]
+}

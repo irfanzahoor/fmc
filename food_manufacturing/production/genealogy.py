@@ -389,3 +389,90 @@ def _supplier_lot(batch_no: str) -> dict:
 		as_dict=True,
 	)
 	return values or {}
+
+
+def get_batch_movements(batches, company, voucher_type, vouchers=None, outward=None):
+	"""Per-batch quantities moved by vouchers of one type, bundle-aware.
+
+	Returns ``[{"voucher_no", "item_code", "batch_no", "qty"}]`` with ``qty``
+	keeping the ledger's sign, so an outward row is negative and a return
+	nets itself out.
+
+	The point of this reader is what it does **not** do: when a Stock Ledger
+	Entry carries a Serial and Batch Bundle holding several batches, the row's
+	own quantity belongs to the bundle as a whole, not to any one batch. Taking
+	it per batch would multiply a multi-batch movement by the number of batches
+	in it. So a bundled row is read from its entries and only an unbundled row
+	is taken at face value.
+
+	``vouchers=[]`` means "no vouchers to look at" and returns nothing, which
+	is different from ``None`` ("any voucher").
+	"""
+	if vouchers == []:
+		return []
+	filters = {"company": company, "is_cancelled": 0, "voucher_type": voucher_type}
+	if vouchers is not None:
+		filters["voucher_no"] = ("in", vouchers)
+	if outward is not None:
+		filters["actual_qty"] = ("<" if outward else ">", 0)
+	bundle_rows = (
+		get_entries(
+			filters={"batch_no": ("in", sorted(batches)), "is_cancelled": 0},
+			fields=["parent", "batch_no", "qty"],
+			order_by="parent asc, idx asc",
+		)
+		if batches
+		else []
+	)
+	or_filters = (
+		{
+			"batch_no": ("in", sorted(batches)),
+			"serial_and_batch_bundle": ("in", sorted({r.parent for r in bundle_rows})),
+		}
+		if batches
+		else None
+	)
+	ledger = frappe.get_all(
+		"Stock Ledger Entry",
+		filters=filters,
+		or_filters=or_filters,
+		fields=["voucher_no", "item_code", "batch_no", "actual_qty", "serial_and_batch_bundle"],
+		order_by="posting_datetime asc, name asc",
+	)
+	if not batches:
+		bundles = sorted({r.serial_and_batch_bundle for r in ledger if r.serial_and_batch_bundle})
+		bundle_rows = (
+			get_entries(
+				filters={"parent": ("in", bundles), "is_cancelled": 0},
+				fields=["parent", "batch_no", "qty"],
+				order_by="parent asc, idx asc",
+			)
+			if bundles
+			else []
+		)
+	by_bundle = {}
+	for row in bundle_rows:
+		by_bundle.setdefault(row.parent, []).append(row)
+	result = []
+	for row in ledger:
+		if row.serial_and_batch_bundle:
+			for entry in by_bundle.get(row.serial_and_batch_bundle, []):
+				if entry.batch_no:
+					result.append(
+						{
+							"voucher_no": row.voucher_no,
+							"item_code": row.item_code,
+							"batch_no": entry.batch_no,
+							"qty": entry.qty,
+						}
+					)
+		elif row.batch_no:
+			result.append(
+				{
+					"voucher_no": row.voucher_no,
+					"item_code": row.item_code,
+					"batch_no": row.batch_no,
+					"qty": row.actual_qty,
+				}
+			)
+	return result

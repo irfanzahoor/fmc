@@ -25,6 +25,8 @@ than copying them.
 | Selling and dispatch | `Sales Order`, `Delivery Note`, `Sales Invoice`, `Payment Entry` | dispatch-time validation of expiry, remaining shelf life and batch release status |
 | Traceability | `Stock Ledger Entry`, `Serial and Batch Bundle`, `Batch.parent_batch` | report-only genealogy derived from submitted transactions — no stored duplicate graph |
 | Costing | `Stock Ledger Entry` valuation, `BOM` cost, `Landed Cost Voucher` | reports that present ledger valuation per batch and per pack, clearly separated from BOM planned cost |
+| Supplier rating | `Supplier Scorecard`, `Supplier Scorecard Criteria`, `Supplier Scorecard Variable`, `Supplier Scorecard Period` | four `Supplier Scorecard Variable` records whose `path` points at this app, so quality outcomes feed ERPNext's own scoring instead of a second one |
+| Recall evidence | `Stock Ledger Entry`, `Serial and Batch Bundle`, `Batch.parent_batch` | `FM Recall Drill` recording that an exercise was carried out, how long the trace took and what it found |
 
 ## Why each custom DocType is justified
 
@@ -36,6 +38,7 @@ A custom DocType is only created where standard configuration cannot express the
 | `FM Recipe` | A BOM cannot be entered as percentages, has no approval state distinct from submit, and has no confidential-formula permlevel. Generates a standard BOM rather than replacing it. | planned (M3) |
 | `FM Batch Release` | `Quality Inspection` records *measurements*; it does not record an authorised release decision, who made it, or a later hold/reject with history. Batch status alone has no audit trail. | planned (M2) |
 | ~~`FM Production Run`~~ | **Not created — design revised in M4 after reading the real schema.** `Work Order` already maintains `required_items[].required_qty` / `consumed_qty`, `produced_qty`, `process_loss_qty`, and (v16) by-products in `secondary_items`; ERPNext updates them itself when a manufacturing Stock Entry is submitted or cancelled. A wrapper DocType would have duplicated all of that. The genuine gaps — a **yield** figure and a variance flag against the company tolerance — are `fm_` fields on Work Order, and lot allocation is *derived* from the ledger rather than stored. | **replaced by an extension** |
+| `FM Recall Drill` | Everything else in this app derives traceability from the ledger and stores nothing, so it cannot drift. A drill is the one case where storing *is* the point: the evidence an auditor asks for is what the trace showed **on the day it was run**, and re-deriving it today answers a different question, because stock has since moved, lots have been consumed and batches released. The elapsed time, the counts and the snapshot are therefore written once at submit and are read-only after. No standard DocType records a completed exercise: `Quality Inspection` holds measurements of a batch, not an account of a procedure. | **implemented (2026-10-25)** |
 | ~~`FM Packaging Run`~~ | **Not created — design revised in M5.** A packaging run is a standard Work Order whose BOM consumes the bulk blend plus packaging materials. The bulk→packed link is already in the ledger, so genealogy is derived rather than stored, and packaging variance comes from `Work Order Item.required_qty` / `consumed_qty`. What ERPNext cannot express is the *shape* a packaging BOM must have, which is enforced in `packaging/validation.py`. | **replaced by validation + derivation** |
 
 Deliberately **not** created: any invoice, payment, stock ledger, valuation or accounting
@@ -162,3 +165,75 @@ unconfigured policy blocks rather than permits.
 Accessors: `get_policy(company)` throws when missing (safe default for consumption
 validation); `get_policy_if_any(company)` returns `None`, and also returns `None` for a
 disabled policy.
+
+## Mass balance (2026-10-25)
+
+No custom DocType. `production/mass_balance.py` derives two figures that are
+deliberately kept apart, because only one of them can fail.
+
+| Figure | What it answers | Can it disagree? |
+|---|---|---|
+| **Disposition** | How much of a lot was consumed, issued, dispatched, rejected and is still on hand | **No.** For one batch in one company the ledger guarantees `inward - outward == on hand`. The value is the breakdown, not the identity. |
+| **Transformation** | Input against output on every production step the lot fed | **Yes.** A blend's output is a different item and batch from its inputs, so no ledger identity constrains them. |
+
+The transformation figure is the control worth having: 100 kg of ingredients
+reported as 110 kg of blend is visible here and nowhere else. In a spice plant
+that is the shape extension, a mis-keyed output or a double-counted input takes.
+
+Two honesty constraints, both found by running it against the demo data:
+
+- **Internal transfers are not receipts.** Both legs of a quarantine-to-stores
+  move are in the ledger. Counting the inward leg read a 120 kg lot as 240 kg
+  received. `INTERNAL_PURPOSES` excludes them.
+- **Mixed units are not subtracted.** A packaging step consumes kilograms of
+  bulk and produces a count of packs. Reporting "950 over" for it would be
+  arithmetic on incompatible units, so the step reports both quantities and
+  states why they cannot be differenced — the same rule
+  `yield_tracking.fm_yield_basis` follows.
+
+The same bug class was found in `costing/batch_cost.py`, which had been counting
+transfer legs since it was written: the rate was right because quantity and
+value doubled together, which is why no test caught it. Totals were double.
+
+## Supplier lot quality (2026-10-25)
+
+No custom DocType. `quality/supplier_quality.py` plus the
+**FM Supplier Lot Quality** report, and four variables registered into
+ERPNext's own `Supplier Scorecard`.
+
+ERPNext's scorecard scores the *purchase*: shipments, on-time delivery, and the
+quantity a receipt clerk marked rejected at the gate. It cannot know what the
+lab decided afterwards, which is held on `Batch.fm_quality_status` and written
+only by `FM Batch Release` — usually days after the receipt was accepted.
+
+So this answers the buying question ERPNext cannot: **what did a usable
+kilogram cost?** A lot bought at 300/kg of which 20% is rejected cost 375/kg
+usable, and that is the figure that decides where to buy next season.
+
+| Registered variable | `param_name` | Measures |
+|---|---|---|
+| FM Lots Received | `fm_lots_received` | Lots received in the period |
+| FM Received Qty | `fm_received_qty` | Quantity received, transfer legs excluded |
+| FM QC Rejected Qty | `fm_qc_rejected_qty` | Quantity the lab rejected, not the gate |
+| FM Usable Qty | `fm_usable_qty` | Received less rejected |
+
+Three deliberate decisions:
+
+- **"Hold" counts as usable.** A held lot has not been decided against, and
+  charging a supplier for a decision the plant has not made would be unfair.
+- **A fully rejected lot states no usable rate.** Falling back to the purchase
+  rate there would understate the loss rather than overstate it.
+- **No limit is invented.** Nothing here decides what an acceptable reject rate
+  is; it reports the rate and the cost, and the plant's own Scorecard Criteria
+  express the judgement.
+
+The variables are created in code (`setup/scorecard.py`), not exported as
+fixtures, because `Supplier Scorecard Variable` has no `module` field, so a
+scoped fixture filter cannot express "ours".
+
+Their `path` points at `food_manufacturing.scorecard_variables`, one level below
+the package root, because ERPNext resolves a variable path with
+`__import__(root)` and a plain `getattr` chain rather than an import. A lazy
+PEP 562 `__getattr__` in `food_manufacturing/__init__.py` makes that one level
+resolve without importing anything at boot; a deeper path would need the same
+hook in every package along the way.

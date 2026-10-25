@@ -29,11 +29,15 @@ from food_manufacturing.compat.bundle import restrict_to_live
 from food_manufacturing.production.genealogy import get_producing_work_orders
 
 
-def get_batch_actual_cost(batch_names) -> dict:
+def get_batch_actual_cost(batch_names, from_date=None, to_date=None) -> dict:
 	"""Map batch -> {value, qty, rate} from the stock ledger.
 
 	Inward movements only: those carry the valuation at which the batch entered
 	stock. Outward movements consume it at that value and would cancel it out.
+
+	``from_date`` / ``to_date`` narrow the window to entries posted inside it,
+	which is what a per-period supplier comparison needs. Both default to None,
+	meaning the batch's whole history — the figure a batch cost report wants.
 	"""
 	if not batch_names:
 		return {}
@@ -41,10 +45,10 @@ def get_batch_actual_cost(batch_names) -> dict:
 	batch_names = list(batch_names)
 	totals = {}
 
-	for batch_no, value, qty in _direct_inward(batch_names):
+	for batch_no, value, qty in _direct_inward(batch_names, from_date, to_date):
 		_add(totals, batch_no, value, qty)
 
-	for batch_no, value, qty in _bundle_inward(batch_names):
+	for batch_no, value, qty in _bundle_inward(batch_names, from_date, to_date):
 		_add(totals, batch_no, value, qty)
 
 	for batch_no, row in totals.items():
@@ -59,20 +63,65 @@ def _add(totals: dict, batch_no: str, value, qty) -> None:
 	row["qty"] += flt(qty)
 
 
-def _direct_inward(batch_names: list):
+#: Stock Entry purposes whose inward leg is not an arrival into the plant but
+#: the receiving half of a move between its own warehouses. Both legs are in the
+#: ledger, so counting the positive one reports the same material twice: a
+#: 180 kg lot moved quarantine -> stores read as 360 kg received, at the correct
+#: rate but double the quantity and double the value.
+INTERNAL_PURPOSES = (
+	"Material Transfer",
+	"Material Transfer for Manufacture",
+	"Send to Subcontractor",
+)
+
+
+def _within(query, sle, from_date, to_date):
+	"""Narrow a ledger query to a posting-date window, when one is given."""
+	if from_date:
+		query = query.where(sle.posting_date >= from_date)
+	if to_date:
+		query = query.where(sle.posting_date <= to_date)
+
+	return query
+
+
+def _exclude_internal_transfers(query, sle):
+	"""Drop the inward leg of a warehouse-to-warehouse move.
+
+	Left join, not inner: only a Stock Entry has a purpose, and a Purchase
+	Receipt or a sales return must still count. A null purpose therefore passes.
+	"""
+	entry = frappe.qb.DocType("Stock Entry")
+
+	return (
+		query.left_join(entry)
+		.on((entry.name == sle.voucher_no) & (sle.voucher_type == "Stock Entry"))
+		.where(entry.purpose.isnull() | entry.purpose.notin(INTERNAL_PURPOSES))
+	)
+
+
+def _direct_inward(batch_names: list, from_date=None, to_date=None):
 	"""Inward ledger entries that name the batch directly."""
 	sle = frappe.qb.DocType("Stock Ledger Entry")
 	rows = (
-		frappe.qb.from_(sle)
-		.select(
-			sle.batch_no,
-			Sum(sle.stock_value_difference).as_("value"),
-			Sum(sle.actual_qty).as_("qty"),
+		_exclude_internal_transfers(
+			_within(
+				frappe.qb.from_(sle)
+				.select(
+					sle.batch_no,
+					Sum(sle.stock_value_difference).as_("value"),
+					Sum(sle.actual_qty).as_("qty"),
+				)
+				.where(sle.batch_no.isin(batch_names))
+				.where(sle.is_cancelled == 0)
+				.where(sle.actual_qty > 0)
+				.where((sle.serial_and_batch_bundle.isnull()) | (sle.serial_and_batch_bundle == "")),
+				sle,
+				from_date,
+				to_date,
+			),
+			sle,
 		)
-		.where(sle.batch_no.isin(batch_names))
-		.where(sle.is_cancelled == 0)
-		.where(sle.actual_qty > 0)
-		.where((sle.serial_and_batch_bundle.isnull()) | (sle.serial_and_batch_bundle == ""))
 		.groupby(sle.batch_no)
 		.orderby(sle.batch_no)
 	).run(as_dict=True)
@@ -80,7 +129,7 @@ def _direct_inward(batch_names: list):
 	return [(r.batch_no, r.value, r.qty) for r in rows]
 
 
-def _bundle_inward(batch_names: list):
+def _bundle_inward(batch_names: list, from_date=None, to_date=None):
 	"""Inward entries whose batches live in a Serial and Batch Bundle.
 
 	``Serial and Batch Entry`` carries its own ``stock_value_difference``, so the
@@ -91,17 +140,25 @@ def _bundle_inward(batch_names: list):
 	entry = frappe.qb.DocType("Serial and Batch Entry")
 	rows = (
 		restrict_to_live(
-			frappe.qb.from_(sle)
-			.inner_join(entry)
-			.on(entry.parent == sle.serial_and_batch_bundle)
-			.select(
-				entry.batch_no,
-				Sum(entry.stock_value_difference).as_("value"),
-				Sum(entry.qty).as_("qty"),
-			)
-			.where(entry.batch_no.isin(batch_names))
-			.where(sle.is_cancelled == 0)
-			.where(entry.is_outward == 0),
+			_exclude_internal_transfers(
+				_within(
+					frappe.qb.from_(sle)
+					.inner_join(entry)
+					.on(entry.parent == sle.serial_and_batch_bundle)
+					.select(
+						entry.batch_no,
+						Sum(entry.stock_value_difference).as_("value"),
+						Sum(entry.qty).as_("qty"),
+					)
+					.where(entry.batch_no.isin(batch_names))
+					.where(sle.is_cancelled == 0)
+					.where(entry.is_outward == 0),
+					sle,
+					from_date,
+					to_date,
+				),
+				sle,
+			),
 			entry,
 		)
 		.groupby(entry.batch_no)

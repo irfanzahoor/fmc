@@ -10,6 +10,7 @@ import frappe
 from food_manufacturing.api import dispatch, idempotency, quality, recall
 from food_manufacturing.api.idempotency import retry_safe
 from food_manufacturing.dispatch import fefo
+from food_manufacturing.production import genealogy
 from food_manufacturing.food_manufacturing_quality.doctype.fm_batch_release import fm_batch_release as release
 
 
@@ -170,7 +171,7 @@ class TestOperatorGuardsUnit(unittest.TestCase):
 	# The bundle rows come from compat.bundle.get_entries, which reads the
 	# schema to decide where its columns live - so it is mocked as its own seam
 	# rather than through frappe.get_all, keeping this test database-free.
-	@patch.object(recall, "get_entries")
+	@patch.object(genealogy, "get_entries")
 	@patch.object(frappe, "get_all")
 	def test_recall_split_bundle_counts_only_affected_batch(self, get_all, get_entries):
 		get_entries.return_value = [frappe._dict(parent="BUNDLE", batch_no="A", qty=-3)]
@@ -183,7 +184,7 @@ class TestOperatorGuardsUnit(unittest.TestCase):
 				serial_and_batch_bundle="BUNDLE",
 			)
 		]
-		rows = recall._movements({"A"}, "C", "Delivery Note")
+		rows = genealogy.get_batch_movements({"A"}, "C", "Delivery Note")
 		self.assertEqual(rows[0]["qty"], -3)
 
 	def test_retry_returns_original_without_posting_again(self):

@@ -4,7 +4,7 @@ import frappe
 from frappe import _
 from frappe.utils import flt
 
-from food_manufacturing.compat.bundle import get_entries
+from food_manufacturing.production.genealogy import get_batch_movements
 from food_manufacturing.stock_levels import get_batch_balances
 
 
@@ -34,7 +34,7 @@ def get_recall(batch: str, company: str) -> dict:
 	uoms = {row.name: row.stock_uom for row in items}
 	if set(uoms) != {row.item for row in visible}:
 		frappe.throw(_("You do not have access to every affected item."), frappe.PermissionError)
-	movements = _movements(batches, company, "Delivery Note")
+	movements = get_batch_movements(batches, company, "Delivery Note")
 	names = sorted({row["voucher_no"] for row in movements})
 	notes = (
 		frappe.get_list(
@@ -122,7 +122,7 @@ def _walk(frontier, company, seen, depth):
 	if depth == 0 or len(seen | frontier) > 200:
 		return seen, True
 	seen = seen | frontier
-	consumed = _movements(frontier, company, "Stock Entry", outward=True)
+	consumed = get_batch_movements(frontier, company, "Stock Entry", outward=True)
 	vouchers = sorted({row["voucher_no"] for row in consumed})
 	if not vouchers:
 		return seen, False
@@ -159,77 +159,5 @@ def _walk(frontier, company, seen, depth):
 		order_by="name asc",
 		limit_page_length=0,
 	)
-	produced = _movements(None, company, "Stock Entry", vouchers=[row.name for row in outputs], outward=False)
+	produced = get_batch_movements(None, company, "Stock Entry", vouchers=[row.name for row in outputs], outward=False)
 	return _walk({row["batch_no"] for row in produced}, company, seen, depth - 1)
-
-
-def _movements(batches, company, voucher_type, vouchers=None, outward=None):
-	"""Read direct and bundled batch quantities without attributing a whole bundle to each batch."""
-	if vouchers == []:
-		return []
-	filters = {"company": company, "is_cancelled": 0, "voucher_type": voucher_type}
-	if vouchers is not None:
-		filters["voucher_no"] = ("in", vouchers)
-	if outward is not None:
-		filters["actual_qty"] = ("<" if outward else ">", 0)
-	bundle_rows = (
-		get_entries(
-			filters={"batch_no": ("in", sorted(batches)), "is_cancelled": 0},
-			fields=["parent", "batch_no", "qty"],
-			order_by="parent asc, idx asc",
-		)
-		if batches
-		else []
-	)
-	or_filters = (
-		{
-			"batch_no": ("in", sorted(batches)),
-			"serial_and_batch_bundle": ("in", sorted({r.parent for r in bundle_rows})),
-		}
-		if batches
-		else None
-	)
-	ledger = frappe.get_all(
-		"Stock Ledger Entry",
-		filters=filters,
-		or_filters=or_filters,
-		fields=["voucher_no", "item_code", "batch_no", "actual_qty", "serial_and_batch_bundle"],
-		order_by="posting_datetime asc, name asc",
-	)
-	if not batches:
-		bundles = sorted({r.serial_and_batch_bundle for r in ledger if r.serial_and_batch_bundle})
-		bundle_rows = (
-			get_entries(
-				filters={"parent": ("in", bundles), "is_cancelled": 0},
-				fields=["parent", "batch_no", "qty"],
-				order_by="parent asc, idx asc",
-			)
-			if bundles
-			else []
-		)
-	by_bundle = {}
-	for row in bundle_rows:
-		by_bundle.setdefault(row.parent, []).append(row)
-	result = []
-	for row in ledger:
-		if row.serial_and_batch_bundle:
-			for entry in by_bundle.get(row.serial_and_batch_bundle, []):
-				if entry.batch_no:
-					result.append(
-						{
-							"voucher_no": row.voucher_no,
-							"item_code": row.item_code,
-							"batch_no": entry.batch_no,
-							"qty": entry.qty,
-						}
-					)
-		elif row.batch_no:
-			result.append(
-				{
-					"voucher_no": row.voucher_no,
-					"item_code": row.item_code,
-					"batch_no": row.batch_no,
-					"qty": row.actual_qty,
-				}
-			)
-	return result
