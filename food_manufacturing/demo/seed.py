@@ -584,6 +584,31 @@ def _approve_recipe(company: str, items: dict, uoms: dict, log) -> str:
 	return doc.name
 
 
+def _pin_source_warehouse(order, warehouse: str) -> None:
+	"""Point every required row of ``order`` at ``warehouse`` before submit.
+
+	A required row inherits its source warehouse from the item default, which
+	ERPNext seeds from ``Stock Settings.default_warehouse`` when the Item is
+	created. ``set_required_items`` only fills a row that is *blank*, so the
+	Work Order's own ``source_warehouse`` never overrides it. On any site that
+	has a default warehouse set - every site made by ``bench new-site`` does -
+	the run would draw from a warehouse holding none of the demo's released
+	stock, and the blend fails with "Valuation Rate Missing" rather than
+	anything that points at the real cause.
+
+	Saying it on the row is also what makes the Work Order internally
+	consistent, which is what the yield figures and the operator console read.
+	"""
+	changed = False
+	for row in order.required_items:
+		if row.source_warehouse != warehouse:
+			row.source_warehouse = warehouse
+			changed = True
+
+	if changed:
+		order.save()
+
+
 def _run_blending(company: str, warehouses: dict, items: dict, recipe: str, tag: str, log) -> list:
 	"""Three blends: two healthy, one with a yield outside tolerance."""
 	from erpnext.manufacturing.doctype.work_order.work_order import make_stock_entry
@@ -614,6 +639,7 @@ def _run_blending(company: str, warehouses: dict, items: dict, recipe: str, tag:
 			}
 		)
 		order.insert()
+		_pin_source_warehouse(order, warehouses["stores"])
 		order.submit()
 
 		if not frappe.db.exists("Batch", batch_id):
@@ -687,6 +713,7 @@ def _run_packaging(company: str, warehouses: dict, items: dict, uoms: dict, blen
 			}
 		)
 		order.insert()
+		_pin_source_warehouse(order, warehouses["bulk"])
 		order.submit()
 
 		if not frappe.db.exists("Batch", batch_id):
@@ -933,6 +960,7 @@ def _open_work_orders(company, warehouses: dict, items: dict, recipe: str, tag: 
 			}
 		)
 		order.insert()
+		_pin_source_warehouse(order, warehouses["stores"])
 		order.submit()
 		log(f"  open work order {order.name}: {qty} kg to produce")
 
