@@ -145,7 +145,7 @@
 						</p>
 
 						<div v-else class="overflow-x-auto">
-							<table class="fm-table min-w-[46rem]">
+							<table class="fm-table fm-table-rows min-w-[46rem]">
 								<caption class="sr-only">Available batches in first-expiry-first-out order</caption>
 								<thead>
 									<tr>

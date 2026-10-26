@@ -58,8 +58,10 @@
 			:on-retry="load"
 		>
 			<div class="grid gap-4 lg:grid-cols-[20rem_1fr] xl:grid-cols-[22rem_1fr]">
-				<!-- Master: horizontally scrollable on a phone, a column on desktop. -->
-				<div>
+				<!-- Master: horizontally scrollable on a phone, a column on desktop.
+				     min-w-0 because a grid track is sized by its content's
+				     min-content width unless the item is allowed to shrink. -->
+				<div class="min-w-0">
 					<div class="mb-2 flex items-baseline justify-between">
 						<h2 class="text-sm font-bold">Open work orders</h2>
 						<span class="fm-chip fm-chip-soft">{{ rows.length }} shown</span>
@@ -69,7 +71,7 @@
 						<li v-for="row in rows" :key="row.name" class="w-[17rem] shrink-0 lg:w-auto">
 							<button
 								type="button"
-								class="fm-card w-full p-4 text-left transition-colors motion-reduce:transition-none"
+								class="fm-card fm-card-interactive w-full p-4 text-left"
 								:style="selected === row.name
 									? { borderColor: 'var(--fm-primary)', boxShadow: '0 0 0 1px var(--fm-primary)' }
 									: {}"
@@ -117,7 +119,7 @@
 				</div>
 
 				<!-- Detail -->
-				<div v-if="selected" class="space-y-4">
+				<div v-if="selected" class="min-w-0 space-y-4">
 					<StateBlock :loading="detailLoading" :error="detailError" loading-text="Loading run…" :required-roles="SCREEN_ROLES.production">
 						<div v-if="detail" class="space-y-4">
 							<div class="fm-card p-5">
@@ -139,22 +141,36 @@
 									</span>
 								</div>
 
-								<dl class="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-3">
-									<div>
-										<dt class="fm-label">Planned</dt>
-										<dd class="fm-num mt-0.5 text-xl font-bold">{{ fmt(detail.work_order.qty) }} <span class="text-xs font-normal fm-muted">{{ unit }}</span></dd>
-									</div>
-									<div>
-										<dt class="fm-label">Produced</dt>
-										<dd class="fm-num mt-0.5 text-xl font-bold">{{ fmt(detail.work_order.produced_qty) }} <span class="text-xs font-normal fm-muted">{{ unit }}</span></dd>
-									</div>
-									<div>
-										<dt class="fm-label">Remaining</dt>
-										<dd class="fm-num mt-0.5 text-xl font-bold" :style="{ color: 'var(--fm-primary)' }">
-											{{ fmt(remaining) }} <span class="text-xs font-normal fm-muted">{{ unit }}</span>
-										</dd>
-									</div>
-								</dl>
+								<!-- Column on a phone, row from sm up. Not flex-wrap with a
+								     width: `flex-1` sets flex-basis to 0, which beats `w-full`,
+								     so the stats stayed beside the ring and "Produced" was
+								     pushed off the card at 390px. -->
+								<div class="mt-4 flex flex-col gap-5 sm:flex-row sm:items-center">
+									<!-- The queue cards carry a bar; opening a run lost the
+									     figure entirely. Same rule as `progress`, so the card
+									     and the row it came from cannot disagree. -->
+									<ProgressRing
+										:value="progress(detail.work_order)"
+										:label="`of ${fmt(detail.work_order.qty)} ${unit} planned`"
+									/>
+
+									<dl class="grid flex-1 grid-cols-2 gap-4 sm:grid-cols-3">
+										<div>
+											<dt class="fm-label">Planned</dt>
+											<dd class="fm-num mt-0.5 text-xl font-bold">{{ fmt(detail.work_order.qty) }} <span class="text-xs font-normal fm-muted">{{ unit }}</span></dd>
+										</div>
+										<div>
+											<dt class="fm-label">Produced</dt>
+											<dd class="fm-num mt-0.5 text-xl font-bold">{{ fmt(detail.work_order.produced_qty) }} <span class="text-xs font-normal fm-muted">{{ unit }}</span></dd>
+										</div>
+										<div>
+											<dt class="fm-label">Remaining</dt>
+											<dd class="fm-num mt-0.5 text-xl font-bold" :style="{ color: 'var(--fm-primary)' }">
+												{{ fmt(remaining) }} <span class="text-xs font-normal fm-muted">{{ unit }}</span>
+											</dd>
+										</div>
+									</dl>
+								</div>
 							</div>
 
 							<div class="fm-card overflow-hidden">
@@ -176,7 +192,7 @@
 								</div>
 
 								<div class="overflow-x-auto">
-									<table class="fm-table">
+									<table class="fm-table fm-table-rows">
 										<caption class="sr-only">Required ingredients with released lots</caption>
 										<thead>
 											<tr>
@@ -330,6 +346,7 @@ import { computed, onMounted, reactive, ref } from 'vue'
 import { AlertTriangle, Check, CheckCircle, Clock, Factory, LineChart, Lock, RefreshCw, Search, ShieldCheck } from 'lucide-vue-next'
 
 import PageHeader from '@/components/PageHeader.vue'
+import ProgressRing from '@/components/ProgressRing.vue'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import StateBlock from '@/components/StateBlock.vue'
 import { SCREEN_ROLES } from '@/data/access'

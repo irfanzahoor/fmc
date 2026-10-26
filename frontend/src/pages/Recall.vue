@@ -101,7 +101,7 @@
 					</p>
 
 					<div v-else class="overflow-x-auto">
-						<table class="fm-table min-w-[44rem]">
+						<table class="fm-table fm-table-rows min-w-[44rem]">
 							<caption class="sr-only">Deliveries and returns for the affected batches</caption>
 							<thead>
 								<tr>

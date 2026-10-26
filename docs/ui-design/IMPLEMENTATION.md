@@ -351,3 +351,59 @@ progress ring on the production detail card, and a screen-by-screen comparison
 of Receiving, Dispatch and Recall.
 
 317 tests pass. Verified against a live session.
+
+
+### Seventh pass (2026-10-26) — depth, response, and a phone-width bug
+
+The brief was simply to make the app more attractive. Six passes had already got
+the structure, typography and charts right, so this one is about the two things
+a flat design is still missing — **depth** and **response to the pointer** — plus
+one layout defect the renders exposed.
+
+**Cards had no elevation at all.** `--fm-shadow` was a single 3%-alpha wash at
+14px, which on a near-white canvas reads as nothing: every surface was a hairline
+rectangle and nothing sat *above* anything. It is now two layers — a 1px contact
+shadow for the edge and an 18px ambient one for height — with a `--fm-shadow-lift`
+step for hover. Both stay cool and low-alpha, so the page still reads as paper.
+
+**Nothing responded to the pointer.** A `fm-card-interactive` class gives a card
+whose whole surface is a control — a work order in the queue, a purchase order to
+receive, a dashboard shortcut — a border tint, the lift shadow and a 2px rise, with
+a matching `:focus-visible` ring so the keyboard gets the same affordance. It
+replaces three ad-hoc `hover:border-…` utilities that each did a little less. The
+attention rows gained a chevron that nudges on hover.
+
+**Tables had no row wash.** These are read across — an ingredient to its lot and
+its expiry, an allocation to the batch it came from — and a wide row with nothing
+tying it together is where the eye slips a line. `fm-table-rows` is opt-in, applied
+to the six tables with more than one row; the quality queue takes it too, since its
+selected row sets its own inline background and only the other rows take the wash.
+
+**The run detail card had no progress figure**, which was on the previous pass's
+"still not done" list. `ProgressRing.vue` draws it from the same `progress()` rule
+the queue cards use, so a card and the row it was opened from cannot disagree. It
+is chrome, not a chart: it uses `--fm-primary` and re-tints with the theme, exactly
+as the queue card's bar does. A run at 0% draws a cap at twelve o'clock, because an
+empty ring otherwise reads as a disabled control rather than as a run not started.
+
+**Native date inputs were the one unstyled control.** A browser draws them itself,
+so on Receiving they sat shorter than the fields beside them with a full-black
+picker button. The box height now matches and the indicator is toned; the date
+*format* stays the browser's, which is the user's locale.
+
+**A phone-width bug the renders found, and it was not new.** On Production at
+390px the run detail card was wider than the screen, so "Produced" was off-screen
+entirely — along with the "3 shown" and yield chips. A grid track is sized by its
+content's min-content width unless the item may shrink, and neither column carried
+`min-w-0`. Confirmed against a build with this pass's changes stashed, so it was
+pre-existing rather than introduced here. The ring and the stats also stack on a
+phone instead of competing for one row: `flex-1` sets `flex-basis: 0`, which beats
+`w-full`, so wrapping had to be a `flex-col sm:flex-row` rather than a width.
+
+**Rendered, not reasoned about.** Every page at 1440 before and after, Production
+and Quality at 390, and the copper palette to confirm the new shadows sit correctly
+on a warm canvas. Chart colours are untouched, so the data-viz validator did not
+need re-running; `yarn build` is clean.
+
+**Not verified:** hover and focus states against a live Frappe session — headless
+Chrome drives one synthetic pointer event, which is not the same as using it.
