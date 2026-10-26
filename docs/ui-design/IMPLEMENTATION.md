@@ -407,3 +407,46 @@ need re-running; `yarn build` is clean.
 
 **Not verified:** hover and focus states against a live Frappe session — headless
 Chrome drives one synthetic pointer event, which is not the same as using it.
+
+### Eighth pass (2026-10-26) — the expiry chart, read against real plant data
+
+Reported from a live screen: the expiry chart looked wrong. It did. Reproduced by
+putting the site's own figures into the harness — twelve batches, buckets of
+2/2/1 — rather than reasoning about the component.
+
+**Three buckets became three columns floating at 300px centres.** Bands were laid
+out with `flex-1` and the column inside was capped at 72px and centred, so the
+plot divided whatever width the card happened to have: in a wide card that is a
+chart with its middle missing. A column chart's proportions belong to the chart,
+so `BAND` is now a *cap* on band width — narrow cards still divide normally — and
+the baseline stops where the plot stops instead of ruling on past the last column.
+
+**Each column now sits in a track** running the full plot height. The track is
+what the column is a fraction of, so a bucket holding two batches out of a
+maximum of two is no longer read against nothing.
+
+**An omitted bucket is now drawn as a zero.** `_expiry_buckets` starts every
+bucket at 0 and filters `if counts[label]`, so an omission is a *measured* zero,
+not an unknown — checked in `api/dashboard.py` before relying on it. A time scale
+missing a step from its middle reads as if the question was never asked; "Expired
+— 0" answers it, and the chart stops changing width with the day's data. An
+entirely empty list still means "nothing to show", because the server returns
+`[]` before counting when the company has no warehouse.
+
+The scale, its ramp and that rule moved to `src/utils/expiry.js`; the Overview and
+Quality Insights had each grown a copy of the mapping.
+
+**The status bar left its smallest segments unlabelled.** The floor was 9% of the
+bar, which on a plant holding twelve batches hides the number on a single
+quarantined one — 8.3%, some forty pixels, ample for one digit. It is 6% now,
+each segment clips its own overflow so a label that does not fit is cut rather
+than pushed into its neighbour, and a segment has a minimum width so a
+one-in-two-hundred status is still visible.
+
+**Both pages were capped at `max-w-6xl`.** Four KPI cards and two charts stretched
+across a 1920 monitor are mostly empty card. Quality Insights also went from a
+2:3 split to equal halves, since the expiry chart's width is now its own.
+
+**Rendered at 1800, 1280 and 390**, with the live plant's small counts *and* the
+harness's larger demo figures, because the fault only appeared at one of them.
+Chart colours are untouched, so the data-viz validator did not need re-running.

@@ -18,28 +18,28 @@
 			Every column is direct-labelled on its cap, so there is no y-axis to
 			read - four columns is few enough that labelling each one is the
 			sparing choice, not a flood.
+
+			Each column sits in a track running the full height of the plot.
+			The track is what the column is a fraction *of*, so a bucket holding
+			two batches out of a maximum of two no longer has to be read against
+			nothing; it also stops three columns in a wide card reading as a
+			chart with its middle missing.
 		-->
 		<div v-else>
-			<ul class="flex items-end gap-0.5" :style="{ height: `${PLOT}px` }">
-				<li
-					v-for="column in columns"
-					:key="column.label"
-					class="flex h-full flex-1 flex-col justify-end"
-				>
-					<p
-						class="fm-num mb-1 text-center text-xs font-semibold"
-						:style="{ color: column.zero ? 'var(--viz-ink-secondary)' : 'var(--viz-ink)' }"
-					>
-						{{ column.value }}
-					</p>
-
+			<!--
+				The plot is capped rather than stretched. Laying bands out with
+				flex-1 alone divides whatever width the card happens to have, so
+				in a wide card three buckets became three 72px columns floating
+				at 300px centres. A column chart's proportions belong to the
+				chart, not to its container.
+			-->
+			<ul class="flex items-stretch gap-2" :style="{ height: `${PLOT}px`, maxWidth: plotWidth }">
+				<li v-for="column in columns" :key="column.label" class="min-w-0 flex-1">
 					<button
 						type="button"
-						class="mx-auto w-full rounded-t transition-[filter] motion-reduce:transition-none"
+						class="relative flex h-full w-full flex-col justify-end overflow-hidden rounded-md transition-[filter] motion-reduce:transition-none"
 						:style="{
-							height: `${column.height}px`,
-							maxWidth: '72px',
-							background: column.color,
+							background: 'var(--viz-plane)',
 							filter: active && active !== column.label ? 'opacity(0.55)' : 'none',
 						}"
 						:aria-label="`${column.label}: ${column.value} ${unitLabel}`"
@@ -47,14 +47,28 @@
 						@pointerleave="active = null"
 						@focus="active = column.label"
 						@blur="active = null"
-					/>
+					>
+						<span
+							class="fm-num mb-1 text-center text-xs font-semibold"
+							:style="{ color: column.zero ? 'var(--viz-ink-secondary)' : 'var(--viz-ink)' }"
+						>
+							{{ column.value }}
+						</span>
+
+						<span
+							class="block w-full"
+							:style="{ height: `${column.height}px`, background: column.color }"
+						/>
+					</button>
 				</li>
 			</ul>
 
-			<!-- Baseline: a solid hairline, one step off the surface. -->
-			<div :style="{ borderTop: '1px solid var(--viz-axis)' }" />
+			<!-- Baseline: a solid hairline, one step off the surface. It stops
+			     where the plot stops; a rule running on past the last column was
+			     most of what made a short chart look unfinished. -->
+			<div :style="{ borderTop: '1px solid var(--viz-axis)', maxWidth: plotWidth }" />
 
-			<ul class="flex gap-0.5">
+			<ul class="flex gap-2" :style="{ maxWidth: plotWidth }">
 				<li v-for="column in columns" :key="`l${column.label}`" class="min-w-0 flex-1">
 					<p
 						class="mt-1.5 text-center text-[11px] leading-tight"
@@ -97,6 +111,13 @@ const props = defineProps({
 })
 
 const PLOT = 150
+
+/* The widest a band may get, not a fixed width. The bands still divide the
+   card, so a narrow card simply makes them narrower; the cap is only there to
+   stop a wide card stretching three buckets into three columns floating at
+   300px centres, which is what flex-1 on its own did. A column fills its band,
+   so this caps the column too. */
+const BAND = 110
 const active = ref(null)
 
 const columns = computed(() => {
@@ -121,4 +142,6 @@ const columns = computed(() => {
 		}
 	})
 })
+
+const plotWidth = computed(() => `${columns.value.length * BAND}px`)
 </script>

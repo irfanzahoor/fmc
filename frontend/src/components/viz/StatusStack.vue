@@ -16,9 +16,13 @@
 						v-for="(row, index) in segments"
 						:key="row.label"
 						type="button"
-						class="relative flex items-center justify-center transition-[filter] motion-reduce:transition-none"
+						class="relative flex items-center justify-center overflow-hidden transition-[filter] motion-reduce:transition-none"
 						:style="{
 							width: `${row.percent}%`,
+							// A one-of-two-hundred segment is a third of a pixel
+							// wide, which is no segment at all. The bar clips, so
+							// the couple of pixels this borrows never spill.
+							minWidth: '8px',
 							background: row.color,
 							marginLeft: index ? '2px' : '0',
 							filter: active && active.label !== row.label ? 'saturate(0.45) opacity(0.65)' : 'none',
@@ -30,9 +34,17 @@
 					>
 						<!-- Direct value labels: the mandated relief for the two
 						     status hues that sit below 3:1 on a white surface.
-						     Only where the number actually fits the segment. -->
+						     Only where the number actually fits the segment.
+
+						     The floor is 6%, not 9%: on a plant holding twelve
+						     batches a single quarantined one is 8.3% of the bar -
+						     some forty pixels, ample for one digit - and it was
+						     going unlabelled, so the two statuses that most need
+						     a number carried none. The segment clips its own
+						     overflow, so a label that does not fit is cut rather
+						     than pushed into its neighbour. -->
 						<span
-							v-if="row.percent >= 9"
+							v-if="row.percent >= 6"
 							class="fm-num text-xs font-semibold"
 							:style="{ color: row.labelInk }"
 						>
