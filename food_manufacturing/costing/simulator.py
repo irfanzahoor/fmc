@@ -18,7 +18,7 @@ from frappe import _
 from frappe.utils import cint, flt
 
 from food_manufacturing.costing.pricing import price_items
-from food_manufacturing.packaging.conversion import convert_qty
+from food_manufacturing.packaging.conversion import convert_qty, get_conversions
 from food_manufacturing.recipe_access import may_see_formula
 
 #: A simulation is an estimate from a declared price source, never ledger value.
@@ -264,6 +264,20 @@ def _packs(packs: list, total: float, good_qty: float, doc) -> list:
 		)
 	}
 
+	# Every conversion the loop will ask for, resolved first: a factor lookup
+	# per row was up to four queries per row inside a whitelisted call.
+	conversions = get_conversions(
+		{
+			(
+				item.fm_bulk_item or doc.item,
+				item.fm_pack_uom or item.stock_uom,
+				doc.uom,
+			)
+			for item in (sizes.get(row.get("item_code")) for row in packs)
+			if item and flt(item.fm_pack_size) > 0
+		}
+	)
+
 	per_unit = total / good_qty
 	out = []
 	for row in packs:
@@ -283,7 +297,7 @@ def _packs(packs: list, total: float, good_qty: float, doc) -> list:
 		# The blend being filled: the pack's own bulk item when it declares one,
 		# and otherwise whatever this BOM makes.
 		bulk_item = item.fm_bulk_item or doc.item
-		held, factor, problem = convert_qty(bulk_item, fill, fill_uom, doc.uom)
+		held, factor, problem = convert_qty(bulk_item, fill, fill_uom, doc.uom, conversions)
 		if problem or held <= 0:
 			out.append(_unpriced_pack(item, fill_uom, problem or _("The pack fill converts to zero.")))
 			continue

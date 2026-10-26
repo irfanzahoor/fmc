@@ -4,11 +4,51 @@ A pack is filled in the unit the plant thinks in - 50 g - while the blend sits
 in the warehouse in kilograms. Getting that factor wrong silently is how a plan
 asks for 50,000 kg of blend instead of 50, so every conversion here either
 returns a factor the caller can show the reader, or says why it could not.
+
+:func:`get_conversions` is the implementation and answers for a whole set in
+three queries; the single-pair functions are wrappers over it. A caller
+converting a row at a time was paying up to four queries per row inside a
+whitelisted call.
 """
 
 import frappe
 from frappe import _
 from frappe.utils import flt
+
+
+def get_conversions(requests) -> dict:
+	"""``(item, from_uom, to_uom) -> (factor, problem)``, in three queries.
+
+	``to_uom`` may be None, meaning the item's own stock unit, which is the
+	question :func:`to_stock_qty` asks.
+
+	``problem`` is None on success and a sentence naming the missing conversion
+	otherwise - the caller surfaces it rather than guessing a 1. The two tables
+	are read for the whole set at once, so adding a row to the caller's loop
+	costs no query.
+	"""
+	keys = {tuple(request) for request in requests}
+	if not keys:
+		return {}
+
+	stock_uoms = _stock_uoms({item for item, _from_uom, _to_uom in keys})
+
+	# The real target of each pair, resolved before either factor table is read
+	# so that both can be read once for the whole set.
+	targets = {key: (key[2] or stock_uoms.get(key[0])) for key in keys}
+
+	pending = {
+		key: target
+		for key, target in targets.items()
+		if key[0] and stock_uoms.get(key[0]) and key[1] and target and key[1] != target
+	}
+
+	item_factors = _item_factors({(key[0], key[1]) for key in pending})
+	global_factors = _global_factors({(key[1], target) for key, target in pending.items()})
+
+	return {
+		key: _resolve(key, targets[key], stock_uoms, item_factors, global_factors) for key in keys
+	}
 
 
 def to_stock_qty(item_code: str, qty: float, uom: str) -> tuple:
@@ -17,68 +57,11 @@ def to_stock_qty(item_code: str, qty: float, uom: str) -> tuple:
 	``problem`` is None on success, and a sentence naming the missing
 	conversion otherwise - the caller surfaces it rather than guessing a 1.
 	"""
-	stock_uom = frappe.db.get_value("Item", item_code, "stock_uom")
-	if not stock_uom:
-		return 0.0, 0.0, _("Item {0} does not exist.").format(item_code)
-
-	if not uom or uom == stock_uom:
-		return flt(qty), 1.0, None
-
-	factor = _factor(item_code, uom, stock_uom)
-	if not factor:
-		return (
-			0.0,
-			0.0,
-			_(
-				"No conversion from {0} to {1} for item {2}. Add it to the item's "
-				"UOM table or to UOM Conversion Factor."
-			).format(uom, stock_uom, item_code),
-		)
-
-	return flt(qty) * factor, factor, None
+	key = (item_code, uom or None, None)
+	return _applied(qty, get_conversions([key])[key])
 
 
-def _factor(item_code: str, from_uom: str, stock_uom: str) -> float:
-	"""How many stock units one ``from_uom`` is, or 0.0 when nothing says.
-
-	ERPNext's ``get_conversion_factor`` is deliberately not used here: it
-	returns **1.0** when it finds nothing, which is indistinguishable from a
-	genuine 1:1 conversion. Planning 50 g of blend as 50 kg is precisely the
-	mistake this module exists to prevent, so the two tables are read directly
-	and "unknown" comes back as zero.
-
-	The item's own UOM table wins - a plant may define a 25 kg bag for one item
-	and a 50 kg bag for another. The global table is the fallback.
-	"""
-	item_factor = frappe.db.get_value(
-		"UOM Conversion Detail",
-		{"parent": item_code, "parenttype": "Item", "uom": from_uom},
-		"conversion_factor",
-	)
-	if flt(item_factor):
-		return flt(item_factor)
-
-	return _global_factor(from_uom, stock_uom)
-
-
-def _global_factor(from_uom: str, to_uom: str) -> float:
-	"""A UOM Conversion Factor row, in either direction."""
-	direct = frappe.db.get_value(
-		"UOM Conversion Factor", {"from_uom": from_uom, "to_uom": to_uom}, "value"
-	)
-	if direct:
-		return flt(direct)
-
-	inverse = frappe.db.get_value(
-		"UOM Conversion Factor", {"from_uom": to_uom, "to_uom": from_uom}, "value"
-	)
-	if inverse and flt(inverse):
-		return 1.0 / flt(inverse)
-
-	return 0.0
-
-
-def convert_qty(item_code: str, qty: float, from_uom: str, to_uom: str) -> tuple:
+def convert_qty(item_code: str, qty: float, from_uom: str, to_uom: str, conversions=None) -> tuple:
 	"""``(qty, factor, problem)`` for ``qty`` of ``item_code`` in ``to_uom``.
 
 	:func:`to_stock_qty` answers the common question - into the item's own stock
@@ -86,25 +69,122 @@ def convert_qty(item_code: str, qty: float, from_uom: str, to_uom: str) -> tuple
 	one, because a BOM may be written in a unit that is not the item's stock
 	unit, and for that pair only the global table can speak.
 
+	``conversions`` is an optional :func:`get_conversions` result, so a caller
+	converting many rows pays for the batch once instead of once per row.
+
 	Same contract as the rest of this module: "unknown" comes back as a problem
 	the caller can show, never as a silent factor of 1.
 	"""
 	if not from_uom or not to_uom or from_uom == to_uom:
 		return flt(qty), 1.0, None
 
-	stock_uom = frappe.db.get_value("Item", item_code, "stock_uom")
-	if not stock_uom:
-		return 0.0, 0.0, _("Item {0} does not exist.").format(item_code)
+	key = (item_code, from_uom, to_uom)
+	resolved = (conversions or {}).get(key) or get_conversions([key])[key]
 
-	if to_uom == stock_uom:
-		return to_stock_qty(item_code, qty, from_uom)
+	return _applied(qty, resolved)
 
-	factor = _global_factor(from_uom, to_uom)
-	if not factor:
-		return (
-			0.0,
-			0.0,
-			_("No conversion from {0} to {1}. Add it to UOM Conversion Factor.").format(from_uom, to_uom),
-		)
+
+# -- internals ---------------------------------------------------------------
+
+
+def _applied(qty: float, resolved: tuple) -> tuple:
+	"""Turn a ``(factor, problem)`` answer into the callers' three-value tuple."""
+	factor, problem = resolved
+	if problem:
+		return 0.0, 0.0, problem
 
 	return flt(qty) * factor, factor, None
+
+
+def _resolve(key: tuple, target, stock_uoms: dict, item_factors: dict, global_factors: dict) -> tuple:
+	"""``(factor, problem)`` for one already-prefetched pair."""
+	item, from_uom, _to_uom = key
+	stock_uom = stock_uoms.get(item)
+
+	if not item or not stock_uom:
+		return 0.0, _("Item {0} does not exist.").format(item)
+
+	if not from_uom or not target or from_uom == target:
+		return 1.0, None
+
+	# The item's own UOM table wins, but it only ever describes the item's stock
+	# unit - a plant may define a 25 kg bag for one item and a 50 kg bag for
+	# another. For any other target only the global table can speak.
+	if target == stock_uom:
+		factor = flt(item_factors.get((item, from_uom))) or flt(global_factors.get((from_uom, target)))
+		problem = _(
+			"No conversion from {0} to {1} for item {2}. Add it to the item's "
+			"UOM table or to UOM Conversion Factor."
+		).format(from_uom, target, item)
+	else:
+		factor = flt(global_factors.get((from_uom, target)))
+		problem = _("No conversion from {0} to {1}. Add it to UOM Conversion Factor.").format(
+			from_uom, target
+		)
+
+	return (factor, None) if factor else (0.0, problem)
+
+
+def _stock_uoms(item_codes) -> dict:
+	"""Map item code -> its stock UOM, in one query."""
+	codes = {code for code in item_codes if code}
+	if not codes:
+		return {}
+
+	return {
+		row.name: row.stock_uom
+		for row in frappe.get_all(
+			"Item",
+			filters={"name": ("in", list(codes))},
+			fields=["name", "stock_uom"],
+			order_by="name asc",
+		)
+	}
+
+
+def _item_factors(pairs) -> dict:
+	"""``(item, uom) -> factor`` from the items' own UOM tables, in one query."""
+	items = {item for item, _uom in pairs if item}
+	uoms = {uom for _item, uom in pairs if uom}
+	if not items or not uoms:
+		return {}
+
+	return {
+		(row.parent, row.uom): flt(row.conversion_factor)
+		for row in frappe.get_all(
+			"UOM Conversion Detail",
+			filters={
+				"parenttype": "Item",
+				"parent": ("in", list(items)),
+				"uom": ("in", list(uoms)),
+			},
+			fields=["parent", "uom", "conversion_factor"],
+			order_by="parent asc, uom asc",
+		)
+	}
+
+
+def _global_factors(pairs) -> dict:
+	"""``(from_uom, to_uom) -> factor`` from UOM Conversion Factor, in one query.
+
+	A row is read in both directions, and a declared row always beats the
+	inverse of one declared the other way round.
+	"""
+	uoms = {uom for pair in pairs for uom in pair if uom}
+	if not uoms:
+		return {}
+
+	rows = frappe.get_all(
+		"UOM Conversion Factor",
+		filters={"from_uom": ("in", list(uoms)), "to_uom": ("in", list(uoms))},
+		fields=["from_uom", "to_uom", "value"],
+		order_by="from_uom asc, to_uom asc",
+	)
+
+	declared = {(row.from_uom, row.to_uom): flt(row.value) for row in rows if flt(row.value)}
+
+	factors = dict(declared)
+	for (from_uom, to_uom), value in declared.items():
+		factors.setdefault((to_uom, from_uom), 1.0 / value)
+
+	return factors

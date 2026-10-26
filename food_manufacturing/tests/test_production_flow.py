@@ -328,6 +328,54 @@ class TestProductionFlow(FMTestCase):
 			frappe.db.get_value("Batch", blend_batch, "fm_quality_status"), "Quarantine"
 		)
 
+	def test_cancelling_the_run_takes_the_batch_out_of_quarantine(self):
+		"""A cancelled run produced nothing, so nothing is awaiting a decision.
+
+		Leaving the batch in the release queue asks quality to rule on stock
+		that the cancellation has just removed.
+		"""
+		chilli_lot = self.receive(self.chilli, 60, f"LOT-CHILLI-{self.tag}")
+		cumin_lot = self.receive(self.cumin, 40, f"LOT-CUMIN-{self.tag}")
+		self.release(chilli_lot)
+		self.release(cumin_lot)
+
+		recipe = self.approve_recipe()
+		work_order = self.make_work_order(recipe.bom, qty=100)
+		entry = self.manufacture(work_order, 100, f"BULK-{self.tag}")
+		blend_batch = f"_FMT-BULK-{self.tag}"
+		self.assertEqual(
+			frappe.db.get_value("Batch", blend_batch, "fm_quality_status"), "Quarantine"
+		)
+
+		entry.reload()
+		entry.cancel()
+
+		self.assertIsNone(frappe.db.get_value("Batch", blend_batch, "fm_quality_status"))
+
+	def test_cancelling_the_run_leaves_a_decided_batch_alone(self):
+		"""An FM Batch Release is a record of somebody deciding.
+
+		A cancellation is not the place to overturn it, so a batch quality has
+		already ruled on keeps that ruling.
+		"""
+		chilli_lot = self.receive(self.chilli, 60, f"LOT-CHILLI-{self.tag}")
+		cumin_lot = self.receive(self.cumin, 40, f"LOT-CUMIN-{self.tag}")
+		self.release(chilli_lot)
+		self.release(cumin_lot)
+
+		recipe = self.approve_recipe()
+		work_order = self.make_work_order(recipe.bom, qty=100)
+		entry = self.manufacture(work_order, 100, f"BULK-{self.tag}")
+		blend_batch = f"_FMT-BULK-{self.tag}"
+		self.release(blend_batch)
+
+		entry.reload()
+		entry.cancel()
+
+		self.assertEqual(
+			frappe.db.get_value("Batch", blend_batch, "fm_quality_status"), "Released"
+		)
+
 	def test_an_unreleased_blend_cannot_be_consumed(self):
 		"""The gate the production stamp exists for."""
 		chilli_lot = self.receive(self.chilli, 60, f"LOT-CHILLI-{self.tag}")

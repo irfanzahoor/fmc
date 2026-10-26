@@ -1,6 +1,6 @@
 """Batch extensions: the quality fields are app-controlled state, not user input.
 
-``fm_quality_status`` and the fields beside it are marked ``read_only`` on the
+``fm_quality_status`` and the release fields beside it are marked ``read_only`` on the
 form. That keeps them out of the way of someone filling in a Batch, but
 ``read_only`` is an instruction to the form, not a permission: ``/api/resource``,
 ``frappe.client.set_value``, Data Import and a Server Script all write a
@@ -21,12 +21,17 @@ from frappe import _
 from frappe.utils import get_datetime
 
 #: Fields whose only writers are FM Batch Release and the app's own stamps.
+#:
+#: ``fm_supplier_lot_no`` is deliberately not among them. It is the supplier's
+#: own reference, stamped from the Purchase Receipt rather than decided by
+#: anyone, and it gates nothing. Guarding it only made a lot number that was
+#: mistyped on a submitted receipt impossible to correct anywhere - the release
+#: gate gained nothing and traceability lost a correction.
 PROTECTED_FIELDS = (
 	"fm_quality_status",
 	"fm_last_release",
 	"fm_released_by",
 	"fm_released_on",
-	"fm_supplier_lot_no",
 )
 
 #: Fields holding a moment rather than a string, compared as datetimes so a
@@ -57,6 +62,11 @@ def guard_quality_fields(doc) -> None:
 	meta = frappe.get_meta(doc.doctype)
 	labels = [frappe.bold(_(meta.get_label(fieldname))) for fieldname in changed]
 
+	# ValidationError, deliberately, and not PermissionError: nobody may write
+	# these fields down this path - a System Manager is refused exactly as an
+	# operator is - so the refusal is a rule about the write, not a statement
+	# about who the caller is. The guards in recipe_access and costing.simulator
+	# do raise PermissionError, because those genuinely do turn on the caller.
 	frappe.throw(
 		_(
 			"{0} is set by FM Batch Release, which records who decided and why. "

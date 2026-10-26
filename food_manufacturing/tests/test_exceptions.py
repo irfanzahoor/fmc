@@ -162,6 +162,97 @@ class TestExceptions(FMTestCase):
 		delayed = {row["work_order"] for row in get_exceptions(self.site["company"])["delayed_runs"]}
 		self.assertNotIn(order.name, delayed)
 
+	# --- the formula behind a shortage ---------------------------------------
+
+	def console_user(self, suffix, fm_role):
+		"""An operator account: Work Order and Company read, no recipe access."""
+		return fixtures.ensure_user(
+			suffix, (fm_role, "Manufacturing User", "Item Manager", "Stock User")
+		)
+
+	def short_row(self, order):
+		rows = {
+			row["work_order"]: row for row in get_exceptions(self.site["company"])["material_short"]
+		}
+		return rows.get(order.name)
+
+	def test_an_operator_sees_the_shortage_at_all(self):
+		"""The panel has to work for somebody other than Administrator.
+
+		``has_permission`` on a child table with no ``parent_doctype`` has no
+		parent to check against and returns False for every non-Administrator,
+		so this list used to come back empty for every real operator - and the
+		tests above all ran as Administrator, which is exactly how that hid.
+		"""
+		self.receive(self.chilli, 200)
+		recipe = self.approve_recipe()
+		order = self.work_order(recipe.bom)
+
+		frappe.set_user(self.console_user("excreal", "FM Recipe Manager"))
+
+		self.assertIsNotNone(self.short_row(order))
+
+	def test_the_shortage_quantities_are_withheld_from_an_outsider(self):
+		"""The detail screen withholds these figures; so must this panel.
+
+		What a run still needs is its BOM's quantity for that ingredient while
+		nothing has been transferred yet, and this panel lists many runs at once
+		- so it was the cheaper read of the two, and quoting the numbers here
+		made the withholding on the detail screen worth nothing.
+		"""
+		self.receive(self.chilli, 200)
+		recipe = self.approve_recipe()
+		order = self.work_order(recipe.bom)
+
+		frappe.set_user(self.console_user("excshort", "FM Production Manager"))
+		row = self.short_row(order)
+
+		self.assertIsNotNone(row)
+		self.assertFalse(row["shows_ingredient_detail"])
+		for item in row["items"]:
+			self.assertIsNone(item["required_qty"])
+			self.assertIsNone(item["short_qty"])
+			# Stock on hand is a fact about the warehouse, not about the recipe.
+			self.assertIsNotNone(item["available_qty"])
+
+	def test_the_shortage_itself_survives_the_withholding(self):
+		"""Withholding the numbers must not hide that something is missing."""
+		self.receive(self.chilli, 200)
+		recipe = self.approve_recipe()
+		order = self.work_order(recipe.bom)
+
+		frappe.set_user(self.console_user("excstill", "FM Production Manager"))
+		row = self.short_row(order)
+
+		self.assertEqual({item["item_code"] for item in row["items"]}, {self.cumin})
+
+	def test_a_recipe_manager_still_gets_the_quantities(self):
+		self.receive(self.chilli, 200)
+		recipe = self.approve_recipe()
+		order = self.work_order(recipe.bom)
+
+		frappe.set_user(self.console_user("excdetail", "FM Recipe Manager"))
+		row = self.short_row(order)
+
+		self.assertTrue(row["shows_ingredient_detail"])
+		items = {item["item_code"]: item for item in row["items"]}
+		self.assertEqual(items[self.cumin]["required_qty"], 40)
+		self.assertEqual(items[self.cumin]["short_qty"], 40)
+
+	def test_a_run_with_no_recipe_behind_it_is_not_withheld(self):
+		"""This app does not decide who reads other people's BOMs."""
+		self.receive(self.chilli, 200)
+		recipe = self.approve_recipe()
+		order = self.work_order(recipe.bom)
+		frappe.db.set_value("BOM", recipe.bom, "fm_recipe", None, update_modified=False)
+		frappe.clear_document_cache("BOM", recipe.bom)
+
+		frappe.set_user(self.console_user("excplain", "FM Production Manager"))
+		row = self.short_row(order)
+
+		self.assertTrue(row["shows_ingredient_detail"])
+		self.assertIsNotNone(row["items"][0]["required_qty"])
+
 	# --- permissions --------------------------------------------------------
 
 	def test_a_user_who_cannot_read_work_orders_sees_no_runs(self):

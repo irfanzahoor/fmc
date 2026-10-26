@@ -31,12 +31,25 @@
 						class="flex flex-wrap items-baseline gap-x-2 text-xs"
 					>
 						<span :style="{ color: 'var(--fm-ink)' }">{{ item.item_name }}</span>
+						<!-- A blank quantity is withheld, not zero: the server
+						     withholds the figures that would rebuild a recipe
+						     from an account that may not read it, and the row
+						     then carries the shortage without the numbers. -->
 						<span class="fm-num font-semibold" :style="{ color: 'var(--fm-bad)' }">
-							short {{ fmt(item.short_qty) }} {{ item.uom }}
+							<template v-if="given(item.short_qty)">
+								short {{ fmt(item.short_qty) }} {{ item.uom }}
+							</template>
+							<template v-else>short of stock</template>
 						</span>
 						<span class="fm-muted">
-							({{ fmt(item.available_qty) }} of {{ fmt(item.required_qty) }} in
-							{{ item.warehouse }})
+							<template v-if="given(item.required_qty)">
+								({{ fmt(item.available_qty) }} of {{ fmt(item.required_qty) }} in
+								{{ item.warehouse }})
+							</template>
+							<template v-else>
+								({{ fmt(item.available_qty) }} {{ item.uom }} on hand in
+								{{ item.warehouse }})
+							</template>
 						</span>
 					</li>
 				</ul>
@@ -58,4 +71,6 @@ const props = defineProps({
 
 const fmt = (value) =>
 	Number(value || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })
+/* A withheld figure is not a zero, so it is never run through fmt. */
+const given = (value) => value !== null && value !== undefined
 </script>

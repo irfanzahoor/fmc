@@ -17,8 +17,20 @@ import frappe
 from frappe.query_builder.functions import Sum
 from frappe.utils import flt, getdate, today
 
+from food_manufacturing.recipe_access import may_see_formulas
+
 #: Open runs, in the sense that they still have work left.
 OPEN_STATUSES = ("Not Started", "In Process")
+
+#: Per-ingredient figures that are the formula written in another unit.
+#:
+#: The same set as ``api.production.FORMULA_FIELDS`` withholds, for the same
+#: reason: what a run still needs *is* its BOM's quantity for that ingredient
+#: once nothing has been transferred yet, and ``short_qty`` is that figure minus
+#: the stock on hand that this panel also gives. ``available_qty`` stays - it is
+#: a fact about the warehouse, not about the recipe - and so does the fact that
+#: the ingredient is short, which is the only part of the row that is actionable.
+FORMULA_FIELDS = ("required_qty", "short_qty")
 
 #: Enough rows to act on; an exception list is not a report.
 LIMIT = 50
@@ -53,6 +65,9 @@ def _open_runs(company: str) -> list:
 			"qty",
 			"produced_qty",
 			"planned_end_date",
+			# Carried so the shortage rows can be judged against the recipe the
+			# run was planned from, without a query per run.
+			"bom_no",
 			"wip_warehouse",
 			"source_warehouse",
 		],
@@ -68,8 +83,17 @@ def _material_short(company: str, runs: list) -> list:
 	still needs; anything beyond the stock in its source warehouse is a
 	shortage. Read from Bin, so it is the same number the stock ledger would
 	give - this never estimates.
+
+	A caller who may not read the recipe behind a run gets the shortage without
+	the quantities - see :func:`_withhold_formulas`.
 	"""
-	if not runs or not frappe.has_permission("Work Order Item", "read"):
+	# parent_doctype is not optional on a child table: without it
+	# has_child_permission has no parent to check against and returns False for
+	# everyone except Administrator, which quietly emptied this panel for every
+	# real operator.
+	if not runs or not frappe.has_permission(
+		"Work Order Item", "read", parent_doctype="Work Order"
+	):
 		return []
 
 	names = [run.name for run in runs]
@@ -134,7 +158,37 @@ def _material_short(company: str, runs: list) -> list:
 			"uom": row.stock_uom,
 		})
 
+	# Every figure is decided before this point, so withholding happens once, in
+	# one place - the same shape as get_work_order_detail.
+	_withhold_formulas(shortages, runs)
+
 	return sorted(shortages.values(), key=lambda row: len(row["items"]), reverse=True)[:LIMIT]
+
+
+def _withhold_formulas(shortages: dict, runs: list) -> None:
+	"""Blank the quantities that would rebuild a recipe, leaving the shortage.
+
+	Withholding the detail screen's figures and then quoting them here would be
+	no protection at all: this panel lists many runs at once, so it is the
+	cheaper read of the two.
+
+	Blanked rather than dropped: None already means "not given" across this API,
+	and a client that reads the key gets "not given" rather than a wrong zero.
+	The row keeps ``shows_ingredient_detail`` so the screen can say which it is.
+	"""
+	detail = may_see_formulas({run.bom_no for run in runs})
+	bom_by_run = {run.name: run.bom_no for run in runs}
+
+	for name, entry in shortages.items():
+		bom = bom_by_run.get(name)
+		shown = detail.get(bom, True) if bom else True
+		entry["shows_ingredient_detail"] = shown
+		if shown:
+			continue
+
+		for row in entry["items"]:
+			for fieldname in FORMULA_FIELDS:
+				row[fieldname] = None
 
 
 def _bin_quantities(company: str, pairs: set) -> dict:

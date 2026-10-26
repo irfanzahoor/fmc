@@ -11,9 +11,16 @@ separately:
 * ``core.doctype.data_import.exporter`` - the Export / data-import template.
 
 A test that only checked the form would prove nothing about the other two.
+
+A fourth path is not the recipe at all: approving one generates a standard
+submitted ``BOM`` whose rows carry the same quantities, and ERPNext gives
+**Manufacturing User** read on BOM - a role every console operator needs. The
+bulk routes to those rows are closed in ``overrides/bom.py`` and tested here,
+and what deliberately stays open is documented in ``recipe_access``.
 """
 
 import frappe
+from frappe.utils import flt
 
 from food_manufacturing.compat.testing import FMTestCase
 from food_manufacturing.tests import fixtures
@@ -365,3 +372,126 @@ class TestRecipeConfidentiality(FMTestCase):
 		self.assertFalse(detail["material_ready"])
 		self.assertTrue(all(row["short"] for row in detail["ingredients"]))
 		self.assertFalse(detail["next_action"]["enabled"])
+
+	# -- path 4: the BOM the approval generated -------------------------------
+
+	def bom_rows(self, bom):
+		"""The lines, asked for the way a caller would ask for them directly.
+
+		``/api/resource/BOM Item?parent=BOM`` lands here. v16 answers it by
+		joining ``tabBOM`` and applying *BOM's* permission conditions, which is
+		why the rule is registered on BOM and reaches the child rows too.
+		"""
+		return frappe.get_list(
+			"BOM Item",
+			parent_doctype="BOM",
+			filters={"parent": bom},
+			fields=["item_code", "qty"],
+			order_by="idx asc",
+		)
+
+	def test_the_generated_boms_rows_are_hidden_from_an_outsider(self):
+		"""The formula survives into the BOM; the bulk route to it is closed.
+
+		A console operator holds Manufacturing User for the production screen,
+		and Manufacturing User reads BOM - so without this they could ask for
+		every recipe's quantities in one request.
+		"""
+		self.recipe.submit()
+		frappe.set_user(self.console_user("bom_out", "FM Production Manager"))
+
+		self.assertEqual(self.bom_rows(self.recipe.bom), [])
+
+	def test_the_generated_boms_rows_are_visible_to_a_recipe_manager(self):
+		self.recipe.submit()
+		frappe.set_user(self.console_user("bom_in", "FM Recipe Manager"))
+
+		rows = self.bom_rows(self.recipe.bom)
+
+		self.assertEqual(
+			{row.item_code: flt(row.qty) for row in rows},
+			{self.chilli: 60, self.cumin: 40},
+		)
+
+	def test_a_bom_no_recipe_generated_is_not_gated(self):
+		"""This app does not decide who reads other people's BOMs.
+
+		The marker is cleared rather than a second BOM built, because the marker
+		is the whole of the rule: with it gone the very same query must answer.
+		"""
+		self.recipe.submit()
+		bom = self.recipe.bom
+		frappe.db.set_value("BOM", bom, "fm_recipe", None, update_modified=False)
+		frappe.clear_document_cache("BOM", bom)
+
+		frappe.set_user(self.console_user("bom_plain", "FM Production Manager"))
+
+		self.assertTrue(self.bom_rows(bom))
+
+	def test_an_outsider_cannot_take_a_copy_of_the_generated_bom(self):
+		"""Print and email are how a document leaves the system wholesale.
+
+		ERPNext grants both to Manufacturing User, so both are refused for a
+		BOM that carries a formula this account may not read.
+		"""
+		self.recipe.submit()
+		frappe.set_user(self.console_user("bom_print", "FM Production Manager"))
+		doc = frappe.get_doc("BOM", self.recipe.bom)
+
+		for right in ("print", "email"):
+			self.assertFalse(
+				frappe.has_permission("BOM", right, doc=doc),
+				msg=f"{right} on a recipe's BOM was allowed",
+			)
+
+	def test_reading_the_bom_is_deliberately_still_allowed(self):
+		"""Costing is built on it: the totals are given, the lines are not.
+
+		Denying document read would take the cost screen away from the people it
+		was written for - see the module docstring of ``overrides/bom.py``.
+		"""
+		self.recipe.submit()
+		frappe.set_user(self.console_user("bom_read", "FM Production Manager"))
+		doc = frappe.get_doc("BOM", self.recipe.bom)
+
+		self.assertTrue(frappe.has_permission("BOM", "read", doc=doc))
+
+	def test_a_recipe_manager_can_still_print_the_bom(self):
+		"""The rule turns on the formula, not on the BOM being generated."""
+		self.recipe.submit()
+		frappe.set_user(self.console_user("bom_print_in", "FM Recipe Manager"))
+		doc = frappe.get_doc("BOM", self.recipe.bom)
+
+		self.assertTrue(frappe.has_permission("BOM", "print", doc=doc))
+
+	def test_the_generated_bom_is_hidden_from_a_list_query_too(self):
+		"""The same rule, on the route a report view or Desk list would take."""
+		self.recipe.submit()
+		frappe.set_user(self.console_user("bom_list", "FM Production Manager"))
+
+		names = frappe.get_list("BOM", filters={"name": self.recipe.bom}, pluck="name")
+
+		self.assertEqual(names, [])
+
+	def test_costing_can_still_list_and_cost_the_bom(self):
+		"""Totals without lines is the deliberate exception to the rule above.
+
+		``get_costable_boms`` reads with ``get_all`` and checks read on BOM and
+		the company as a document, precisely so the screen that is meant to give
+		an operator the totals is not emptied by the rule that hides the lines.
+		"""
+		from food_manufacturing.api.costing import get_costable_boms
+
+		self.recipe.submit()
+		# Stock User as well, because the endpoint now checks the company as a
+		# document - which is what `access.js` already lists for this screen.
+		frappe.set_user(
+			fixtures.ensure_user(
+				"bom_cost",
+				("FM Production Manager", "Manufacturing User", "Item Manager", "Stock User"),
+			)
+		)
+
+		names = [row["name"] for row in get_costable_boms(self.site["company"])]
+
+		self.assertIn(self.recipe.bom, names)

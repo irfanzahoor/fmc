@@ -270,6 +270,50 @@ class TestReceiving(FMTestCase):
 		self.assertEqual(getdate(dates.manufacturing_date), getdate(today()))
 		self.assertEqual(getdate(dates.expiry_date), getdate(add_days(today(), 180)))
 
+	def test_a_date_that_says_the_material_arrived_expired_is_refused(self):
+		"""The one-way write makes submit the last place to catch the typo.
+
+		A year written wrong - 2016 for 2026 - takes ten years off the shelf
+		life of stock that is fine, and because the dates only ever move earlier
+		there is no way back from the UI afterwards. Its signature is exactly
+		this: a shelf life that had already run out before the material arrived.
+		"""
+		self.perishable(shelf_life_days=180)
+
+		with self.assertRaises(frappe.ValidationError):
+			self.make_receipt(
+				self.raw,
+				self.site["stores"],
+				lot_no="SUP-MFG-OLD",
+				mfg_date=getdate(add_days(today(), -3650)),
+			)
+
+	def test_an_old_lot_still_inside_its_shelf_life_is_accepted(self):
+		"""The guard is about expiry, not about age: old stock is ordinary."""
+		self.perishable(shelf_life_days=180)
+		made = getdate(add_days(today(), -170))
+
+		doc = self.make_receipt(
+			self.raw, self.site["stores"], lot_no="SUP-MFG-OLDOK", mfg_date=made
+		)
+		batch_no = self.batches_of(doc)[0]
+
+		self.assertEqual(getdate(self.dates_of(batch_no).manufacturing_date), made)
+
+	def test_an_item_with_no_shelf_life_is_not_second_guessed(self):
+		"""With no shelf life there is no expiry to judge the date against."""
+		frappe.db.set_value(
+			"Item", self.raw, {"has_expiry_date": 0, "shelf_life_in_days": 0}
+		)
+		frappe.clear_document_cache("Item", self.raw)
+		made = getdate(add_days(today(), -3650))
+
+		doc = self.make_receipt(
+			self.raw, self.site["stores"], lot_no="SUP-MFG-NOSHELF", mfg_date=made
+		)
+
+		self.assertTrue(doc.name)
+
 	def test_a_receipt_without_a_supplier_date_is_left_to_erpnext(self):
 		self.perishable(shelf_life_days=180)
 

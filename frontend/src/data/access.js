@@ -28,5 +28,8 @@ export const SCREEN_ROLES = {
 	// get_recall gates on Company, Batch, Delivery Note and Stock Ledger Entry.
 	recall: ['Item Manager', 'Stock User'],
 	// simulate_recipe_cost gates on BOM; the packaging planner reads Item and Bin.
+	// get_costable_boms also checks Company as a document, because it reads with
+	// get_all on purpose: the rule that hides a recipe's BOM from list queries
+	// would otherwise empty the very screen that is meant to give the totals.
 	costing: ['Item Manager', 'Manufacturing User', 'Stock User'],
 }

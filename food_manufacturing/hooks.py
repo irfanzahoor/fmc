@@ -53,6 +53,10 @@ doc_events = {
 			"food_manufacturing.overrides.stock_entry.on_submit",
 			"food_manufacturing.production.yield_tracking.on_stock_entry_change",
 		],
+		# before_cancel, not on_cancel: ERPNext clears batch_no and the bundle on
+		# the rows as it cancels, so by on_cancel nothing says which batches the
+		# entry produced.
+		"before_cancel": "food_manufacturing.overrides.stock_entry.before_cancel",
 		"on_cancel": "food_manufacturing.production.yield_tracking.on_stock_entry_change",
 	},
 	"Delivery Note": {
@@ -76,6 +80,23 @@ doc_events = {
 		"validate": "food_manufacturing.overrides.work_order.validate",
 		"on_submit": "food_manufacturing.production.yield_tracking.on_work_order_submit",
 	},
+}
+
+# Extra permission rules
+# ----------------------
+# A BOM generated from an FM Recipe carries that recipe's quantities, which the
+# recipe keeps at permlevel 1. Document read is left to ERPNext on purpose - the
+# cost screen is built on it - so what is closed is the bulk: a copy of the
+# document to take away, and the child rows asked for directly.
+has_permission = {
+	"BOM": "food_manufacturing.overrides.bom.has_permission",
+}
+
+# Registered on BOM rather than BOM Item: v16 answers a child-table query by
+# joining the parent and applying the parent's conditions, so this one covers
+# `/api/resource/BOM Item` as well as the BOM list itself.
+permission_query_conditions = {
+	"BOM": "food_manufacturing.overrides.bom.get_permission_query_conditions",
 }
 
 # Operator SPA

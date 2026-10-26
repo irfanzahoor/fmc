@@ -32,14 +32,31 @@ def simulate_recipe_cost(
 
 @frappe.whitelist()
 def get_costable_boms(company: str, item: str | None = None, limit: int = 50) -> list:
-	"""Approved, active BOMs this user may cost, newest first."""
+	"""Approved, active BOMs this user may cost, newest first.
+
+	Read with ``get_all`` and an explicit pair of checks rather than
+	``get_list``, because the two rules point in opposite directions here. The
+	permission query condition in ``overrides/bom.py`` hides a recipe-generated
+	BOM from list queries, which is what stops the formula being read out of
+	``/api/resource``. Costing is the deliberate exception: a caller without
+	recipe access is *meant* to get the totals - that is what this screen is for
+	- and ``simulate`` withholds the lines itself. Going through ``get_list``
+	here would have hidden exactly the BOMs the screen exists to cost.
+
+	So the two things ``get_list`` would have done are done by hand: read on BOM,
+	and the company as a document, which is what applies the caller's User
+	Permissions.
+	"""
 	frappe.has_permission("BOM", "read", throw=True)
+	# The company is checked as a document because get_all applies no User
+	# Permissions, so DocType-level read on BOM says nothing about *this* company.
+	frappe.has_permission("Company", "read", doc=company, throw=True)
 
 	filters = {"company": company, "docstatus": 1, "is_active": 1}
 	if item:
 		filters["item"] = item
 
-	return frappe.get_list(
+	return frappe.get_all(
 		"BOM",
 		filters=filters,
 		fields=["name", "item", "item_name", "quantity", "uom", "currency", "rm_cost_as_per"],

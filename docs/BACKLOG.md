@@ -168,11 +168,47 @@ One carries an upgrade note: `quarantine_production_output` defaults to on, so a
 manufactured blend or pack now needs a quality decision before it can be
 consumed or dispatched.
 
+## Closed by the code review (2026-10-26)
+
+Seven findings from a review of the 2026-10-24 server-audit commit, each with a
+test that fails without the fix.
+
+| Finding | What closed it |
+|---|---|
+| The withheld formula was readable through `/api/resource/BOM Item?parent=BOM` and in BOM list queries | `overrides/bom.py` — a `permission_query_conditions` hook on `BOM` (which v16 also applies to its child rows) and a `has_permission` hook refusing print/email/export |
+| `api/exceptions.py` quoted the same per-ingredient quantities with no recipe check | `_withhold_formulas`, the same field set `api/production.py` withholds; rows keep the shortage and stock on hand |
+| **The material-shortage panel was empty for every non-Administrator** — `frappe.has_permission` on a child DocType without `parent_doctype` always returns False | `parent_doctype="Work Order"`; the old tests passed because they ran as Administrator |
+| A UOM factor lookup per pack row inside `simulate()` | `conversion.get_conversions` resolves a whole set in three queries; the single-pair functions delegate to it |
+| Cancelling a run left its batch in Quarantine for stock that no longer existed | `overrides/stock_entry.before_cancel` — before, because ERPNext clears `batch_no` as it cancels |
+| A mistyped supplier manufacturing date shortened a batch's life irreversibly | `validate_supplier_dates` refuses a date whose shelf life had already ended before the material arrived |
+| `fm_supplier_lot_no` was guarded, so a lot number mistyped on a submitted receipt could not be corrected anywhere | Removed from `overrides/batch.PROTECTED_FIELDS`; it gates nothing |
+| `_output_rows` inferred the produced row from the shape of its warehouses, so it quarantined scrap | `is_finished_item`, with the old shape kept only for the case ERPNext leaves the flag unset |
+
+Two reported findings were **withdrawn on inspection**, not fixed:
+
+- Changing the Batch guard to raise `PermissionError` was wrong. Nobody may write those
+  fields down that path — a System Manager is refused exactly as an operator is — so the
+  refusal is a rule about the write, not a statement about the caller. It stays
+  `ValidationError`, which is also the contract its tests already documented.
+- Refusing a supplier date *after* the receipt was unnecessary: the dates only ever move
+  earlier, so such a date is already ignored, and `test_a_supplier_date_never_makes_a_batch_look_fresher`
+  documents that as deliberate.
+
+### Open decision
+
+Hiding recipe-generated BOMs from list and link queries means a Desk user without
+recipe access cannot pick one when planning a Work Order. That is defensible —
+planning a run of a confidential recipe is a recipe-level act — but it is a
+site-policy call, and it is reversible by removing the `BOM` entry from
+`permission_query_conditions` in `hooks.py`. Reading the BOM document and
+`Work Order Item.required_qty` stay open either way; `docs/workflows.md` §2 says
+why neither `permlevel` nor v16's `mask` can close them without breaking ERPNext.
+
 ## Verification standing
 
 | Check | State |
 |---|---|
-| Test suite (347) | **PASS** — 2026-10-24, run module by module. The `--app` form runs 15 (point 3). |
+| Test suite (399) | **PASS** — 2026-10-26, `--app` form, 384 + 15. |
 | Live-session render, desktop and phone | **PASS** for Overview, Production, Quality, Costing, Workspace |
 | Brand contrast | **PASS** — measured, all AA |
 | Chart palette | **PASS** — validator run, all surfaces |

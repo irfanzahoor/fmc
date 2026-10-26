@@ -7,7 +7,7 @@ reached by hook.
 
 import frappe
 from frappe import _
-from frappe.utils import add_days, cint, getdate
+from frappe.utils import add_days, cint, formatdate, getdate, today
 
 from food_manufacturing.food_manufacturing_setup.doctype.fm_manufacturing_policy.fm_manufacturing_policy import (
 	get_policy_if_any,
@@ -21,12 +21,67 @@ INSPECTED_NATURES = ("Raw Material", "Packaging Material")
 
 def validate(doc, method=None):
 	route_to_quarantine(doc)
+	validate_supplier_dates(doc)
 
 
 def on_submit(doc, method=None):
 	rows = _receipt_rows(doc.name)
 	stamp_batches(doc, rows)
 	record_supplier_dates(rows)
+
+
+def validate_supplier_dates(doc) -> None:
+	"""Refuse material the supplier's own date says arrived already expired.
+
+	:func:`record_supplier_dates` only ever moves a batch's dates **earlier**,
+	which is the right asymmetry but makes the write one-way: after submit the
+	only correction is a deliberate one from ``bench console``. The typo that
+	does the damage is therefore a date too far in the *past* - 2016 for 2026 -
+	which takes ten years off the shelf life of stock that is fine and leaves
+	the batch undispatchable with no way back.
+
+	Its signature is exactly this: a supplier date whose shelf life had already
+	run out before the material arrived. Refusing it costs nothing, because the
+	date is an optional field - a receipt of genuinely expired material is still
+	recorded, by leaving the supplier's date off it or by writing the date the
+	plant means to stand behind.
+
+	A date *after* the receipt needs no refusal: dates only move earlier, so
+	:func:`record_supplier_dates` already ignores it. See
+	``test_a_supplier_date_never_makes_a_batch_look_fresher``.
+	"""
+	dated = [row for row in doc.get("items") or [] if row.get("fm_supplier_mfg_date")]
+	if not dated:
+		return
+
+	received = getdate(doc.posting_date or today())
+	shelf_life = _shelf_life_days([row.item_code for row in dated])
+
+	for row in dated:
+		days = cint(shelf_life.get(row.item_code))
+		if not days:
+			continue
+
+		made = getdate(row.fm_supplier_mfg_date)
+		expiry = getdate(add_days(made, days))
+		if expiry >= received:
+			continue
+
+		frappe.throw(
+			_(
+				"Row {0}: the supplier's date says {1} was made on {2}, so its {3} day "
+				"shelf life ended on {4} - before it was received on {5}. Correct the "
+				"date, or leave it blank to date the batch from the receipt."
+			).format(
+				row.idx,
+				frappe.bold(row.item_code),
+				frappe.bold(formatdate(made)),
+				days,
+				frappe.bold(formatdate(expiry)),
+				frappe.bold(formatdate(received)),
+			),
+			title=_("Material Arrived Expired"),
+		)
 
 
 def route_to_quarantine(doc) -> None:
@@ -149,6 +204,13 @@ def record_supplier_dates(rows: list) -> None:
 
 	Not gated on policy. A date somebody entered is a fact about the material,
 	not a rule a company opts into.
+
+	One-way in both senses: the dates only move earlier, and cancelling this
+	receipt does not move them back - the batch's original dates are not kept
+	anywhere to move back to, and a batch may hold stock from several receipts.
+	:func:`validate_supplier_dates` is what stops a typo getting this far; a
+	correction after the fact is a deliberate ``frappe.db.set_value`` from
+	``bench console``.
 	"""
 	dated = [row for row in rows if row.get("fm_supplier_mfg_date")]
 	if not dated:

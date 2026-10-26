@@ -32,6 +32,29 @@ paths — not just form buttons.
 2. Draft → submitted → **approved** by `FM Recipe Manager`. Formula fields sit at
    `permlevel` 1, so only that role reads them — on forms, APIs, reports and exports.
 3. Approval generates a standard submitted `BOM` with explicit quantities and UOMs.
+
+   The BOM's rows **are** the formula in another unit, and `permlevel` on `FM Recipe`
+   cannot reach into another app's DocType, so the gap is closed where it can be:
+
+   - Endpoints of ours that would quote per-ingredient quantities ask
+     `recipe_access.may_see_formula` first and withhold the figures otherwise —
+     `get_work_order_detail`, the material-shortage panel in `api/exceptions.py`, and the
+     cost simulator, which also refuses per-ingredient overrides because repeating one
+     measures the quantity it belongs to. Stock on hand and "is it short" survive; the
+     quantities do not.
+   - `overrides/bom.py` keeps recipe-generated BOMs out of list and report queries and
+     refuses to print or email one. That is also what closes
+     `/api/resource/BOM Item?parent=BOM`, because v16 answers a child-table query by
+     joining the parent and applying the parent's conditions.
+   - **What stays open, deliberately:** reading the BOM *document*. Costing is built on it
+     — a caller without recipe access is meant to get the totals. One consequence: a Desk
+     user without recipe access no longer sees these BOMs in a list or a link field, so
+     they cannot pick one when planning a Work Order. `Work Order Item.required_qty` is
+     likewise still readable by anyone who may read the Work Order.
+   - Neither field-level answer was usable: a `permlevel` on `BOM Item.qty` is reset on
+     write, so nobody without level 1 could save a BOM at all, and v16's `mask` is applied
+     after the permission check — it reaches `frappe.get_all`, and would feed `XXXXXXXX`
+     into ERPNext's own manufacturing arithmetic.
 4. Historical production keeps its exact revision: `Work Order.bom_no` pins the submitted
    BOM, which ERPNext will not let you edit. A recipe change creates a **new** revision and
    a new BOM; it never mutates the old one.
@@ -211,6 +234,10 @@ The SPA is a **convenience over the same server rules**, never a second route ar
   `finish_production_run` still refuses an unreleased lot.
 - The company selector is a browser preference, never a trust boundary; each endpoint
   re-checks permission, so choosing a company you cannot see returns nothing.
+- A child DocType needs `parent_doctype` in `frappe.has_permission`. Without it,
+  `has_child_permission` has no parent to check against and returns False for everyone
+  except Administrator — which silently emptied the material-shortage panel for every real
+  operator, and passed in tests because they ran as Administrator.
 
 ### The dashboard
 
