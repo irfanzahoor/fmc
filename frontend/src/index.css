@@ -264,6 +264,36 @@
 		background: var(--viz-plane);
 	}
 
+	/*
+	 * Chart furniture: the title, the subtitle and the "nothing here" line that
+	 * every chart in components/viz carries.
+	 *
+	 * Each of the seven components used to re-specify these inline, and the
+	 * copies had drifted: one heading was a size larger and bolder than the
+	 * rest, two components reached for Tailwind's `text-gray-500` - a grey
+	 * outside the token system that does not follow it - and the empty states
+	 * disagreed about their own padding. One definition is also the only way
+	 * the rule in the viz token block above ("these are the chart tokens") can
+	 * actually hold.
+	 */
+	.fm-app .fm-viz-title {
+		font-size: 0.875rem;
+		font-weight: 600;
+		color: var(--viz-ink);
+	}
+
+	.fm-app .fm-viz-subtitle {
+		font-size: 0.75rem;
+		color: var(--viz-ink-secondary);
+	}
+
+	.fm-app .fm-viz-empty {
+		padding: 2.5rem 0;
+		text-align: center;
+		font-size: 0.875rem;
+		color: var(--viz-ink-secondary);
+	}
+
 	/* Sized for a gloved hand on a shop-floor tablet. */
 	.fm-app .fm-tap {
 		min-height: 2.75rem;

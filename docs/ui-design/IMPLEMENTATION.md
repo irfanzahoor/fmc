@@ -450,3 +450,39 @@ across a 1920 monitor are mostly empty card. Quality Insights also went from a
 **Rendered at 1800, 1280 and 390**, with the live plant's small counts *and* the
 harness's larger demo figures, because the fault only appeared at one of them.
 Chart colours are untouched, so the data-viz validator did not need re-running.
+
+### Ninth pass (2026-10-26) — chart audit against a "redesign every chart" brief
+
+The brief assumed charts with arbitrary per-component colours needing one global
+palette imposed on them. Audited before changing anything, and that is not this
+codebase: every chart colour already resolves to a `--viz-*` token, there are no
+undefined tokens, and the only hex literals in the chart components are the two
+label inks StatusStack puts on known fills. The palette was also *measured* —
+against this app's own white card surface and the five hero surfaces — so
+swapping in the brief's suggested hues would have replaced validated colours with
+unvalidated ones. The brief's own escape clause covers this: integrate with an
+existing design system rather than create a conflicting one. No chart colour was
+changed, and the data-viz validator therefore did not need re-running.
+
+What the audit did find, and what was fixed:
+
+| Found | Fixed |
+|---|---|
+| `StatTile` used Tailwind `text-gray-500` twice and `text-gray-400` once — three greys outside the token system, which do not follow it | `--viz-ink-secondary` and `--viz-muted`; the latter had been defined and never referenced |
+| `StatusStack`'s empty state used `text-gray-500` | the shared empty-state rule |
+| `RunReview`'s heading was `text-base font-bold` while the other five were `text-sm font-semibold` | one `.fm-viz-title` |
+| Empty states disagreed about their own padding (`py-10` vs `py-8`) | one `.fm-viz-empty` |
+| Each of the seven components re-specified title, subtitle and empty-state styling inline — which is how the drift above happened | `.fm-viz-title`, `.fm-viz-subtitle` and `.fm-viz-empty` in `index.css`, applied across all of them |
+
+`LineTrend` keeps its inline colour bindings on top of the shared classes,
+because it is the one component that renders on two surfaces and its ink,
+grid, axis and series all switch for the hero panel.
+
+**Verified** by rendering the Overview, Production Insights, Quality Insights,
+My workspace and Costing at 1440, and Quality Insights under the amethyst palette
+to confirm the rule that chrome re-tints and charts do not. `yarn build` clean.
+No lint or type-check script exists in `frontend/package.json`; `build` is the
+only verification command the project ships.
+
+**Not supported, and not claimed:** a dark theme. All five palettes have light
+chrome, and the `--viz-*` dark flip was deliberately removed in the fourth pass.

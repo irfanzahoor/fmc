@@ -1,11 +1,11 @@
 <template>
 	<figure :class="bare ? '' : 'fm-card p-4'">
 		<figcaption class="mb-2">
-			<h3 class="text-sm font-semibold" :style="{ color: 'var(--viz-ink)' }">{{ title }}</h3>
-			<p v-if="subtitle" class="text-xs" :style="{ color: 'var(--viz-ink-secondary)' }">{{ subtitle }}</p>
+			<h3 class="fm-viz-title">{{ title }}</h3>
+			<p v-if="subtitle" class="fm-viz-subtitle">{{ subtitle }}</p>
 		</figcaption>
 
-		<p v-if="!columns.length" class="py-10 text-center text-sm" :style="{ color: 'var(--viz-ink-secondary)' }">
+		<p v-if="!columns.length" class="fm-viz-empty">
 			{{ emptyText }}
 		</p>
 
