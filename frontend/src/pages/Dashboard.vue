@@ -219,6 +219,7 @@ import KpiCard from '@/components/KpiCard.vue'
 import PageHeader from '@/components/PageHeader.vue'
 import StateBlock from '@/components/StateBlock.vue'
 import { SCREEN_ROLES } from '@/data/access'
+import { toExpiryRows } from '@/utils/expiry'
 import { dashboard } from '@/data/api'
 import BarRanking from '@/components/viz/BarRanking.vue'
 import ColumnBuckets from '@/components/viz/ColumnBuckets.vue'
@@ -257,29 +258,7 @@ const productionRows = computed(() =>
 	}))
 )
 
-/*
- * The expiry scale, and the ramp step each bucket owns.
- *
- * `expiry_buckets` leaves out a bucket with no batches in it, so stepping the
- * ramp by row position would repaint the rest on a day when "Expired" is empty:
- * "Within 7 days" would wear the darkest step one day and the second the next.
- * The step follows the bucket. Kept in step with EXPIRY_BUCKETS in
- * `food_manufacturing/api/dashboard.py`.
- */
-const EXPIRY_STEP = {
-	Expired: 'var(--viz-ordinal-4)',
-	'Within 7 days': 'var(--viz-ordinal-3)',
-	'8-30 days': 'var(--viz-ordinal-2)',
-	'31-90 days': 'var(--viz-ordinal-1)',
-}
-
-const expiryRows = computed(() =>
-	(data.value?.expiry_buckets || []).map((row) => ({
-		label: row.label,
-		value: row.value,
-		color: EXPIRY_STEP[row.label],
-	}))
-)
+const expiryRows = computed(() => toExpiryRows(data.value?.expiry_buckets))
 
 /* The stat tile's trend: the same completed runs the panel plots, as a mark
    rather than a second chart. */

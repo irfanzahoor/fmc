@@ -19,7 +19,10 @@
 		</PageHeader>
 
 		<StateBlock :loading="loading && !data" :error="error" loading-text="Loading quality overview…" :on-retry="load" :required-roles="SCREEN_ROLES.overview">
-			<div v-if="data" class="space-y-4">
+			<!-- The page is capped rather than run to the edge of a 1920 monitor:
+			     four KPI cards and two charts stretched that far are mostly empty
+			     card, and a chart's proportions are its own. -->
+			<div v-if="data" class="max-w-6xl space-y-4">
 				<div class="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
 					<KpiCard label="Awaiting a decision" :value="k.pending_qc" unit="batches" :icon="ShieldCheck"
 						:note="k.pending_qc ? 'Quarantined or held' : 'Queue is clear'"
@@ -31,17 +34,17 @@
 					<KpiCard label="Holding stock" :value="qualityTotal" unit="batches" :icon="Boxes" />
 				</div>
 
-				<!-- The expiry ranking carries four labelled rows to the stack's
-				     one bar, so it gets the wider column rather than an equal half. -->
-				<div class="grid items-start gap-4 lg:grid-cols-5">
+				<!-- Equal halves. The expiry chart used to take three fifths on the
+				     grounds that four labelled columns need more room than one bar,
+				     but its plot is capped by its own proportions, so the extra
+				     width went to empty card rather than to the chart. -->
+				<div class="grid items-start gap-4 lg:grid-cols-2">
 					<StatusStack
-						class="lg:col-span-2"
 						title="Stock by quality status"
 						:subtitle="`${qualityTotal} batches currently holding company stock.`"
 						:rows="data.quality_mix"
 					/>
 					<ColumnBuckets
-						class="lg:col-span-3"
 						title="Expiry horizon"
 						subtitle="Batches by how close they are to expiry. Most urgent on the left."
 						:rows="expiryRows"
@@ -68,6 +71,7 @@ import KpiCard from '@/components/KpiCard.vue'
 import PageHeader from '@/components/PageHeader.vue'
 import StateBlock from '@/components/StateBlock.vue'
 import { SCREEN_ROLES } from '@/data/access'
+import { toExpiryRows } from '@/utils/expiry'
 import { dashboard } from '@/data/api'
 import ColumnBuckets from '@/components/viz/ColumnBuckets.vue'
 import StatusStack from '@/components/viz/StatusStack.vue'
@@ -89,29 +93,7 @@ const qualityTotal = computed(() =>
 	(data.value?.quality_mix || []).reduce((sum, row) => sum + Number(row.value || 0), 0)
 )
 
-/*
- * The expiry scale, and the ramp step each bucket owns.
- *
- * `expiry_buckets` leaves out a bucket with no batches in it, so stepping the
- * ramp by row position would repaint the rest on a day when "Expired" is empty:
- * "Within 7 days" would wear the darkest step one day and the second the next.
- * The step follows the bucket. Kept in step with EXPIRY_BUCKETS in
- * `food_manufacturing/api/dashboard.py`.
- */
-const EXPIRY_STEP = {
-	Expired: 'var(--viz-ordinal-4)',
-	'Within 7 days': 'var(--viz-ordinal-3)',
-	'8-30 days': 'var(--viz-ordinal-2)',
-	'31-90 days': 'var(--viz-ordinal-1)',
-}
-
-const expiryRows = computed(() =>
-	(data.value?.expiry_buckets || []).map((row) => ({
-		label: row.label,
-		value: row.value,
-		color: EXPIRY_STEP[row.label],
-	}))
-)
+const expiryRows = computed(() => toExpiryRows(data.value?.expiry_buckets))
 
 async function load() {
 	loading.value = true
