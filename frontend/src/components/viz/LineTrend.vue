@@ -1,11 +1,11 @@
 <template>
 	<figure :class="bare ? '' : 'fm-card p-4'">
 		<figcaption v-if="!bare" class="mb-1">
-			<h3 class="text-sm font-semibold" :style="{ color: ink }">{{ title }}</h3>
-			<p v-if="subtitle" class="text-xs" :style="{ color: inkSecondary }">{{ subtitle }}</p>
+			<h3 class="fm-viz-title" :style="{ color: ink }">{{ title }}</h3>
+			<p v-if="subtitle" class="fm-viz-subtitle" :style="{ color: inkSecondary }">{{ subtitle }}</p>
 		</figcaption>
 
-		<p v-if="!points.length" class="py-10 text-center text-sm" :style="{ color: inkSecondary }">
+		<p v-if="!points.length" class="fm-viz-empty" :style="{ color: inkSecondary }">
 			No completed runs yet.
 		</p>
 

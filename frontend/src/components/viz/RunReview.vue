@@ -2,8 +2,8 @@
 	<figure class="fm-card p-4">
 		<figcaption class="mb-3 flex flex-wrap items-start justify-between gap-2">
 			<div>
-				<h3 class="text-base font-bold" :style="{ color: 'var(--viz-ink)' }">{{ title }}</h3>
-				<p class="text-xs" :style="{ color: 'var(--viz-ink-secondary)' }">{{ subtitle }}</p>
+				<h3 class="fm-viz-title">{{ title }}</h3>
+				<p class="fm-viz-subtitle">{{ subtitle }}</p>
 			</div>
 			<span v-if="rows.length" class="fm-chip fm-chip-bad shrink-0">
 				{{ rows.length }} {{ rows.length === 1 ? 'exception' : 'exceptions' }}
