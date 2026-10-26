@@ -126,7 +126,7 @@
 								</p>
 
 								<div v-else class="-mx-4 overflow-x-auto px-4">
-									<table class="fm-table w-full min-w-[34rem] text-left text-sm">
+									<table class="fm-table fm-table-rows w-full min-w-[34rem] text-left text-sm">
 										<thead>
 											<tr>
 												<th scope="col">Ingredient</th>
@@ -224,7 +224,7 @@
 					>
 						<div v-if="plan && plan.lines.length" class="mt-3">
 							<div class="-mx-4 overflow-x-auto px-4">
-								<table class="fm-table w-full min-w-[46rem] text-left text-sm">
+								<table class="fm-table fm-table-rows w-full min-w-[46rem] text-left text-sm">
 									<thead>
 										<tr>
 											<th scope="col">Material</th>

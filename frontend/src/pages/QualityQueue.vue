@@ -82,7 +82,7 @@
 					</p>
 
 					<div v-else class="overflow-x-auto">
-						<table class="fm-table">
+						<table class="fm-table fm-table-rows">
 							<caption class="sr-only">Batches awaiting a quality decision</caption>
 							<thead>
 								<tr>

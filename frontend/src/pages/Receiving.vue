@@ -28,7 +28,7 @@
 				<li v-for="order in orders" :key="order.name" class="w-[16rem] shrink-0">
 					<button
 						type="button"
-						class="fm-card w-full p-4 text-left"
+						class="fm-card fm-card-interactive w-full p-4 text-left"
 						:style="selected === order.name ? { borderColor: 'var(--fm-primary)', boxShadow: '0 0 0 1px var(--fm-primary)' } : {}"
 						:aria-current="selected === order.name ? 'true' : undefined"
 						@click="open(order)"
@@ -91,7 +91,7 @@
 						</div>
 
 						<div class="overflow-x-auto">
-							<table class="fm-table min-w-[52rem]">
+							<table class="fm-table fm-table-rows min-w-[52rem]">
 								<caption class="sr-only">Purchase order lines outstanding</caption>
 								<thead>
 									<tr>

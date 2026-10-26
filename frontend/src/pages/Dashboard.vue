@@ -107,7 +107,7 @@
 							<li v-for="item in priorities" :key="item.title">
 								<RouterLink
 									:to="item.to"
-									class="fm-tap flex items-center gap-3 rounded-xl px-2 py-2.5 text-left transition-colors hover:bg-[var(--fm-canvas)] motion-reduce:transition-none"
+									class="fm-tap group flex items-center gap-3 rounded-xl px-2 py-2.5 text-left transition-colors hover:bg-[var(--fm-canvas)] motion-reduce:transition-none"
 								>
 									<span
 										class="grid h-10 w-10 shrink-0 place-items-center rounded-xl"
@@ -120,7 +120,12 @@
 										<span class="block text-sm font-semibold">{{ item.title }}</span>
 										<span class="block text-xs fm-muted">{{ item.hint }}</span>
 									</span>
-									<ChevronRight class="h-4 w-4 shrink-0 fm-muted" aria-hidden="true" />
+									<!-- The nudge is the row's only affordance besides the wash:
+									     a chevron that moves says "this goes somewhere". -->
+									<ChevronRight
+										class="h-4 w-4 shrink-0 fm-muted transition-transform group-hover:translate-x-0.5 motion-reduce:transition-none"
+										aria-hidden="true"
+									/>
 								</RouterLink>
 							</li>
 						</ul>
@@ -174,7 +179,7 @@
 
 				<ul class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
 					<li v-for="action in quickActions" :key="action.label">
-						<RouterLink :to="action.to" class="fm-card fm-tap flex items-center gap-3 p-4 transition-colors hover:border-[var(--fm-primary)] motion-reduce:transition-none">
+						<RouterLink :to="action.to" class="fm-card fm-card-interactive fm-tap flex items-center gap-3 p-4">
 							<span
 								class="grid h-9 w-9 shrink-0 place-items-center rounded-lg"
 								:style="{ background: 'var(--fm-soft)', color: 'var(--fm-primary)' }"

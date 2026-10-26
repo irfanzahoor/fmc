@@ -45,7 +45,15 @@
 	--fm-accent-on-dark: #cca23c;
 
 	--fm-radius: 16px;
-	--fm-shadow: 0 3px 14px #1a294508;
+	/*
+	 * Two layers, not one. A single 3% wash at 14px read as no shadow at all,
+	 * so every surface was a hairline rectangle on a flat canvas and nothing
+	 * sat *above* anything. The contact layer gives the card an edge and the
+	 * ambient layer gives it height; both stay cool and low-alpha so the page
+	 * still reads as paper rather than as glass.
+	 */
+	--fm-shadow: 0 1px 2px #1a29450f, 0 6px 18px -6px #1a29451f;
+	--fm-shadow-lift: 0 2px 4px #1a294514, 0 16px 32px -12px #1a294530;
 
 	--fm-heading: 'Plus Jakarta Sans', system-ui, sans-serif;
 	--fm-body: 'Inter', system-ui, sans-serif;
@@ -268,6 +276,33 @@
 		box-shadow: var(--fm-shadow);
 	}
 
+	/*
+	 * A card whose whole surface is a control: a work order in the queue, a
+	 * purchase order to receive, a shortcut into another screen. The lift is
+	 * what says "this responds" - a hairline border never does - and it is a
+	 * transform and a shadow, so it costs no layout and never nudges the text
+	 * under the cursor. The reduced-motion rule at the end of this file
+	 * neutralises the movement without taking the hover colour away.
+	 */
+	.fm-app .fm-card-interactive {
+		transition:
+			box-shadow 160ms ease,
+			border-color 160ms ease,
+			transform 160ms ease;
+	}
+
+	.fm-app .fm-card-interactive:hover {
+		border-color: var(--fm-primary);
+		box-shadow: var(--fm-shadow-lift);
+		transform: translateY(-2px);
+	}
+
+	/* Keyboard parity: the pointer gets a lift, so the keyboard gets a ring. */
+	.fm-app .fm-card-interactive:focus-visible {
+		outline: 2px solid var(--fm-primary);
+		outline-offset: 2px;
+	}
+
 	.fm-app .fm-label {
 		font-size: 0.6875rem;
 		font-weight: 600;
@@ -356,6 +391,30 @@
 		box-shadow: 0 0 0 3px var(--fm-soft);
 	}
 
+	/*
+	 * A native date control is the only field the browser draws for itself, so
+	 * left alone it was the one odd box in a row of styled inputs - shorter
+	 * than its neighbours, with a picker button at full black. Matching the
+	 * height and toning the indicator is as far as styling a native control
+	 * safely goes; the format stays the browser's, which is the user's locale.
+	 */
+	.fm-app input[type='date'].fm-input,
+	.fm-app input[type='datetime-local'].fm-input {
+		min-height: 2.75rem;
+	}
+
+	.fm-app input[type='date'].fm-input::-webkit-calendar-picker-indicator,
+	.fm-app input[type='datetime-local'].fm-input::-webkit-calendar-picker-indicator {
+		cursor: pointer;
+		opacity: 0.5;
+		transition: opacity 150ms ease;
+	}
+
+	.fm-app input[type='date'].fm-input:hover::-webkit-calendar-picker-indicator,
+	.fm-app input[type='date'].fm-input:focus::-webkit-calendar-picker-indicator {
+		opacity: 1;
+	}
+
 	/* Status chips always carry a word; colour alone never states the meaning. */
 	.fm-app .fm-chip {
 		display: inline-flex;
@@ -393,6 +452,21 @@
 	.fm-app .fm-table td {
 		padding: 0.75rem 0.875rem;
 		border-top: 1px solid var(--fm-border);
+	}
+
+	/*
+	 * A row wash on hover. These tables are read across - an ingredient to its
+	 * lot and its expiry, an allocation to the batch it came from - and a wide
+	 * row with nothing tying it together is where the eye slips a line. Opt-in
+	 * per table, because a one-row table has nothing to slip between, and a
+	 * table whose rows are already selectable has its own selected state.
+	 */
+	.fm-app .fm-table-rows tbody tr {
+		transition: background-color 120ms ease;
+	}
+
+	.fm-app .fm-table-rows tbody tr:hover {
+		background: var(--fm-canvas);
 	}
 
 	/* Focus is always visible; it is never removed to tidy a layout. */

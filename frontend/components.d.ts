@@ -17,6 +17,7 @@ declare module 'vue' {
     LineTrend: typeof import('./src/components/viz/LineTrend.vue')['default']
     MetricCard: typeof import('./src/components/MetricCard.vue')['default']
     PageHeader: typeof import('./src/components/PageHeader.vue')['default']
+    ProgressRing: typeof import('./src/components/ProgressRing.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
     RunReview: typeof import('./src/components/viz/RunReview.vue')['default']
