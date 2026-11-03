@@ -155,6 +155,80 @@ is refused, an anonymous visitor is sent to login).
 | `/fm/insights/production` | Yield by run, output by item, process loss rate |
 | `/fm/insights/quality` | Stock by quality status, expiry horizon |
 
+These are full-page captures of every current console route, rendered from the
+built-in design harness with sample data. Sign in to your site to see live
+company data.
+
+<details>
+<summary>Plant overview</summary>
+
+![Plant overview dashboard](docs/screenshots/dashboard.png)
+
+</details>
+
+<details>
+<summary>Production</summary>
+
+![Production workspace](docs/screenshots/production.png)
+
+</details>
+
+<details>
+<summary>Quality</summary>
+
+![Quality workspace](docs/screenshots/quality.png)
+
+</details>
+
+<details>
+<summary>Goods in / Receiving</summary>
+
+![Goods in and receiving](docs/screenshots/receiving.png)
+
+</details>
+
+<details>
+<summary>Dispatch</summary>
+
+![Dispatch workspace](docs/screenshots/dispatch.png)
+
+</details>
+
+<details>
+<summary>Recall and traceability</summary>
+
+![Recall and traceability](docs/screenshots/recall.png)
+
+</details>
+
+<details>
+<summary>Production insights</summary>
+
+![Production insights](docs/screenshots/insights-production.png)
+
+</details>
+
+<details>
+<summary>Quality insights</summary>
+
+![Quality insights](docs/screenshots/insights-quality.png)
+
+</details>
+
+<details>
+<summary>Recipe cost and packaging</summary>
+
+![Recipe cost and packaging](docs/screenshots/costing.png)
+
+</details>
+
+<details>
+<summary>My workspace</summary>
+
+![My workspace](docs/screenshots/workspace.png)
+
+</details>
+
 **Appearance.** Five palettes — Batchwell forest green (default), Midnight
 Blue, Amethyst, Graphite and Copper — and two font pairings, stored per browser. Chart colours
 deliberately **do not** follow the theme: a quality status keeps one meaning
