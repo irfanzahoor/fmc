@@ -155,79 +155,48 @@ is refused, an anonymous visitor is sent to login).
 | `/fm/insights/production` | Yield by run, output by item, process loss rate |
 | `/fm/insights/quality` | Stock by quality status, expiry horizon |
 
-These are full-page captures of every current console route, rendered from the
-built-in design harness with sample data. Sign in to your site to see live
-company data.
+These full-page captures show every current console route. They use sample data
+from the built-in design harness; sign in to your site to see live company data.
 
-<details>
-<summary>Plant overview</summary>
+### Plant overview
 
 ![Plant overview dashboard](docs/screenshots/dashboard.png)
 
-</details>
-
-<details>
-<summary>Production</summary>
+### Production
 
 ![Production workspace](docs/screenshots/production.png)
 
-</details>
-
-<details>
-<summary>Quality</summary>
+### Quality
 
 ![Quality workspace](docs/screenshots/quality.png)
 
-</details>
-
-<details>
-<summary>Goods in / Receiving</summary>
+### Goods in / Receiving
 
 ![Goods in and receiving](docs/screenshots/receiving.png)
 
-</details>
-
-<details>
-<summary>Dispatch</summary>
+### Dispatch
 
 ![Dispatch workspace](docs/screenshots/dispatch.png)
 
-</details>
-
-<details>
-<summary>Recall and traceability</summary>
+### Recall and traceability
 
 ![Recall and traceability](docs/screenshots/recall.png)
 
-</details>
-
-<details>
-<summary>Production insights</summary>
+### Production insights
 
 ![Production insights](docs/screenshots/insights-production.png)
 
-</details>
-
-<details>
-<summary>Quality insights</summary>
+### Quality insights
 
 ![Quality insights](docs/screenshots/insights-quality.png)
 
-</details>
-
-<details>
-<summary>Recipe cost and packaging</summary>
+### Recipe cost and packaging
 
 ![Recipe cost and packaging](docs/screenshots/costing.png)
 
-</details>
-
-<details>
-<summary>My workspace</summary>
+### My workspace
 
 ![My workspace](docs/screenshots/workspace.png)
-
-</details>
 
 **Appearance.** Five palettes — Batchwell forest green (default), Midnight
 Blue, Amethyst, Graphite and Copper — and two font pairings, stored per browser. Chart colours
