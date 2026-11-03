@@ -1,16 +1,37 @@
-# Food Manufacturing
+<div align="center">
 
-Spice and masala manufacturing on ERPNext: supplier lots, approved recipes, bulk
-blending, packaging into multiple pack sizes, and batch traceability from
-supplier lot to customer.
+# 🌶️ Food Manufacturing for ERPNext
 
-Built on standard ERPNext purchasing, inventory, manufacturing, sales and
-accounting. This app adds the food-manufacturing rules that ERPNext does not
-model; it does not duplicate stock ledgers, valuation, invoices or payments.
+### Open-source food manufacturing solution built on Frappe & ERPNext.
 
-> **Start with the handbook.** Install the app and open `/handbook` — an
-> operating manual, an administrator guide and a developer reference, each
-> downloadable as a PDF. This README is the short version.
+Manage spice production, quality control, batch traceability,
+recipe-based blending, packaging and dispatch in one integrated workflow.
+
+[Features](#what-it-does) ·
+[Installation](#install) ·
+[Screenshots](#the-operator-console) ·
+[Documentation](#documentation)
+
+</div>
+
+---
+
+## Why Food Manufacturing?
+
+ERPNext provides the foundation for purchasing, inventory,
+manufacturing and sales. This app adds the specialized controls
+needed by food and spice manufacturers.
+
+- **Quality Control:** Quarantine, Released, Hold and Rejected batches.
+- **Batch Traceability:** Trace supplier lots through production to customers.
+- **FEFO:** Prioritize stock by earliest expiry.
+- **Shelf-Life Management:** Prevent dispatch of expired or ineligible stock.
+- **Recipe Management:** Protect confidential ingredient percentages.
+- **Production Yield:** Track actual output and process loss.
+- **Packaging:** Convert bulk blends into multiple finished pack sizes.
+
+> Start with the built-in handbook at `/handbook` after installation.
+> It includes operating, administrator and developer guides.
 
 ---
 
