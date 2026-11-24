@@ -2,7 +2,7 @@ name: CI v16
 
 on:
   push:
-    branches: [master, main, develop]
+    branches: [version-15, version-16]
   pull_request:
 
 concurrency:
