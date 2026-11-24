@@ -53,6 +53,15 @@ jobs:
 
       - name: Configure MariaDB for Frappe
         run: |
+          echo "Waiting for MariaDB to accept connections..."
+          for i in $(seq 1 30); do
+            if mysqladmin --host 127.0.0.1 --port 3306 -uroot -proot ping --silent; then
+              echo "MariaDB is up after ${i} tries"
+              break
+            fi
+            echo "try $i: not ready yet, waiting 5s..."
+            sleep 5
+          done
           mysql --host 127.0.0.1 --port 3306 -uroot -proot -e \
             "SET GLOBAL character_set_server = 'utf8mb4'; SET GLOBAL collation_server = 'utf8mb4_unicode_ci';"
 
